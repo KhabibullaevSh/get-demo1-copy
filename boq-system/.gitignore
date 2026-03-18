@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+output/*.xlsx
+input/drawings/*.dxf
+input/drawings/*.dwg
+input/pdfs/*.pdf
+input/bom/*.xlsx
