@@ -1,0 +1,11 @@
+{
+  "structural": ["bom", "ifc", "structural_schedule", "dwg_geometry", "arch_evidence", "standard_fallback"],
+  "room_areas":  ["dwg_polygon", "pdf_explicit", "ifc_slab", "standard_fallback"],
+  "doors":       ["schedule", "elevation_detail", "plan_count", "standard_fallback"],
+  "windows":     ["schedule", "elevation_detail", "plan_count", "standard_fallback"],
+  "stairs":      ["structural_detail", "arch_detail", "plan_evidence", "standard_fallback"],
+  "finishes":    ["finish_schedule", "room_note", "general_note", "standard_fallback"],
+  "battens":     ["bom_explicit", "structural_note", "area_rule", "standard_fallback"],
+  "fc_sheets":   ["lining_schedule", "finish_note", "wall_area_rule", "standard_fallback"],
+  "roof":        ["dwg_polygon", "pdf_explicit", "standard_fallback"]
+}

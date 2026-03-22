@@ -1,0 +1,32 @@
+{
+  "battens": {
+    "roof_batten_spacing_mm": 900,
+    "ceiling_batten_spacing_mm": 400,
+    "waste_factor": 1.05
+  },
+  "fc_sheets": {
+    "sheet_area_m2": 2.88,
+    "waste_factor": 1.10,
+    "wall_sides": 2
+  },
+  "plasterboard": {
+    "sheet_area_m2": 2.88,
+    "waste_factor": 1.10
+  },
+  "walls": {
+    "default_height_mm": 2400,
+    "external_wall_thickness_mm": 90,
+    "internal_wall_thickness_mm": 90
+  },
+  "stairs": {
+    "default_riser_mm": 175,
+    "default_going_mm": 250,
+    "default_width_mm": 900
+  },
+  "conflict_tolerance": 0.10,
+  "confidence_thresholds": {
+    "high_min_sources": 1,
+    "medium_min_sources": 1,
+    "low_min_sources": 0
+  }
+}
