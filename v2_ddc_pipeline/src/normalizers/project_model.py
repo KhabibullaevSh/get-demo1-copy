@@ -157,43 +157,82 @@ def build_project_model(
     # ── Structural ────────────────────────────────────────────────────────
     bom_totals = framecad_data.get("totals", {})
 
-    def _struct_lm(key_bom: str, key_ifc: str) -> dict:
+    def _ifc_sum(*keys: str) -> float:
+        """Sum multiple IFC result keys (named + inferred variants)."""
+        return sum(ifc_data.get(k, 0.0) for k in keys)
+
+    def _struct_lm(key_bom: str, *ifc_keys: str) -> dict:
         if framecad_available:
-            return _pick_lm(
-                (bom_totals.get(key_bom, 0.0), "framecad_bom", "HIGH"),
-            )
+            return _pick_lm((bom_totals.get(key_bom, 0.0), "framecad_bom", "HIGH"))
         if ifc_has_members:
-            return _pick_lm(
-                (ifc_data.get(key_ifc, 0.0), "ifc_model", "HIGH"),
-            )
+            total = _ifc_sum(*ifc_keys)
+            return _pick_lm((total, "ifc_model", "HIGH"))
         return _val(0.0, "dxf_derived", "LOW")
 
-    wall_stud_lm  = _struct_lm("wall_stud_lm",  "wall_frame_stud_lm")
-    wall_plate_lm = _struct_lm("plate_lm",       "wall_plate_lm")
-    wall_noggin_lm= _struct_lm("noggin_lm",      "wall_noggin_lm")
-    roof_rafter_lm= _struct_lm("rafter_lm",      "roof_rafter_lm")
-    roof_plate_lm = _struct_lm("plate_lm",       "roof_plate_lm")
-    roof_noggin_lm= _struct_lm("noggin_lm",      "roof_noggin_lm")
-    verandah_lm   = _struct_lm("verandah_lm",    "verandah_frame_lm")
-    floor_joist_lm= _struct_lm("joist_lm",       "floor_joist_lm")
-    girt_lm       = _struct_lm("girt_lm",        "girt_lm")
+    # Wall stud = named W-type + inferred full-height + short stud
+    wall_stud_lm  = _struct_lm(
+        "wall_stud_lm",
+        "wall_frame_stud_lm",
+        "wall_stud_inferred_lm",
+        "wall_stud_short_inferred_lm",
+    )
+    # Wall plate = named T-type top plates + inferred plates from bare-desc
+    wall_plate_lm = _struct_lm(
+        "plate_lm",
+        "wall_frame_top_plate_lm",
+        "wall_plate_lm",
+        "wall_plate_inferred_lm",
+    )
+    # Wall noggin = named N-type + inferred noggins from bare-desc
+    wall_noggin_lm = _struct_lm(
+        "noggin_lm",
+        "wall_noggin_lm",
+        "wall_noggin_inferred_lm",
+    )
+    # Bottom plate (separate — anomalous lengths flagged in extractor)
+    wall_btm_plate_lm = _struct_lm(
+        "bottom_plate_lm",
+        "wall_frame_bottom_plate_lm",
+    )
+    roof_rafter_lm = _struct_lm("rafter_lm",   "roof_rafter_lm")
+    roof_plate_lm  = _struct_lm("plate_lm",    "roof_plate_lm")
+    roof_noggin_lm = _struct_lm("noggin_lm",   "roof_noggin_lm")
+    verandah_lm    = _struct_lm("verandah_lm", "verandah_frame_lm")
+    floor_joist_lm = _struct_lm("joist_lm",    "floor_joist_lm", "lgs_unclassified_lm")
+    girt_lm        = _struct_lm("girt_lm",     "girt_lm")
+
+    # SHS / RHS structural steel — NOT LGS, always separate BOQ item
+    steel_shs_lm = _val(
+        round(_ifc_sum("steel_shs_lm"), 2),
+        "ifc_model",
+        "HIGH" if ifc_has_members else "LOW",
+    )
 
     structural = {
-        "wall_stud_lm":         wall_stud_lm,
-        "wall_plate_lm":        wall_plate_lm,
-        "wall_noggin_lm":       wall_noggin_lm,
-        "roof_rafter_lm":       roof_rafter_lm,
-        "roof_plate_lm":        roof_plate_lm,
-        "roof_noggin_lm":       roof_noggin_lm,
-        "floor_joist_lm":       floor_joist_lm,
-        "verandah_frame_lm":    verandah_lm,
-        "girt_lm":              girt_lm,
-        "total_column_lm":      _val(ifc_data.get("total_column_lm", 0.0), "ifc_model", "HIGH"),
-        "total_beam_lm":        _val(ifc_data.get("total_beam_lm",   0.0), "ifc_model", "HIGH"),
-        "column_count":         _val(ifc_data.get("column_count",    0),   "ifc_model", "HIGH"),
-        "beam_count":           _val(ifc_data.get("beam_count",      0),   "ifc_model", "HIGH"),
-        "source_priority_used": struct_priority,
-        "member_breakdown":     ifc_data.get("member_breakdown", {}),
+        "wall_stud_lm":              wall_stud_lm,
+        "wall_plate_lm":             wall_plate_lm,
+        "wall_btm_plate_lm":         wall_btm_plate_lm,
+        "wall_noggin_lm":            wall_noggin_lm,
+        "roof_rafter_lm":            roof_rafter_lm,
+        "roof_plate_lm":             roof_plate_lm,
+        "roof_noggin_lm":            roof_noggin_lm,
+        "floor_joist_lm":            floor_joist_lm,
+        "verandah_frame_lm":         verandah_lm,
+        "girt_lm":                   girt_lm,
+        "steel_shs_lm":              steel_shs_lm,
+        "lgs_unclassified_lm":       _val(
+            round(_ifc_sum("lgs_unclassified_lm"), 2), "ifc_model", "LOW"
+        ),
+        "ifc_manual_review_lm":      _val(
+            round(ifc_data.get("manual_review_lm", 0.0), 2), "ifc_model", "MEDIUM"
+        ),
+        "total_column_lm":           _val(ifc_data.get("total_column_lm", 0.0), "ifc_model", "HIGH"),
+        "total_beam_lm":             _val(ifc_data.get("total_beam_lm",   0.0), "ifc_model", "HIGH"),
+        "column_count":              _val(ifc_data.get("column_count",    0),   "ifc_model", "HIGH"),
+        "beam_count":                _val(ifc_data.get("beam_count",      0),   "ifc_model", "HIGH"),
+        "source_priority_used":      struct_priority,
+        "member_breakdown":          ifc_data.get("member_breakdown", {}),
+        "ifc_classification_notes":  ifc_data.get("classification_notes", []),
     }
 
     # ── Openings detail ───────────────────────────────────────────────────

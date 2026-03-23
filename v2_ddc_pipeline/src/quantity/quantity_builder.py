@@ -122,15 +122,57 @@ def _build_structure(pm: dict) -> list[dict]:
                 v2_extractor_source=src_label,
             ))
 
-    _row("Wall Frame", "Stud",       _s(pm, "wall_stud_lm"),   "HIGH" if src_label != "dxf_derived" else "LOW")
-    _row("Wall Frame", "Top Plate",  _s(pm, "wall_plate_lm"),  "HIGH" if src_label != "dxf_derived" else "LOW")
-    _row("Wall Frame", "Noggin",     _s(pm, "wall_noggin_lm"), "HIGH" if src_label != "dxf_derived" else "LOW")
-    _row("Roof Frame", "Rafter",     _s(pm, "roof_rafter_lm"), "HIGH" if src_label != "dxf_derived" else "LOW")
-    _row("Roof Frame", "Plate",      _s(pm, "roof_plate_lm"),  "HIGH" if src_label != "dxf_derived" else "LOW")
-    _row("Roof Frame", "Noggin",     _s(pm, "roof_noggin_lm"), "HIGH" if src_label != "dxf_derived" else "LOW")
-    _row("Floor",      "Joist",      _s(pm, "floor_joist_lm"), "MEDIUM")
-    _row("Verandah",   "Frame",      _s(pm, "verandah_frame_lm"), "HIGH" if src_label != "dxf_derived" else "LOW")
-    _row("Structure",  "Girt",       _s(pm, "girt_lm"),        "MEDIUM")
+    ifc_conf = "HIGH" if src_label != "dxf_derived" else "LOW"
+    _row("Wall Frame", "Stud",       _s(pm, "wall_stud_lm"),     ifc_conf)
+    _row("Wall Frame", "Top Plate",  _s(pm, "wall_plate_lm"),    ifc_conf)
+    _row("Wall Frame", "Noggin",     _s(pm, "wall_noggin_lm"),   ifc_conf)
+    _row("Roof Frame", "Rafter",     _s(pm, "roof_rafter_lm"),   ifc_conf)
+    _row("Roof Frame", "Plate",      _s(pm, "roof_plate_lm"),    ifc_conf)
+    _row("Roof Frame", "Noggin",     _s(pm, "roof_noggin_lm"),   ifc_conf)
+    _row("Floor",      "Joist",      _s(pm, "floor_joist_lm"),   "MEDIUM")
+    _row("Verandah",   "Frame",      _s(pm, "verandah_frame_lm"), ifc_conf)
+    _row("Structure",  "Girt",       _s(pm, "girt_lm"),          "MEDIUM")
+
+    # Bottom plate — separate row, marked manual_review due to anomalous IFC lengths
+    btm_plate = _s(pm, "wall_btm_plate_lm")
+    if btm_plate and btm_plate > 0:
+        rows.append(_qrow(
+            "Structure", "Wall Frame", "Bottom Plate",
+            round(btm_plate, 2), "lm",
+            "measured", "direct from source",
+            f"{src_label}: Wall Frame Bottom Plate",
+            "LOW",  # LOW — all B members are 15.0 m (anomalous) — needs BOM confirm
+            assumption="IFC B-type members all 15.0 m — likely cumulative length artifact, not cut lengths. Confirm with FrameCAD BOM.",
+            manual_review=True,
+            v2_extractor_source=src_label,
+        ))
+
+    # Structural steel SHS posts — always separate from LGS wall frame
+    shs_lm = _s(pm, "steel_shs_lm")
+    if shs_lm and shs_lm > 0:
+        rows.append(_qrow(
+            "Structure", "Structural Steel Post", "75×75×4 SHS",
+            round(shs_lm, 2), "lm",
+            "measured", "direct from source",
+            f"{src_label}: SHS steel (desc=XX/00, name=75x75x4 SHS)",
+            "HIGH",
+            assumption="Structural steel hollow section (not LGS). Confirm post type and size from structural drawings.",
+            v2_extractor_source=src_label,
+        ))
+
+    # Unclassified LGS — separate provisional row
+    lgs_unc = _s(pm, "lgs_unclassified_lm")
+    if lgs_unc and lgs_unc > 0:
+        rows.append(_qrow(
+            "Structure", "LGS Members", "unclassified (desc=numeric artifact)",
+            round(lgs_unc, 2), "lm",
+            "provisional", "FrameCAD export artifact — type unknown",
+            f"{src_label}: 128 × ~3.7 m IfcBeam, desc='2440.000050'",
+            "LOW",
+            assumption="128 LGS beams (~3.7 m each, 89S41-075-500) with numeric description. Likely floor-joist cassette or ceiling purlin. Confirm with FrameCAD BOM.",
+            manual_review=True,
+            v2_extractor_source=src_label,
+        ))
 
     # Post count from DXF STRUCTURE CIRCLE
     post_count = _g(pm, "post_count")
