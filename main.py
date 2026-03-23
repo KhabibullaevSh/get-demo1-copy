@@ -111,12 +111,11 @@ def main() -> int:
 
     _banner(args.project)
 
-    # ── Step 1: File detection ─────────────────────────────────────────────────
-    print("\n[1/10] Scanning input files...")
+    # ── Step 1: Scan input files → source inventory ───────────────────────────
+    print("\n[1/13] Scanning input files...")
     from src.file_detector import detect_files
     from src.config import INPUT_DIR
 
-    # Per-project folder: input/ProjectName/ takes priority over shared input/
     project_input = INPUT_DIR / args.project
     if project_input.exists():
         scan_dir = project_input
@@ -126,7 +125,6 @@ def main() -> int:
         print(f"  Input folder: input/  (tip: create input/{args.project}/ for project isolation)")
 
     files = detect_files(scan_dir)
-    # Also check legacy flat input/ when using project subfolder
     if scan_dir != INPUT_DIR:
         pass  # project folder is self-contained
     elif not any(INPUT_DIR.rglob("*.pdf")):
@@ -141,97 +139,187 @@ def main() -> int:
         print("\n  --dry-run: stopping here.")
         return 0
 
-    # ── Step 2: Interactive mode selection ────────────────────────────────────
-    print("\n[2/10] Determining project mode...")
-    mode, house_type, highset = _determine_mode(args, files)
-    print(f"  Mode     : {mode}")
-    print(f"  Type     : {house_type or 'custom / generic'}")
-    print(f"  Highset  : {highset}")
+    # ── Step 2: Extract DWG/DXF geometry ──────────────────────────────────────
+    print("\n[2/13] Extracting DWG/DXF geometry...")
+    dwg_data = _run_dwg_extraction(files, args.force_convert)
 
-    # ── Step 3: Load approved BOQ (primary) or standard model (fallback) ─────
-    print("\n[3/10] Loading approved BOQ / standard model...")
-    from src.config import DATA_DIR
-    approved_boq_path = None
-    for _candidate in [DATA_DIR / "approved_boq_G303.xlsx", DATA_DIR / "approved_boq.xlsx"]:
-        if _candidate.exists():
-            approved_boq_path = str(_candidate)
-            break
+    # ── Step 3: Extract PDFs ───────────────────────────────────────────────────
+    print("\n[3/13] Extracting PDFs (AI vision)...")
+    pdf_data = _run_pdf_extraction(files)
 
-    standard_boq: list[dict] = []
-    standard_geometry: dict = {}
+    # ── Step 4: Extract BOM / IFC ─────────────────────────────────────────────
+    print("\n[4/13] Extracting BOM / IFC...")
+    bom_data = _run_bom_extraction(files)
 
-    if approved_boq_path:
-        try:
-            from src.loader import load_approved_boq
-            standard_boq = load_approved_boq(approved_boq_path)
-            print(f"  Approved BOQ: {len(standard_boq)} items  ({Path(approved_boq_path).name})")
-        except Exception as exc:
-            print(f"  WARNING: Could not load approved BOQ: {exc}")
+    # ── Build source inventory (feeds QA, no longer blocking) ─────────────────
+    from src.source_inventory import build_inventory
+    parse_results = {"dwg": dwg_data, "pdf": pdf_data, "bom": bom_data}
+    source_inventory = build_inventory(files, parse_results)
+    parsed_ok_count = sum(1 for r in source_inventory if r["parsed_ok"])
+    print(f"  Source inventory: {len(source_inventory)} files  ({parsed_ok_count} parsed ok)")
 
-    if not standard_boq:
-        standard_boq, standard_geometry = _load_standard_model(house_type)
-        print(f"  Standard BOQ (fallback): {len(standard_boq)} items")
-    else:
-        # Still load geometry for area-based calculations
-        _, standard_geometry = _load_standard_model(house_type)
+    # ── Step 5: Merge all sources ──────────────────────────────────────────────
+    print("\n[5/13] Merging sources...")
+    from src.merger import merge_all
+    # Highset detection (pre-classify)
+    highset: bool | None = None
+    if args.highset.lower() in ("y", "yes", "true", "1"):
+        highset = True
+    elif args.highset.lower() in ("n", "no", "false", "0"):
+        highset = False
 
-    if args.debug and standard_geometry:
-        print(f"  Standard Geometry keys: {list(standard_geometry.keys())}")
-
-    # ── Step 4: Title block detection ─────────────────────────────────────────
-    print("\n[4/10] Detecting title blocks...")
+    # Title block
+    print("  Detecting title blocks...")
     titleblock = _run_titleblock(files)
     if titleblock.get("project_name"):
         print(f"  Project name detected: {titleblock['project_name']}")
     if titleblock.get("house_type_detected"):
         detected = titleblock["house_type_detected"]
         print(f"  House type in title block: {detected} ({titleblock.get('house_type_confidence')})")
-        if not house_type and detected:
-            house_type = detected
-            print(f"  Using detected type: {house_type}")
 
-    # ── Step 5: DWG extraction ────────────────────────────────────────────────
-    print("\n[5/10] Extracting DWG/DXF geometry...")
-    dwg_data = _run_dwg_extraction(files, args.force_convert)
-
-    # ── Step 6: PDF extraction ────────────────────────────────────────────────
-    print("\n[6/10] Extracting PDFs (AI vision)...")
-    pdf_data = _run_pdf_extraction(files)
-
-    # ── Step 7: BOM / IFC extraction ──────────────────────────────────────────
-    print("\n[7/10] Extracting BOM / IFC...")
-    bom_data = _run_bom_extraction(files)
-
-    # ── Step 8: Merge ─────────────────────────────────────────────────────────
-    print("\n[8/10] Merging sources...")
-    from src.merger import merge_all
     if highset is not None:
         titleblock["highset_detected"] = highset
+
     merged = merge_all(dwg_data, pdf_data, bom_data, titleblock)
     _print_merge_summary(merged)
 
-    # ── Step 9: Validate ──────────────────────────────────────────────────────
-    print("\n[9/10] Validating data...")
+    # ── Step 6: Classify project ───────────────────────────────────────────────
+    print("\n[6/13] Classifying project...")
+    from src.project_classifier import classify_project
+
+    # Override with --type argument if provided
+    forced_type = (args.type or "").strip().upper()
+    if forced_type:
+        titleblock["house_type_detected"]   = forced_type
+        titleblock["house_type_confidence"] = "HIGH"
+
+    classification = classify_project(files, titleblock, merged)
+    project_mode   = classification["project_mode"]
+    model_code     = classification.get("matched_model_code")
+    cl_conf        = classification["confidence"]
+
+    print(f"  Mode       : {project_mode}")
+    print(f"  Model code : {model_code or 'custom / generic'}")
+    print(f"  Confidence : {cl_conf}")
+    if args.debug:
+        for r in classification.get("reasoning", []):
+            print(f"    {r}")
+
+    # Legacy mode variable for QA reporter compatibility
+    from src.config import ProjectMode, STANDARD_MODELS_MAP
+    mode = (
+        ProjectMode.STANDARD.value
+        if project_mode == "standard_model"
+        else ProjectMode.GENERIC.value
+    )
+    house_type = model_code or forced_type or ""
+
+    # ── Step 7: Build neutral quantity model ──────────────────────────────────
+    print("\n[7/13] Building neutral quantity model...")
+    from src.project_quantities import build_quantity_model, save_quantity_model
+    quantity_model = build_quantity_model(merged, classification)
+    qty_path = save_quantity_model(quantity_model, args.project)
+    print(f"  Quantities  : {len(quantity_model['quantities'])} entries")
+    print(f"  Saved       : {qty_path.name}")
+    # Print package completeness
+    completeness = quantity_model.get("completeness", {})
+    if completeness:
+        print("  Completeness:")
+        for pkg, info in completeness.items():
+            status = "OK" if info["detected"] else "--"
+            print(f"    [{status}] {pkg:<12}  {info['items']:>3} quantities  {info['notes']}")
+
+    # ── Step 8: Load item library (reference only) ────────────────────────────
+    print("\n[8/13] Loading item library (reference only)...")
+    from src.config import DATA_DIR, STANDARD_MODELS
+    from src.item_library import load_item_library
+
+    # Only load approved BOQ as reference for the classified model
+    approved_boq_path  = None
+    standard_model_path = None
+
+    if project_mode == "standard_model" and model_code:
+        # Look for the matching model file
+        model_filename = STANDARD_MODELS_MAP.get(model_code)
+        if model_filename:
+            candidate = STANDARD_MODELS / model_filename
+            if candidate.exists():
+                standard_model_path = str(candidate)
+
+    # Also check for approved BOQ in data/
+    for _candidate in [DATA_DIR / "approved_boq_G303.xlsx", DATA_DIR / "approved_boq.xlsx"]:
+        if _candidate.exists():
+            approved_boq_path = str(_candidate)
+            break
+
+    item_library = load_item_library(approved_boq_path, standard_model_path)
+    print(f"  Item library: {len(item_library)} entries  "
+          f"({'approved BOQ' if approved_boq_path else 'standard model' if standard_model_path else 'none'})")
+
+    # ── Step 9: Map quantities to BOQ items ───────────────────────────────────
+    print("\n[9/13] Mapping quantities to BOQ items...")
+    from src.boq_mapper import map_to_boq_items, save_boq_items
+    mapped_items = map_to_boq_items(quantity_model, item_library, merged)
+    boq_items_path = save_boq_items(mapped_items, args.project)
+    print(f"  Mapped items: {len(mapped_items)}")
+    print(f"  Saved       : {boq_items_path.name}")
+    # Print section breakdown
+    from collections import Counter
+    section_counts = Counter(i.get("boq_section", "GENERAL") for i in mapped_items)
+    for section, count in sorted(section_counts.items()):
+        print(f"    {section:<28} {count:>3} item(s)")
+
+    # ── Validate ───────────────────────────────────────────────────────────────
+    print("\nValidating data...")
     from src.validator import validate
     validation = validate(merged)
     print(f"  Checks    : {len(validation['relationship_checks'])}")
     print(f"  Conflicts : {len(validation['conflicts'])}")
     print(f"  Missing   : {len(validation['missing_scope'])}")
 
-    # ── Step 10a: Calculate quantities ───────────────────────────────────────
-    print("\n[10/10] Calculating quantities...")
-    from src.quantity_calculator import calculate_quantities
-    boq_items = calculate_quantities(standard_boq, merged, validation,
-                                     standard_geometry=standard_geometry,
-                                     debug=args.debug)
+    # ── Still run legacy quantity_calculator for standard_model only ──────────
+    # For custom_project: use mapped_items from step 9 (boq_mapper output) directly.
+    # For standard_model: load template + calculate_quantities as before.
+    print("\n[10/13] Calculating BOQ item quantities...")
+    standard_boq: list[dict] = []
+    standard_geometry: dict  = {}
 
-    # ── Step 10a.5: Apply rates ───────────────────────────────────────────────
-    print("  Applying rates from library...")
+    if project_mode == "standard_model":
+        if model_code:
+            standard_boq, standard_geometry = _load_standard_model(model_code)
+            print(f"  Standard BOQ loaded: {len(standard_boq)} items  (model: {model_code})")
+        elif approved_boq_path:
+            try:
+                from src.loader import load_approved_boq
+                standard_boq = load_approved_boq(approved_boq_path)
+                print(f"  Approved BOQ loaded: {len(standard_boq)} items  ({Path(approved_boq_path).name})")
+            except Exception as exc:
+                print(f"  WARNING: Could not load approved BOQ: {exc}")
+        if not standard_boq:
+            standard_boq, standard_geometry = _load_standard_model(house_type)
+
+        from src.quantity_calculator import calculate_quantities
+        boq_items = calculate_quantities(
+            standard_boq, merged, validation,
+            standard_geometry=standard_geometry,
+            debug=args.debug,
+        )
+        print(f"  Calculated: {len(boq_items)} items")
+    else:
+        # custom_project: use mapped_items from boq_mapper (step 9) directly
+        # Do NOT load approved BOQ — that is a different (G303) project template
+        print("  custom_project mode — using mapped_items from step 9 (no G303 template)")
+        boq_items = mapped_items
+        print(f"  BOQ items from mapper: {len(boq_items)}")
+
+    # ── Step 10: Apply rates ──────────────────────────────────────────────────
+    print("\n[10/13] Applying rates from library...")
     boq_items = _apply_rates(boq_items, house_type)
 
-    # ── Step 10a.6: Cross-check against reference BOQ ────────────────────────
+    # ── Cross-check against reference BOQ ────────────────────────────────────
     from src.cross_checker import cross_check, format_report as _xc_format
-    xc_ref_boq = standard_boq if approved_boq_path else None
+    # Only cross-check for standard_model — custom projects have no reference template
+    xc_ref_boq = standard_boq if (project_mode == "standard_model" and standard_boq) else None
     xc_result  = cross_check(boq_items, xc_ref_boq, reference_path=approved_boq_path)
     xc_report  = _xc_format(xc_result)
     xc_path    = OUTPUT_LOGS / f"{args.project}_cross_check.txt"
@@ -244,8 +332,8 @@ def main() -> int:
     except Exception as _xc_exc:
         print(f"  WARNING: Cross-check write failed: {_xc_exc}")
 
-    # ── Step 10b: Write BOQ ───────────────────────────────────────────────────
-    print("\nWriting BOQ workbook...")
+    # ── Step 11: Write BOQ Excel ──────────────────────────────────────────────
+    print("\n[11/13] Writing BOQ workbook...")
     from src.boq_writer import write_boq
 
     boq_path = write_boq(
@@ -253,11 +341,12 @@ def main() -> int:
         boq_items=boq_items,
         validation=validation,
         merged=merged,
+        project_mode=project_mode,
         approved_boq_path=approved_boq_path,
     )
 
-    # ── Step 10c: Write Summary ───────────────────────────────────────────────
-    print("Writing Summary workbook...")
+    # ── Step 12: Write Summary ────────────────────────────────────────────────
+    print("\n[12/13] Writing Summary workbook...")
     summary_path = None
     try:
         from src.summary_writer import write_summary
@@ -268,6 +357,7 @@ def main() -> int:
             merged=merged,
             files_found=files,
             boq_path=boq_path,
+            project_mode=project_mode,
         )
         print(f"  Summary  : {summary_path.name}")
     except Exception as exc:
@@ -275,8 +365,8 @@ def main() -> int:
         print(f"  WARNING: Summary writer failed: {exc}")
         log.warning("Summary writer failed: %s\n%s", exc, _tb.format_exc())
 
-    # ── Step 10d: QA Report ──────────────────────────────────────────────────
-    print("Writing QA report...")
+    # ── Step 13: Write QA Report ──────────────────────────────────────────────
+    print("\n[13/13] Writing QA report...")
     from src.qa_reporter import generate_report
     report = generate_report(
         project_name=args.project,
@@ -286,74 +376,51 @@ def main() -> int:
         merged=merged,
         project_mode=mode,
         house_type=house_type or "custom",
+        quantity_model=quantity_model,
     )
+    boq_summary = report.get("boq_summary", {})
+    if boq_summary:
+        print(f"  Measured    : {boq_summary.get('measured_items',0)} items ({boq_summary.get('pct_measured',0):.0f}%)")
+        print(f"  Derived     : {boq_summary.get('derived_items',0)} items")
+        print(f"  Provisional : {boq_summary.get('provisional_items',0)} items")
+        print(f"  Manual rev  : {boq_summary.get('manual_review_items',0)} items")
 
     # ── Final summary ─────────────────────────────────────────────────────────
     _print_final_summary(args.project, boq_items, validation, report, boq_path, summary_path)
     return 0
 
 
-# ─── Mode selection ──────────────────────────────────────────────────────────
+# ─── Standard model loading ──────────────────────────────────────────────────
 
-def _determine_mode(args, files: dict) -> tuple[str, str, bool | None]:
-    """Return (mode, house_type, highset)."""
-    from src.config import ProjectMode, STANDARD_MODELS_MAP
+def _load_standard_model(house_type: str) -> tuple[list, dict]:
+    from src.config import STANDARD_MODELS, STANDARD_MODELS_MAP, DATA_DIR
+    from src.loader import load_standard_model
 
-    house_type = (args.type or "").strip().upper()
-    highset: bool | None = None
-    if args.highset.lower() in ("y", "yes", "true", "1"):
-        highset = True
-    elif args.highset.lower() in ("n", "no", "false", "0"):
-        highset = False
-
-    if args.yes and house_type:
-        mode = ProjectMode.STANDARD.value if house_type in STANDARD_MODELS_MAP else ProjectMode.GENERIC.value
-        return mode, house_type, highset
-
-    if args.yes:
-        return ProjectMode.GENERIC.value, house_type, highset
-
-    # Interactive
-    print("""
-What type of project is this?
-
-  [1] Standard G-Range house (G303, G403E, G404, G504E, G302, G202, G201)
-  [2] Non-standard / custom house
-  [3] Auto-detect from drawings title block
-""")
-    choice = input("Enter choice [1/2/3]: ").strip()
-
-    if choice == "1":
-        types_str = ", ".join(STANDARD_MODELS_MAP.keys())
-        if not house_type:
-            house_type = input(f"House type ({types_str}): ").strip().upper()
-        if highset is None:
-            hs_ans = input("Highset with laundry? (y/n): ").strip().lower()
-            highset = hs_ans in ("y", "yes")
-        mode = ProjectMode.STANDARD.value
-    elif choice == "3":
-        print("  Auto-detecting from drawings...")
-        mode = ProjectMode.STANDARD.value
-        # Will be resolved after titleblock detection
+    if house_type and house_type in STANDARD_MODELS_MAP:
+        model_path = STANDARD_MODELS / STANDARD_MODELS_MAP[house_type]
     else:
-        mode = ProjectMode.GENERIC.value
-        use_ref = input("Use standard reference model as fallback? (y/n): ").strip().lower()
-        if use_ref in ("y", "yes"):
-            house_type = input(f"Reference model type: ").strip().upper()
+        candidates = list(DATA_DIR.glob("standard_model_G303*.xlsx"))
+        model_path = candidates[0] if candidates else None
 
-    return mode, house_type, highset
+    if model_path and model_path.exists():
+        try:
+            data = load_standard_model(str(model_path))
+            return data["standard_boq"], data.get("standard_geometry", {})
+        except Exception as exc:
+            print(f"  WARNING: Could not load standard model: {exc}")
+
+    print("  No standard model loaded — BOQ will contain empty template")
+    return [], {}
 
 
 # ─── Rate application ────────────────────────────────────────────────────────
 
 def _apply_rates(boq_items: list, house_type: str) -> list:
-    """Apply rates from the rate library. AI fallback if key set."""
     from src.config import DATA_DIR
     from src import ai_client as _ai
 
     rate_lib_path = DATA_DIR / "rate_library_2026_RPNG.xlsx"
     if not rate_lib_path.exists():
-        # Try legacy location
         candidates = list(DATA_DIR.glob("rate_library*.xlsx"))
         rate_lib_path = candidates[0] if candidates else None
 
@@ -374,41 +441,6 @@ def _apply_rates(boq_items: list, house_type: str) -> list:
     else:
         print("  Rate library not found — rates not applied")
     return boq_items
-
-
-# ─── Standard model loading ──────────────────────────────────────────────────
-
-def _load_standard_model(house_type: str) -> tuple[list, dict]:
-    from src.config import STANDARD_MODELS, STANDARD_MODELS_MAP, DATA_DIR
-    from src.loader import load_standard_model, load_rate_library
-
-    # Try new location first
-    if house_type and house_type in STANDARD_MODELS_MAP:
-        model_path = STANDARD_MODELS / STANDARD_MODELS_MAP[house_type]
-    else:
-        # Fall back to legacy location
-        candidates = list(DATA_DIR.glob("standard_model_G303*.xlsx"))
-        model_path = candidates[0] if candidates else None
-
-    if model_path and model_path.exists():
-        try:
-            data = load_standard_model(str(model_path))
-            return data["standard_boq"], data.get("standard_geometry", {})
-        except Exception as exc:
-            print(f"  WARNING: Could not load standard model: {exc}")
-
-    print("  No standard model loaded — BOQ will contain empty template")
-    return [], {}
-
-
-def _get_reference_path(house_type: str) -> str | None:
-    from src.config import STANDARD_MODELS, STANDARD_MODELS_MAP, DATA_DIR
-    if house_type and house_type in STANDARD_MODELS_MAP:
-        p = STANDARD_MODELS / STANDARD_MODELS_MAP[house_type]
-        if p.exists():
-            return str(p)
-    candidates = list(DATA_DIR.glob("standard_model_G303*.xlsx"))
-    return str(candidates[0]) if candidates else None
 
 
 # ─── Extraction wrappers ─────────────────────────────────────────────────────
@@ -538,7 +570,7 @@ def _print_files(files: dict) -> None:
     print("    Geometry        → DWG/DXF preferred")
     print("    Schedules       → PDF preferred")
     print("    Derived items   → rules library")
-    print("    Standard BOQ    → fallback only")
+    print("    Standard BOQ    → reference only (post-classification)")
 
 
 def _print_merge_summary(merged: dict) -> None:

@@ -181,44 +181,26 @@ def _categorise(description: str) -> str:
 # ─── IFC reader ───────────────────────────────────────────────────────────────
 
 def _read_ifc(path: Path, result: dict) -> list[dict]:
+    """Use ifc_extractor for full property/quantity extraction."""
     try:
-        import ifcopenshell
+        from src.ifc_extractor import extract_ifc
     except ImportError:
-        result["warnings"].append(
-            f"ifcopenshell not installed — IFC extraction skipped: {path.name}"
-        )
+        result["warnings"].append("ifc_extractor module not found — IFC extraction skipped")
         return []
 
-    items = []
-    try:
-        model = ifcopenshell.open(str(path))
-        for entity_type, category in [
-            ("IfcWall",          "wall_frame"),
-            ("IfcWallStandardCase", "wall_frame"),
-            ("IfcSlab",          "floor_panel"),
-            ("IfcRoof",          "roof_truss"),
-            ("IfcColumn",        "columns_posts"),
-            ("IfcBeam",          "beams"),
-            ("IfcMember",        "structural"),
-            ("IfcDoor",          "door"),
-            ("IfcWindow",        "window"),
-            ("IfcStairFlight",   "stairs"),
-        ]:
-            for entity in model.by_type(entity_type):
-                desc = getattr(entity, "Name", None) or entity_type
-                items.append({
-                    "description": str(desc),
-                    "qty": 1,
-                    "length_mm": None,
-                    "unit": "nr",
-                    "mark": str(getattr(entity, "Tag", "") or ""),
-                    "category": category,
-                    "_source": path.name,
-                    "_ifc_type": entity_type,
-                })
-    except Exception as exc:
-        result["warnings"].append(f"IFC read error {path.name}: {exc}")
-    return items
+    ifc_result = extract_ifc(path)
+    result["warnings"].extend(ifc_result.get("warnings", []))
+
+    # Store geometry for merger to pick up
+    if ifc_result.get("geometry"):
+        result["ifc_geometry"] = ifc_result["geometry"]
+
+    # Store structural for _normalise to merge in
+    if ifc_result.get("structural"):
+        result["ifc_structural"] = ifc_result["structural"]
+
+    # Return empty raw_items — quantities flow via ifc_structural/ifc_geometry
+    return []
 
 
 # ─── Normalise aggregates ─────────────────────────────────────────────────────
@@ -251,6 +233,21 @@ def _normalise(result: dict) -> None:
     # Floor panels detail
     panels = [i for i in items if i.get("category") == "floor_panel"]
     n["floor_panels"] = panels
+
+    # Fill in from IFC structural where BOM raw items gave nothing
+    ifc_struct = result.get("ifc_structural", {})
+    if ifc_struct:
+        for key in ("wall_frame_lm", "ceiling_batten_lm", "roof_batten_lm",
+                    "verandah_batten_lm", "floor_joist_lm", "bracing_lm"):
+            if n.get(key, 0) == 0 and ifc_struct.get(key, 0) > 0:
+                n[key] = ifc_struct[key]
+        for key in ("roof_truss_qty", "floor_panel_qty", "post_qty"):
+            if n.get(key, 0) == 0 and ifc_struct.get(key, 0) > 0:
+                n[key] = ifc_struct[key]
+        # Propagate source flags
+        for src_key in ("wall_frame_source", "roof_truss_source", "floor_panel_source"):
+            if src_key in ifc_struct:
+                n[src_key] = ifc_struct[src_key]
 
     log.info(
         "BOM normalized: wall=%.1flm  ceil_batten=%.1flm  roof_batten=%.1flm  "

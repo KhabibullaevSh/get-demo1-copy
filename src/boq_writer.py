@@ -43,11 +43,17 @@ APPROVED_BOQ_DATA_START  = 9
 # Fallback full-workbook columns (no-template mode)
 BOQ_COLS = [
     "Item No", "Stock Code", "Description", "Unit", "Qty",
-    "Rate (PGK)", "Amount (PGK)", "Confidence", "Source",
-    "Drawing Reference", "Notes",
+    "Rate (PGK)", "Amount (PGK)", "Confidence", "Qty Basis",
+    "Source", "Rule / Method", "Notes",
 ]
 CONF_BG_COLOURS = {
     "HIGH": "C6EFCE", "MEDIUM": "FFEB9C", "LOW": "FFC7CE",
+}
+QTY_BASIS_COLOURS = {
+    "measured":      "C6EFCE",   # green
+    "derived":       "FFEB9C",   # amber
+    "provisional":   "FFC7CE",   # light red
+    "manual_review": "D9D9D9",   # grey
 }
 
 
@@ -58,10 +64,25 @@ def write_boq(
     boq_items: list[dict],
     validation: dict,
     merged: dict,
+    project_mode: str = "custom_project",
     approved_boq_path: str | None = None,
     reference_path: str | None = None,
     structural_baseline: list[dict] | None = None,
 ) -> Path:
+    """Write final BOQ Excel workbook.
+
+    Args:
+        project_name:      Job name string.
+        boq_items:         Calculated BOQ item list.
+        validation:        Validator output dict.
+        merged:            Merged project data dict.
+        project_mode:      "standard_model" | "custom_project".
+                           custom_project → always writes full fresh workbook.
+                           standard_model → may use approved BOQ template if file exists.
+        approved_boq_path: Path to approved BOQ xlsx (used only for standard_model mode).
+        reference_path:    (unused, kept for backward compat)
+        structural_baseline: (unused, kept for backward compat)
+    """
     try:
         import openpyxl
     except ImportError:
@@ -71,24 +92,37 @@ def write_boq(
     output_path = OUTPUT_BOQ / f"{project_name}_BOQ_{date_str}.xlsx"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Find approved BOQ file
-    if not approved_boq_path:
-        for candidate in [
-            DATA_DIR / "approved_boq_G303.xlsx",
-            DATA_DIR / "approved_boq.xlsx",
-        ]:
-            if candidate.exists():
-                approved_boq_path = str(candidate)
-                break
+    # project_mode is now the authoritative routing key.
+    # approved_boq_path is only used as the template source when mode = standard_model.
+    effective_mode = project_mode
 
-    if approved_boq_path and Path(approved_boq_path).exists():
-        log.info("Using approved BOQ as template: %s", Path(approved_boq_path).name)
-        total = _write_from_approved_boq(
-            approved_boq_path, output_path, project_name,
-            boq_items, validation, merged, openpyxl,
-        )
+    if effective_mode == "standard_model":
+        # Only use G303 template if the approved BOQ file actually exists
+        if not approved_boq_path:
+            for candidate in [
+                DATA_DIR / "approved_boq_G303.xlsx",
+                DATA_DIR / "approved_boq.xlsx",
+            ]:
+                if candidate.exists():
+                    approved_boq_path = str(candidate)
+                    break
+
+        if approved_boq_path and Path(approved_boq_path).exists():
+            log.info("Using approved BOQ as template: %s", Path(approved_boq_path).name)
+            total = _write_from_approved_boq(
+                approved_boq_path, output_path, project_name,
+                boq_items, validation, merged, openpyxl,
+            )
+        else:
+            log.warning(
+                "standard_model mode but no approved BOQ found — writing full workbook"
+            )
+            total = _write_full_workbook(
+                output_path, project_name, boq_items, validation, merged, openpyxl,
+            )
     else:
-        log.warning("No approved BOQ found — writing full workbook")
+        # custom_project: always use full fresh workbook — do NOT copy G303 template
+        log.info("custom_project mode — writing full workbook (no G303 template)")
         total = _write_full_workbook(
             output_path, project_name, boq_items, validation, merged, openpyxl,
         )
@@ -263,11 +297,12 @@ def _write_from_approved_boq(
                 source = boq_item.get("source") or ""
                 notes  = _build_notes(boq_item)
             else:
-                # Calculated item existed but qty not resolved → use approved qty
-                qty    = safe_float(approved_qty) if approved_qty is not None else None
-                conf   = "MEDIUM"
-                source = "Approved G303 BOQ"
-                notes  = "Not confirmed in drawings — from approved BOQ"
+                # qty=None means calculator hit TIER 4 (BLANK) — no project data available.
+                # Do NOT fall back to approved BOQ qty — that is a different project.
+                qty    = None
+                conf   = "LOW"
+                source = "none"
+                notes  = "No source data — manual entry required"
 
             rate = safe_float(boq_item.get("rate"))
             if qty and rate:
@@ -278,11 +313,13 @@ def _write_from_approved_boq(
             ws.cell(row_idx, 3).value = qty
 
         else:
-            # No matching calculated item → keep approved BOQ qty, mark MEDIUM
-            qty    = safe_float(approved_qty) if approved_qty is not None else None
-            conf   = "MEDIUM"
-            source = "Approved G303 BOQ"
-            notes  = "Not confirmed in drawings — from approved BOQ"
+            # No matching calculated item found for this template row.
+            # Do NOT fall back to approved BOQ qty — that is a different project.
+            # Leave qty blank so the estimator knows this needs manual entry.
+            qty    = None
+            conf   = "LOW"
+            source = "none"
+            notes  = "No source data — manual entry required"
 
         # ── Write cols E-I ──────────────────────────────────────────────────
         # E: Rate
@@ -475,7 +512,9 @@ def _write_boq_sheet(ws, items: list[dict], project_name: str, openpyxl) -> floa
     current_cat  = None
 
     for item in items:
-        cat = (item.get("category") or "").strip()
+        # Support both old keys (qty, source, category) and boq_mapper keys
+        # (quantity, source_evidence, boq_section) — prefer old keys if present.
+        cat = (item.get("category") or item.get("boq_section") or "").strip()
         if cat and cat != current_cat:
             current_cat = cat
             ws.cell(data_row, col_idx["Description"]).value = cat.upper()
@@ -483,12 +522,18 @@ def _write_boq_sheet(ws, items: list[dict], project_name: str, openpyxl) -> floa
             ws.cell(data_row, col_idx["Description"]).fill = PatternFill("solid", fgColor="D9E1F2")
             data_row += 1
 
-        qty    = safe_float(item.get("qty"))
+        # qty: prefer "qty" key, fall back to "quantity" (boq_mapper output)
+        qty    = safe_float(item.get("qty") if item.get("qty") is not None else item.get("quantity"))
         rate   = safe_float(item.get("rate"))
         amount = round(qty * rate, 2) if (qty is not None and rate) else None
         if amount:
             total_amount += amount
         conf = (item.get("confidence") or "").upper()
+
+        # source: prefer "source" key, fall back to "source_evidence" (boq_mapper output)
+        source_val = item.get("source") or item.get("source_evidence") or ""
+        # notes: build from item flags OR use "notes" field directly (boq_mapper)
+        notes_val = _build_notes(item) or item.get("notes") or ""
 
         ws.cell(data_row, col_idx["Item No"]).value        = item.get("item_no") or ""
         ws.cell(data_row, col_idx["Stock Code"]).value     = item.get("stock_code") or ""
@@ -498,15 +543,19 @@ def _write_boq_sheet(ws, items: list[dict], project_name: str, openpyxl) -> floa
         ws.cell(data_row, col_idx["Rate (PGK)"]).value     = rate
         ws.cell(data_row, col_idx["Amount (PGK)"]).value   = amount
         ws.cell(data_row, col_idx["Confidence"]).value     = conf
-        ws.cell(data_row, col_idx["Source"]).value         = item.get("source") or ""
-        ws.cell(data_row, col_idx["Drawing Reference"]).value = (
-            item.get("drawing_reference") or item.get("_source") or ""
-        )
-        ws.cell(data_row, col_idx["Notes"]).value = _build_notes(item)
+        ws.cell(data_row, col_idx["Qty Basis"]).value      = item.get("quantity_basis") or ""
+        ws.cell(data_row, col_idx["Source"]).value         = source_val
+        ws.cell(data_row, col_idx["Rule / Method"]).value  = item.get("quantity_rule_used") or item.get("notes") or ""
+        ws.cell(data_row, col_idx["Notes"]).value          = notes_val
 
         colour = CONF_BG_COLOURS.get(conf)
         if colour:
             ws.cell(data_row, col_idx["Confidence"]).fill = PatternFill("solid", fgColor=colour)
+
+        basis_colour = QTY_BASIS_COLOURS.get(item.get("quantity_basis", ""))
+        if basis_colour:
+            ws.cell(data_row, col_idx["Qty Basis"]).fill = PatternFill("solid", fgColor=basis_colour)
+
         if item.get("issue_flag") in ("REVIEW_REQUIRED", "MISSING_DATA"):
             ws.cell(data_row, col_idx["Notes"]).font = Font(color="C00000")
         data_row += 1
@@ -520,7 +569,7 @@ def _write_boq_sheet(ws, items: list[dict], project_name: str, openpyxl) -> floa
     widths = {
         "Item No": 8, "Stock Code": 14, "Description": 52, "Unit": 8,
         "Qty": 10, "Rate (PGK)": 12, "Amount (PGK)": 14,
-        "Confidence": 12, "Source": 20, "Drawing Reference": 22, "Notes": 50,
+        "Confidence": 12, "Qty Basis": 14, "Source": 20, "Rule / Method": 46, "Notes": 30,
     }
     for col_name, width in widths.items():
         from openpyxl.utils import get_column_letter

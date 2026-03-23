@@ -1,0 +1,76 @@
+============================================================
+QA REPORT — project 2
+Date: 2026-03-23
+Mode: generic  House type: custom
+============================================================
+
+FILES USED:
+  dwg: 2
+  dxf: 1
+  pdf: 3
+  ifc: 1
+  bom: 0
+
+EXTRACTION STATUS:
+  dwg_extracted: True
+  pdf_extracted: True
+  bom_extracted: False
+  ifc_extracted: True
+  titleblock_detected: True
+  doors_source: dwg
+  windows_source: dwg
+  finishes_source: pdf_schedule
+  stairs_source: pdf_plan
+
+CONFLICTS: 0
+
+MISSING SCOPE: 6
+  [MEDIUM] roof_battens: Roof batten quantity not confirmed (not in BOM/schedule)
+  [MEDIUM] ceiling_battens: Ceiling batten quantity not confirmed (not in BOM/schedule)
+  [HIGH] fc_sheets: FC sheet lining not found in BOM — confirm from schedule or lining notes
+  [HIGH] structural_framing: No BOM/IFC found — structural quantities will be estimated/derived
+  [HIGH] room_areas: Room areas are not provided for any of the listed rooms.
+  [MEDIUM] roof_battens: Roof batten note is missing, which may affect roof structure estimation.
+
+LOW CONFIDENCE ITEMS: 21
+DERIVED/ASSUMED ITEMS: 0
+MANUAL REVIEW REQUIRED: 0
+
+RELATIONSHIP CHECKS:
+  [PASS] ceiling_vs_floor_area: ceiling=64.8m² floor=86.4m² ratio=0.75
+  [PASS] Ceiling area vs floor area: Ceiling area (64.8 m2) is consistent with the total floor area (86.4 m2) considering verandah and other factors.
+  [WARNING] Roof battens vs roof area and spacing: Roof batten note is missing, making it difficult to verify consistency with roof area.
+  [WARNING] Structural items defined by BOM/IFC/schedule: No IfcSpace elements found and wall lengths extracted from DWG fallback, indicating potential gaps in structural data.
+
+OVERALL NOTES:
+  • Room areas are missing, which is critical for accurate BOQ preparation.
+  • Roof batten details are absent, posing a risk to structural estimation accuracy.
+  • Ensure all structural elements are cross-verified with available BOM and IFC data.
+
+BOQ TRACEABILITY SUMMARY
+========================
+Measured    : 19 items (36%)
+Derived     : 10 items
+Provisional : 0 items
+Manual Rev  : 23 items
+
+BY SECTION:
+  50114 - DOORS, WINDOWS & GLAZINGS  measured=6  derived=0  provisional=0  manual=0
+  50124 - STAIRS, RAMPS, & BALUSTRADES  measured=1  derived=0  provisional=0  manual=0
+  CEILING                       measured=1  derived=0  provisional=0  manual=2
+  CEILING LININGS               measured=0  derived=1  provisional=0  manual=0
+  DOORS & WINDOWS               measured=0  derived=0  provisional=0  manual=4
+  EXTERNAL WORKS                measured=1  derived=0  provisional=0  manual=2
+  FINISHES                      measured=0  derived=0  provisional=0  manual=5
+  FLOOR                         measured=2  derived=0  provisional=0  manual=0
+  INSULATION                    measured=0  derived=2  provisional=0  manual=0
+  ROOF                          measured=1  derived=2  provisional=0  manual=1
+  ROOF CLADDING                 measured=0  derived=1  provisional=0  manual=0
+  ROOF DRAINAGE                 measured=0  derived=1  provisional=0  manual=1
+  ROOF STRUCTURE                measured=2  derived=0  provisional=0  manual=1
+  SERVICES                      measured=0  derived=0  provisional=0  manual=4
+  STAIRS                        measured=1  derived=0  provisional=0  manual=3
+  WALL FRAMING                  measured=4  derived=1  provisional=0  manual=0
+  WALL LININGS                  measured=0  derived=2  provisional=0  manual=0
+
+============================================================

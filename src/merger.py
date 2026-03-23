@@ -78,9 +78,10 @@ def _merge_metadata(titleblock: dict, merged: dict) -> None:
 # ─── Geometry ─────────────────────────────────────────────────────────────────
 
 def _merge_geometry(dwg: dict, pdf: dict, bom: dict, merged: dict) -> None:
-    """Merge area/length geometry. DWG polygon preferred, then PDF explicit."""
+    """Merge area/length geometry. DWG polygon preferred, then PDF explicit, then IFC."""
     dwg_sum = dwg.get("summary", {})
     pdf_roof = pdf.get("roof", {})
+    ifc_geo  = bom.get("ifc_geometry", {})
     geo = merged["geometry"]
     audit = merged["audit"]
 
@@ -110,34 +111,47 @@ def _merge_geometry(dwg: dict, pdf: dict, bom: dict, merged: dict) -> None:
             _check_conflict(key, candidates, merged)
 
     pick("total_floor_area_m2",   [("dwg", dwg_sum.get("total_floor_area_m2")),
-                                    ("pdf", _pdf_total_floor(pdf))], "m²")
+                                    ("pdf", _pdf_total_floor(pdf)),
+                                    ("ifc", ifc_geo.get("total_floor_area_m2"))], "m²")
     pick("verandah_area_m2",      [("dwg", dwg_sum.get("verandah_area_m2"))], "m²")
-    pick("ceiling_area_m2",       [("dwg", dwg_sum.get("ceiling_area_m2"))], "m²")
-    pick("external_wall_length_m",[("dwg", dwg_sum.get("external_wall_length_m"))], "lm")
-    pick("internal_wall_length_m",[("dwg", dwg_sum.get("internal_wall_length_m"))], "lm")
+    pick("ceiling_area_m2",       [("dwg", dwg_sum.get("ceiling_area_m2")),
+                                    ("ifc", ifc_geo.get("ceiling_area_m2"))], "m²")
+    pick("external_wall_length_m",[("dwg", dwg_sum.get("external_wall_length_m")),
+                                    ("ifc", ifc_geo.get("external_wall_length_m"))], "lm")
+    pick("internal_wall_length_m",[("dwg", dwg_sum.get("internal_wall_length_m")),
+                                    ("ifc", ifc_geo.get("internal_wall_length_m"))], "lm")
     pick("total_wall_length_m",   [("dwg", dwg_sum.get("total_wall_length_m"))], "lm")
     pick("external_wall_area_m2", [("dwg", dwg_sum.get("external_wall_area_m2"))], "m²")
     pick("internal_wall_area_m2", [("dwg", dwg_sum.get("internal_wall_area_m2"))], "m²")
     pick("roof_area_m2",          [("dwg", dwg_sum.get("roof_area_m2")),
-                                    ("pdf", safe_float(pdf_roof.get("roof_area_m2")))], "m²")
+                                    ("pdf", safe_float(pdf_roof.get("roof_area_m2"))),
+                                    ("ifc", ifc_geo.get("roof_area_m2"))], "m²")
     pick("roof_perimeter_m",      [("dwg", dwg_sum.get("roof_perimeter_m")),
                                     ("pdf", safe_float(pdf_roof.get("gutter_length_m")))], "lm")
     pick("post_count",            [("dwg", dwg_sum.get("post_count"))], "nr")
     pick("stair_flight_count",    [("dwg", dwg_sum.get("stair_flight_count"))], "nr")
 
     # Building bounding-box dims (needed for run-length batten / cladding calcs)
-    pick("building_length_m",     [("dwg", dwg_sum.get("building_length_m"))], "m")
-    pick("building_width_m",      [("dwg", dwg_sum.get("building_width_m"))],  "m")
+    pick("building_length_m",     [("dwg", dwg_sum.get("building_length_m")),
+                                    ("ifc", ifc_geo.get("building_length_m"))], "m")
+    pick("building_width_m",      [("dwg", dwg_sum.get("building_width_m")),
+                                    ("ifc", ifc_geo.get("building_width_m"))],  "m")
     pick("verandah_length_m",     [("dwg", dwg_sum.get("verandah_length_m"))], "m")
     pick("verandah_width_m",      [("dwg", dwg_sum.get("verandah_width_m"))],  "m")
     pick("roof_pitch_degrees",    [("dwg", dwg_sum.get("roof_pitch_degrees"))], "deg")
 
+    # Storey count from IFC if not in DWG
+    if not geo.get("storey_count") and ifc_geo.get("storey_count"):
+        geo["storey_count"] = ifc_geo["storey_count"]
+
     # Derived roof component lengths (GROUP 3 fix)
     _compute_roof_component_lengths(geo)
 
-    # Rooms from DWG
+    # Rooms: DWG > IFC > PDF
     if dwg.get("rooms"):
         geo["rooms"] = dwg["rooms"]
+    elif ifc_geo.get("rooms"):
+        geo["rooms"] = ifc_geo["rooms"]
     elif pdf.get("rooms"):
         geo["rooms"] = pdf["rooms"]
     else:

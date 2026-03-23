@@ -1,0 +1,564 @@
+{
+  "project": "project 2",
+  "date": "2026-03-23",
+  "project_mode": "generic",
+  "house_type": "custom",
+  "files_used": {
+    "dwg": 2,
+    "dxf": 1,
+    "pdf": 3,
+    "ifc": 1,
+    "bom": 0
+  },
+  "extraction_status": {
+    "dwg_extracted": true,
+    "pdf_extracted": true,
+    "bom_extracted": false,
+    "ifc_extracted": true,
+    "titleblock_detected": true,
+    "doors_source": "dwg",
+    "windows_source": "dwg",
+    "finishes_source": "pdf_schedule",
+    "stairs_source": "pdf_plan"
+  },
+  "conflicts": [],
+  "missing_scope": [
+    {
+      "category": "roof_battens",
+      "description": "Roof batten quantity not confirmed (not in BOM/schedule)",
+      "risk": "MEDIUM"
+    },
+    {
+      "category": "ceiling_battens",
+      "description": "Ceiling batten quantity not confirmed (not in BOM/schedule)",
+      "risk": "MEDIUM"
+    },
+    {
+      "category": "fc_sheets",
+      "description": "FC sheet lining not found in BOM — confirm from schedule or lining notes",
+      "risk": "HIGH"
+    },
+    {
+      "category": "structural_framing",
+      "description": "No BOM/IFC found — structural quantities will be estimated/derived",
+      "risk": "HIGH"
+    },
+    {
+      "category": "room_areas",
+      "description": "Room areas are not provided for any of the listed rooms.",
+      "risk": "HIGH"
+    },
+    {
+      "category": "roof_battens",
+      "description": "Roof batten note is missing, which may affect roof structure estimation.",
+      "risk": "MEDIUM"
+    }
+  ],
+  "relationship_checks": [
+    {
+      "check_name": "ceiling_vs_floor_area",
+      "status": "PASS",
+      "details": "ceiling=64.8m² floor=86.4m² ratio=0.75"
+    },
+    {
+      "check_name": "Ceiling area vs floor area",
+      "status": "PASS",
+      "details": "Ceiling area (64.8 m2) is consistent with the total floor area (86.4 m2) considering verandah and other factors."
+    },
+    {
+      "check_name": "Roof battens vs roof area and spacing",
+      "status": "WARNING",
+      "details": "Roof batten note is missing, making it difficult to verify consistency with roof area."
+    },
+    {
+      "check_name": "Structural items defined by BOM/IFC/schedule",
+      "status": "WARNING",
+      "details": "No IfcSpace elements found and wall lengths extracted from DWG fallback, indicating potential gaps in structural data."
+    }
+  ],
+  "low_confidence_items": [
+    {
+      "item_no": null,
+      "description": "Downpipe",
+      "confidence": "LOW",
+      "source": "derived: 1 per ~2 corners"
+    },
+    {
+      "item_no": null,
+      "description": "Roof Fixings (Tek Screws)",
+      "confidence": "LOW",
+      "source": "derived: roof_area / 10m² per box"
+    },
+    {
+      "item_no": null,
+      "description": "Cornice / Ceiling Trim",
+      "confidence": "LOW",
+      "source": "derived: ceiling perimeter"
+    },
+    {
+      "item_no": null,
+      "description": "Skirting Board",
+      "confidence": "LOW",
+      "source": "derived: ext_wall_lm + int_wall_lm"
+    },
+    {
+      "item_no": null,
+      "description": "Architrave — Door",
+      "confidence": "LOW",
+      "source": "derived: 6 doors × 2 sides × 900×2100"
+    },
+    {
+      "item_no": null,
+      "description": "Architrave — Window",
+      "confidence": "LOW",
+      "source": "derived: 11 windows × 2 sides × typical 1200×1200"
+    },
+    {
+      "item_no": null,
+      "description": "Paint — External",
+      "confidence": "LOW",
+      "source": "derived: external wall area"
+    },
+    {
+      "item_no": null,
+      "description": "Paint — Internal",
+      "confidence": "LOW",
+      "source": "derived: ceiling_area + internal_wall_area"
+    },
+    {
+      "item_no": null,
+      "description": "Door Lockset",
+      "confidence": "LOW",
+      "source": "derived: 6 doors × 1 lockset"
+    },
+    {
+      "item_no": null,
+      "description": "Door Hinge Set (Pair)",
+      "confidence": "LOW",
+      "source": "derived: 6 doors × 1 hinge set"
+    },
+    {
+      "item_no": null,
+      "description": "Door Stop",
+      "confidence": "LOW",
+      "source": "derived: 6 doors"
+    },
+    {
+      "item_no": null,
+      "description": "Flyscreen",
+      "confidence": "LOW",
+      "source": "derived: 11 windows × 1 flyscreen"
+    },
+    {
+      "item_no": null,
+      "description": "Stair Stringer STR-1 - Prefabricated Complete Set (L/R) 5 RISER",
+      "confidence": "LOW",
+      "source": "none"
+    },
+    {
+      "item_no": null,
+      "description": "Balustrade",
+      "confidence": "LOW",
+      "source": "none"
+    },
+    {
+      "item_no": null,
+      "description": "Handrail",
+      "confidence": "LOW",
+      "source": "none"
+    },
+    {
+      "item_no": null,
+      "description": "Wet Area Waterproofing",
+      "confidence": "LOW",
+      "source": "room_schedule"
+    },
+    {
+      "item_no": null,
+      "description": "Sanitary Fixtures (Provisional)",
+      "confidence": "LOW",
+      "source": "room_schedule"
+    },
+    {
+      "item_no": null,
+      "description": "Builder's Work — Plumbing",
+      "confidence": "LOW",
+      "source": "implied_scope"
+    },
+    {
+      "item_no": null,
+      "description": "Builder's Work — Electrical",
+      "confidence": "LOW",
+      "source": "implied_scope"
+    },
+    {
+      "item_no": null,
+      "description": "Verandah Handrail",
+      "confidence": "LOW",
+      "source": "none"
+    },
+    {
+      "item_no": null,
+      "description": "Site Preparation (Provisional)",
+      "confidence": "LOW",
+      "source": "implied_scope"
+    }
+  ],
+  "derived_items": [],
+  "manual_review_items": [],
+  "material_completeness": {
+    "material_check": [
+      {
+        "category": "Structural framing",
+        "status": "PARTIAL",
+        "confidence": "MEDIUM",
+        "basis": "wall_frame_lm, wall_frame_source",
+        "issues": [
+          "No explicit BOM or detailed framing schedule provided."
+        ],
+        "boq_risk": "MEDIUM",
+        "recommended_estimator_action": "Verify wall frame lengths and sources; check for missing framing details."
+      },
+      {
+        "category": "Floor panels / joists / bearers",
+        "status": "MISSING",
+        "confidence": "LOW",
+        "basis": "No explicit data provided.",
+        "issues": [
+          "No data on floor panels, joists, or bearers."
+        ],
+        "boq_risk": "HIGH",
+        "recommended_estimator_action": "Request detailed floor framing plans or schedules."
+      },
+      {
+        "category": "Roof framing / trusses",
+        "status": "PARTIAL",
+        "confidence": "MEDIUM",
+        "basis": "roof_truss_qty, roof_truss_source",
+        "issues": [
+          "No explicit BOM or detailed truss schedule provided."
+        ],
+        "boq_risk": "MEDIUM",
+        "recommended_estimator_action": "Verify truss quantities and sources; check for missing truss details."
+      },
+      {
+        "category": "Bracing and connectors",
+        "status": "MISSING",
+        "confidence": "LOW",
+        "basis": "No explicit data provided.",
+        "issues": [
+          "No data on bracing or connectors."
+        ],
+        "boq_risk": "HIGH",
+        "recommended_estimator_action": "Request detailed bracing and connector plans or schedules."
+      },
+      {
+        "category": "Roof battens",
+        "status": "PARTIAL",
+        "confidence": "MEDIUM",
+        "basis": "roof_batten_note, roof_batten_source",
+        "issues": [
+          "No explicit BOM or detailed batten schedule provided."
+        ],
+        "boq_risk": "MEDIUM",
+        "recommended_estimator_action": "Verify batten notes and sources; check for missing batten details."
+      },
+      {
+        "category": "Ceiling battens",
+        "status": "MISSING",
+        "confidence": "LOW",
+        "basis": "No explicit data provided.",
+        "issues": [
+          "No data on ceiling battens."
+        ],
+        "boq_risk": "HIGH",
+        "recommended_estimator_action": "Request detailed ceiling batten plans or schedules."
+      },
+      {
+        "category": "FC sheets",
+        "status": "MISSING",
+        "confidence": "LOW",
+        "basis": "No explicit data provided.",
+        "issues": [
+          "No data on FC sheets."
+        ],
+        "boq_risk": "HIGH",
+        "recommended_estimator_action": "Request detailed FC sheet plans or schedules."
+      },
+      {
+        "category": "Plasterboard / internal linings",
+        "status": "MISSING",
+        "confidence": "LOW",
+        "basis": "No explicit data provided.",
+        "issues": [
+          "No data on plasterboard or internal linings."
+        ],
+        "boq_risk": "HIGH",
+        "recommended_estimator_action": "Request detailed plasterboard and lining plans or schedules."
+      },
+      {
+        "category": "Insulation",
+        "status": "MISSING",
+        "confidence": "LOW",
+        "basis": "No explicit data provided.",
+        "issues": [
+          "No data on insulation."
+        ],
+        "boq_risk": "HIGH",
+        "recommended_estimator_action": "Request detailed insulation plans or schedules."
+      },
+      {
+        "category": "Doors",
+        "status": "COMPLETE",
+        "confidence": "HIGH",
+        "basis": "door_count",
+        "issues": [],
+        "boq_risk": "LOW",
+        "recommended_estimator_action": "Verify door count against plans."
+      },
+      {
+        "category": "Windows",
+        "status": "COMPLETE",
+        "confidence": "HIGH",
+        "basis": "window_count",
+        "issues": [],
+        "boq_risk": "LOW",
+        "recommended_estimator_action": "Verify window count against plans."
+      },
+      {
+        "category": "Finishes",
+        "status": "COMPLETE",
+        "confidence": "HIGH",
+        "basis": "finish_count",
+        "issues": [],
+        "boq_risk": "LOW",
+        "recommended_estimator_action": "Verify finish count against plans."
+      },
+      {
+        "category": "Stairs and balustrades",
+        "status": "COMPLETE",
+        "confidence": "HIGH",
+        "basis": "stair_count",
+        "issues": [],
+        "boq_risk": "LOW",
+        "recommended_estimator_action": "Verify stair count against plans."
+      },
+      {
+        "category": "Wet area fixtures",
+        "status": "MISSING",
+        "confidence": "LOW",
+        "basis": "No explicit data provided.",
+        "issues": [
+          "No data on wet area fixtures."
+        ],
+        "boq_risk": "HIGH",
+        "recommended_estimator_action": "Request detailed wet area fixture plans or schedules."
+      },
+      {
+        "category": "Roof plumbing",
+        "status": "PARTIAL",
+        "confidence": "MEDIUM",
+        "basis": "gutter_length_m, fascia_length_m, apron_length_m",
+        "issues": [
+          "No explicit BOM or detailed roof plumbing schedule provided."
+        ],
+        "boq_risk": "MEDIUM",
+        "recommended_estimator_action": "Verify roof plumbing lengths and sources; check for missing details."
+      }
+    ],
+    "priority_review_items": [
+      "Floor panels / joists / bearers",
+      "Bracing and connectors",
+      "Ceiling battens",
+      "FC sheets",
+      "Plasterboard / internal linings",
+      "Insulation",
+      "Wet area fixtures"
+    ],
+    "overall_assessment": "The available drawing data is insufficient for a reliable BOQ preparation. Significant categories are missing or incomplete, posing a high risk for estimation errors. Additional detailed plans or schedules are required for a comprehensive BOQ."
+  },
+  "standard_model_variations": {
+    "detected_variations": [
+      {
+        "category": "door_types",
+        "standard_condition": "Standard model includes Door A and Door B types only",
+        "project_condition": "Project includes Door B, Door C, and Door D types",
+        "impact_on_boq": "Potential change in door hardware and installation costs",
+        "risk": "HIGH"
+      },
+      {
+        "category": "window_types",
+        "standard_condition": "Standard model includes Window A and Window B types only",
+        "project_condition": "Project includes Window A, Window B, and Window D types",
+        "impact_on_boq": "Potential change in window hardware and installation costs",
+        "risk": "HIGH"
+      },
+      {
+        "category": "stair_flights",
+        "standard_condition": "Standard model includes 2 stair flights",
+        "project_condition": "Project includes 1 stair flight",
+        "impact_on_boq": "Reduction in stair material and labor costs",
+        "risk": "MEDIUM"
+      }
+    ],
+    "removed_scope": [
+      {
+        "category": "stair_flights",
+        "item_or_scope": "One stair flight",
+        "reason": "Project specifies only 1 stair flight compared to 2 in the standard model"
+      }
+    ],
+    "added_scope": [
+      {
+        "category": "door_types",
+        "item_or_scope": "Door C and Door D types",
+        "reason": "Additional door types not present in the standard model"
+      },
+      {
+        "category": "window_types",
+        "item_or_scope": "Window D type",
+        "reason": "Additional window type not present in the standard model"
+      }
+    ],
+    "modified_scope": [],
+    "review_notes": [
+      "Verify door and window hardware specifications due to type changes.",
+      "Confirm stair design and material requirements due to reduction in flights."
+    ]
+  },
+  "overall_notes": [
+    "Room areas are missing, which is critical for accurate BOQ preparation.",
+    "Roof batten details are absent, posing a risk to structural estimation accuracy.",
+    "Ensure all structural elements are cross-verified with available BOM and IFC data."
+  ],
+  "warnings": [],
+  "package_qa": {
+    "FLOOR": {
+      "measured": 2,
+      "derived": 0,
+      "provisional": 0,
+      "manual_review": 0,
+      "total": 2
+    },
+    "WALL FRAMING": {
+      "measured": 4,
+      "derived": 1,
+      "provisional": 0,
+      "manual_review": 0,
+      "total": 5
+    },
+    "WALL LININGS": {
+      "measured": 0,
+      "derived": 2,
+      "provisional": 0,
+      "manual_review": 0,
+      "total": 2
+    },
+    "INSULATION": {
+      "measured": 0,
+      "derived": 2,
+      "provisional": 0,
+      "manual_review": 0,
+      "total": 2
+    },
+    "ROOF STRUCTURE": {
+      "measured": 2,
+      "derived": 0,
+      "provisional": 0,
+      "manual_review": 1,
+      "total": 3
+    },
+    "ROOF CLADDING": {
+      "measured": 0,
+      "derived": 1,
+      "provisional": 0,
+      "manual_review": 0,
+      "total": 1
+    },
+    "ROOF": {
+      "measured": 1,
+      "derived": 2,
+      "provisional": 0,
+      "manual_review": 1,
+      "total": 4
+    },
+    "ROOF DRAINAGE": {
+      "measured": 0,
+      "derived": 1,
+      "provisional": 0,
+      "manual_review": 1,
+      "total": 2
+    },
+    "CEILING": {
+      "measured": 1,
+      "derived": 0,
+      "provisional": 0,
+      "manual_review": 2,
+      "total": 3
+    },
+    "CEILING LININGS": {
+      "measured": 0,
+      "derived": 1,
+      "provisional": 0,
+      "manual_review": 0,
+      "total": 1
+    },
+    "FINISHES": {
+      "measured": 0,
+      "derived": 0,
+      "provisional": 0,
+      "manual_review": 5,
+      "total": 5
+    },
+    "DOORS & WINDOWS": {
+      "measured": 0,
+      "derived": 0,
+      "provisional": 0,
+      "manual_review": 4,
+      "total": 4
+    },
+    "STAIRS": {
+      "measured": 1,
+      "derived": 0,
+      "provisional": 0,
+      "manual_review": 3,
+      "total": 4
+    },
+    "SERVICES": {
+      "measured": 0,
+      "derived": 0,
+      "provisional": 0,
+      "manual_review": 4,
+      "total": 4
+    },
+    "EXTERNAL WORKS": {
+      "measured": 1,
+      "derived": 0,
+      "provisional": 0,
+      "manual_review": 2,
+      "total": 3
+    },
+    "50114 - DOORS, WINDOWS & GLAZINGS": {
+      "measured": 6,
+      "derived": 0,
+      "provisional": 0,
+      "manual_review": 0,
+      "total": 6
+    },
+    "50124 - STAIRS, RAMPS, & BALUSTRADES": {
+      "measured": 1,
+      "derived": 0,
+      "provisional": 0,
+      "manual_review": 0,
+      "total": 1
+    }
+  },
+  "boq_summary": {
+    "total_items": 52,
+    "measured_items": 19,
+    "derived_items": 10,
+    "provisional_items": 0,
+    "manual_review_items": 23,
+    "pct_measured": 36.5
+  }
+}

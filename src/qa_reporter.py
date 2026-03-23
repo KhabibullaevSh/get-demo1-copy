@@ -84,6 +84,7 @@ def generate_report(
     merged: dict,
     project_mode: str,
     house_type: str,
+    quantity_model: dict | None = None,
 ) -> dict[str, Any]:
     """Generate full QA report and write to disk.  Returns report dict."""
     report: dict[str, Any] = {
@@ -103,6 +104,8 @@ def generate_report(
         "standard_model_variations": {},
         "overall_notes": validation.get("overall_notes", []),
         "warnings": [],
+        "package_qa": _package_qa(boq_items),
+        "boq_summary": _boq_summary(boq_items),
     }
 
     # AI completeness review
@@ -154,6 +157,60 @@ def _extraction_status(files: dict, merged: dict) -> dict:
         "windows_source": merged.get("audit", {}).get("windows_source", "none"),
         "finishes_source": merged.get("audit", {}).get("finishes_source", "none"),
         "stairs_source": merged.get("audit", {}).get("stairs_source", "none"),
+    }
+
+
+def _infer_item_basis(item: dict) -> str:
+    """Infer quantity_basis for a BOQ item (fallback if field not present)."""
+    basis = item.get("quantity_basis", "")
+    if basis:
+        return basis
+    source_ev = str(item.get("source_evidence") or item.get("source") or "").lower()
+    quantity  = item.get("quantity") if item.get("quantity") is not None else item.get("qty")
+    manual    = bool(item.get("manual_review"))
+    if quantity is None or manual:
+        return "manual_review"
+    if source_ev.startswith("derived:") or "derived" in source_ev:
+        return "derived"
+    if source_ev in ("implied_scope", "none", ""):
+        return "provisional"
+    return "measured"
+
+
+def _package_qa(boq_items: list[dict]) -> dict:
+    """Return per-section quantity basis breakdown."""
+    from collections import defaultdict
+    sections: dict[str, dict] = defaultdict(lambda: {
+        "measured": 0, "derived": 0, "provisional": 0, "manual_review": 0, "total": 0
+    })
+    for item in boq_items:
+        section = (item.get("boq_section") or item.get("category") or "GENERAL").strip()
+        basis   = _infer_item_basis(item)
+        if basis not in ("measured", "derived", "provisional", "manual_review"):
+            basis = "manual_review"
+        sections[section][basis] += 1
+        sections[section]["total"] += 1
+    return dict(sections)
+
+
+def _boq_summary(boq_items: list[dict]) -> dict:
+    """Return high-level traceability summary."""
+    total     = len(boq_items)
+    counts    = {"measured": 0, "derived": 0, "provisional": 0, "manual_review": 0}
+    for item in boq_items:
+        basis = _infer_item_basis(item)
+        if basis in counts:
+            counts[basis] += 1
+        else:
+            counts["manual_review"] += 1
+    pct = round(100.0 * counts["measured"] / total, 1) if total else 0.0
+    return {
+        "total_items":         total,
+        "measured_items":      counts["measured"],
+        "derived_items":       counts["derived"],
+        "provisional_items":   counts["provisional"],
+        "manual_review_items": counts["manual_review"],
+        "pct_measured":        pct,
     }
 
 
@@ -235,6 +292,33 @@ def _run_variation_check(report: dict, merged: dict, house_type: str) -> None:
 
 
 def _write_text_summary(report: dict, path: Path) -> None:
+    boq_sum  = report.get("boq_summary", {})
+    pkg_qa   = report.get("package_qa", {})
+
+    # Build traceability section lines
+    trace_lines: list[str] = []
+    if boq_sum:
+        total = boq_sum.get("total_items", 0)
+        trace_lines += [
+            "BOQ TRACEABILITY SUMMARY",
+            "========================",
+            f"Measured    : {boq_sum.get('measured_items', 0)} items ({boq_sum.get('pct_measured', 0):.0f}%)",
+            f"Derived     : {boq_sum.get('derived_items', 0)} items",
+            f"Provisional : {boq_sum.get('provisional_items', 0)} items",
+            f"Manual Rev  : {boq_sum.get('manual_review_items', 0)} items",
+            "",
+        ]
+        if pkg_qa:
+            trace_lines.append("BY SECTION:")
+            for section, counts in sorted(pkg_qa.items()):
+                trace_lines.append(
+                    f"  {section:<28}  measured={counts.get('measured',0)}"
+                    f"  derived={counts.get('derived',0)}"
+                    f"  provisional={counts.get('provisional',0)}"
+                    f"  manual={counts.get('manual_review',0)}"
+                )
+            trace_lines.append("")
+
     lines = [
         "=" * 60,
         f"QA REPORT — {report['project']}",
@@ -270,6 +354,7 @@ def _write_text_summary(report: dict, path: Path) -> None:
         "OVERALL NOTES:",
         *(f"  • {n}" for n in report["overall_notes"]),
         "",
+        *trace_lines,
         "=" * 60,
     ]
     path.write_text("\n".join(lines), encoding="utf-8")

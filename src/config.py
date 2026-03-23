@@ -110,7 +110,7 @@ def load_rules() -> None:
 
 def ensure_output_dirs() -> None:
     """Create output directories if they do not exist."""
-    for d in [OUTPUT_BOQ, OUTPUT_REPORTS, OUTPUT_LOGS]:
+    for d in [OUTPUT_BOQ, OUTPUT_REPORTS, OUTPUT_LOGS, OUTPUT_DIR / "json"]:
         d.mkdir(parents=True, exist_ok=True)
 
 

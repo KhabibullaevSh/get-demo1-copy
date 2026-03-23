@@ -28,10 +28,43 @@ BLUE_HEX  = "2F5496"
 GREEN_HEX = "375623"
 AMBER_HEX = "7F3F00"
 
-# Path to Standard Geometry fallback file
-_STD_GEO_PATH  = DATA_DIR / "standard_model_G303_complete.xlsx.xlsx"
-# Path to project reference summary (room finishes fallback)
-_PROJ_SUMM_PATH = DATA_DIR / "SDP-3Bedroom_Project_Summary.xlsx"
+# Standard model geometry fallback — only used when project_mode == "standard_model"
+# Resolved dynamically from STANDARD_MODELS dir; these are legacy fallback names.
+_STD_GEO_LEGACY_NAMES = [
+    "standard_model_G303_complete.xlsx",
+    "standard_model_G303_complete.xlsx.xlsx",  # legacy double-extension
+]
+_PROJ_SUMM_LEGACY_NAMES = [
+    "SDP-3Bedroom_Project_Summary.xlsx",
+]
+
+# Resolved at runtime (see _resolve_std_geo_path / _resolve_proj_summ_path below)
+_STD_GEO_PATH   = None
+_PROJ_SUMM_PATH = None
+
+
+def _resolve_std_geo_path() -> Optional[Path]:
+    """Locate standard geometry file without hardcoding the double-extension name."""
+    from src.config import DATA_DIR, STANDARD_MODELS
+    for name in _STD_GEO_LEGACY_NAMES:
+        p = DATA_DIR / name
+        if p.exists():
+            return p
+    # Also search standard_models/
+    for candidate in STANDARD_MODELS.glob("*.xlsx"):
+        if "g303" in candidate.stem.lower() and "complete" in candidate.stem.lower():
+            return candidate
+    return None
+
+
+def _resolve_proj_summ_path() -> Optional[Path]:
+    """Locate project summary reference file without hardcoding project-specific names."""
+    from src.config import DATA_DIR
+    for name in _PROJ_SUMM_LEGACY_NAMES:
+        p = DATA_DIR / name
+        if p.exists():
+            return p
+    return None
 
 
 # ─── Public entry point ───────────────────────────────────────────────────────
@@ -43,6 +76,7 @@ def write_summary(
     merged: dict,
     files_found: dict,
     boq_path: Path | None = None,
+    project_mode: str = "custom_project",
 ) -> Path:
     try:
         import openpyxl
@@ -69,10 +103,10 @@ def write_summary(
     _write_item_detail(ws_det, boq_rows, openpyxl)
 
     # Schedule sheets from drawing data + fallbacks
-    _write_room_schedule(wb.create_sheet("Room Schedule"), merged, openpyxl)
+    _write_room_schedule(wb.create_sheet("Room Schedule"), merged, openpyxl, project_mode)
     _write_door_schedule(wb.create_sheet("Door Schedule"), merged, openpyxl)
     _write_window_schedule(wb.create_sheet("Window Schedule"), merged, openpyxl)
-    _write_finish_schedule(wb.create_sheet("Finish Schedule"), merged, openpyxl)
+    _write_finish_schedule(wb.create_sheet("Finish Schedule"), merged, openpyxl, project_mode)
     _write_structural_summary(wb.create_sheet("Structural Summary"), merged, openpyxl)
     _write_services_summary(wb.create_sheet("Services Summary"), boq_rows, boq_items, openpyxl)
     _write_drawing_register(wb.create_sheet("Drawing Register"), files_found, merged, openpyxl)
@@ -85,27 +119,72 @@ def write_summary(
 # ─── Read BOQ file for Item Detail ────────────────────────────────────────────
 
 def _read_boq_rows(boq_path: Path, openpyxl) -> list[dict]:
-    """Read the written BOQ file and return rows exactly as saved."""
+    """Read the written BOQ file and return rows exactly as saved.
+
+    Handles both BOQ formats:
+    - Approved BOQ template (standard_model): data starts at row 9.
+      Cols: A=StockCode, B=Desc, C=Qty, D=Unit, E=Rate, F=Amount, G=Conf, H=Source, I=Notes
+    - Full fresh workbook (custom_project): header row detected by "Item No" in col A.
+      Cols: A=ItemNo, B=StockCode, C=Desc, D=Unit, E=Qty, F=Rate, G=Amount, H=Conf, I=Source,
+            J=DrawingRef, K=Notes
+    """
     rows = []
     try:
         wb = openpyxl.load_workbook(str(boq_path), read_only=True, data_only=True)
         sheet_name = "BOQ" if "BOQ" in wb.sheetnames else wb.sheetnames[0]
         ws = wb[sheet_name]
-        DATA_START = 9
+
+        # Scan rows 1-15 to find the header row and determine format
+        DATA_START = 9       # default: approved BOQ template
+        is_full_workbook = False
+        for check_row_idx in range(1, 16):
+            check_row = next(
+                ws.iter_rows(min_row=check_row_idx, max_row=check_row_idx, values_only=True),
+                None,
+            )
+            if check_row is None:
+                break
+            cell0 = str(check_row[0] or "").strip().lower()
+            if cell0 in ("item no", "item no.", "#"):
+                DATA_START = check_row_idx + 1
+                is_full_workbook = True
+                break
+
         for row in ws.iter_rows(min_row=DATA_START, values_only=True):
             if len(row) < 2:
                 continue
-            sc   = row[0]
-            desc = row[1]
-            qty  = row[2] if len(row) > 2 else None
-            unit = row[3] if len(row) > 3 else None
-            rate = row[4] if len(row) > 4 else None
-            amt  = row[5] if len(row) > 5 else None
-            conf = row[6] if len(row) > 6 else None
-            src  = row[7] if len(row) > 7 else None
-            notes = row[8] if len(row) > 8 else None
 
-            if sc is None and desc is None:
+            if is_full_workbook:
+                # Full workbook: A=ItemNo, B=StockCode, C=Desc, D=Unit, E=Qty,
+                #                F=Rate, G=Amount, H=Conf, I=Source, J=DrawingRef, K=Notes
+                sc    = row[1] if len(row) > 1 else None
+                desc  = row[2] if len(row) > 2 else None
+                unit  = row[3] if len(row) > 3 else None
+                qty   = row[4] if len(row) > 4 else None
+                rate  = row[5] if len(row) > 5 else None
+                amt   = row[6] if len(row) > 6 else None
+                conf  = row[7] if len(row) > 7 else None
+                src   = row[8] if len(row) > 8 else None
+                notes = row[10] if len(row) > 10 else (row[9] if len(row) > 9 else None)
+                is_hdr = (
+                    sc is None and qty is None and desc is not None
+                    or (row[0] is not None and sc is None and desc is None)
+                )
+            else:
+                # Approved BOQ template: A=StockCode, B=Desc, C=Qty, D=Unit,
+                #                        E=Rate, F=Amount, G=Conf, H=Source, I=Notes
+                sc    = row[0]
+                desc  = row[1]
+                qty   = row[2] if len(row) > 2 else None
+                unit  = row[3] if len(row) > 3 else None
+                rate  = row[4] if len(row) > 4 else None
+                amt   = row[5] if len(row) > 5 else None
+                conf  = row[6] if len(row) > 6 else None
+                src   = row[7] if len(row) > 7 else None
+                notes = row[8] if len(row) > 8 else None
+                is_hdr = (sc is None and qty is None and desc is not None)
+
+            if sc is None and desc is None and (not is_full_workbook or row[0] is None):
                 continue
             rows.append({
                 "stock_code":  str(sc or "").strip(),
@@ -117,7 +196,7 @@ def _read_boq_rows(boq_path: Path, openpyxl) -> list[dict]:
                 "confidence":  str(conf or "").strip(),
                 "source":      str(src or "").strip(),
                 "notes":       str(notes or "").strip(),
-                "_is_header":  (sc is None and qty is None and desc is not None),
+                "_is_header":  is_hdr,
             })
         wb.close()
     except Exception as exc:
@@ -126,12 +205,23 @@ def _read_boq_rows(boq_path: Path, openpyxl) -> list[dict]:
 
 
 def _boq_items_to_rows(boq_items: list[dict]) -> list[dict]:
-    """Fallback: convert boq_items to the same row format."""
+    """Fallback: convert boq_items to the same row format.
+
+    Handles both old keys (qty, source) and boq_mapper keys (quantity, source_evidence).
+    """
     rows = []
     for item in boq_items:
-        qty  = safe_float(item.get("qty"))
+        # Prefer "qty", fall back to "quantity" (boq_mapper output)
+        qty_raw = item.get("qty") if item.get("qty") is not None else item.get("quantity")
+        qty  = safe_float(qty_raw)
         rate = safe_float(item.get("rate"))
         amt  = round(qty * rate, 2) if (qty and rate) else None
+        # Prefer "source", fall back to "source_evidence" (boq_mapper output)
+        source_val = item.get("source") or item.get("source_evidence") or ""
+        notes_parts = list(filter(None, [
+            item.get("issue_flag"), item.get("assumption"),
+            item.get("comment"), item.get("notes"),
+        ]))
         rows.append({
             "stock_code":  item.get("stock_code", ""),
             "description": item.get("description", ""),
@@ -140,10 +230,8 @@ def _boq_items_to_rows(boq_items: list[dict]) -> list[dict]:
             "rate":        rate,
             "amount":      amt,
             "confidence":  (item.get("confidence") or "").upper(),
-            "source":      item.get("source", ""),
-            "notes":       " | ".join(filter(None, [
-                item.get("issue_flag"), item.get("assumption"), item.get("comment"),
-            ])),
+            "source":      source_val,
+            "notes":       " | ".join(notes_parts),
             "_is_header":  False,
         })
     return rows
@@ -177,17 +265,25 @@ def _get_room_level(room_name: str, drawing_source: str = "") -> str:
 
 # ─── Fallback data loaders ────────────────────────────────────────────────────
 
-def _load_std_geo_rooms(openpyxl) -> list[dict]:
+def _load_std_geo_rooms(openpyxl, project_mode: str = "custom_project") -> list[dict]:
     """Load room list from Standard Geometry sheet in standard model file.
+
+    Only used when project_mode == "standard_model" to avoid pulling G303
+    room areas into non-G303 projects.
 
     Returns list of dicts: {name, area_m2, source, floor_finish, wall_finish, ceiling_finish}.
     """
     rooms = []
-    if not _STD_GEO_PATH.exists():
-        log.warning("Standard Geometry file not found: %s", _STD_GEO_PATH)
+    if project_mode != "standard_model":
         return rooms
+
+    std_geo_path = _resolve_std_geo_path()
+    if std_geo_path is None:
+        log.debug("Standard Geometry file not found — skipping fallback rooms")
+        return rooms
+
     try:
-        wb = openpyxl.load_workbook(str(_STD_GEO_PATH), read_only=True, data_only=True)
+        wb = openpyxl.load_workbook(str(std_geo_path), read_only=True, data_only=True)
         if "Standard Geometry" not in wb.sheetnames:
             wb.close()
             return rooms
@@ -212,7 +308,10 @@ def _load_std_geo_rooms(openpyxl) -> list[dict]:
                 rooms.append({
                     "name":     label,
                     "area_m2":  area,
-                    "source":   f"standard_geometry ({src_cell})" if src_cell else "standard_geometry",
+                    "source":   (
+                        f"standard_geometry ({src_cell})" if src_cell
+                        else f"standard_geometry ({std_geo_path.name})"
+                    ),
                 })
         wb.close()
     except Exception as exc:
@@ -220,17 +319,25 @@ def _load_std_geo_rooms(openpyxl) -> list[dict]:
     return rooms
 
 
-def _load_proj_summary_rooms(openpyxl) -> list[dict]:
-    """Load room schedule from SDP-3Bedroom_Project_Summary.xlsx (Room Schedule sheet).
+def _load_proj_summary_rooms(openpyxl, project_mode: str = "custom_project") -> list[dict]:
+    """Load room schedule from a reference project summary file (Room Schedule sheet).
+
+    Only used when project_mode == "standard_model" to avoid polluting
+    custom projects with another project's room data.
 
     Returns list of dicts with name, level, area_m2, floor_finish, wall_finish,
     ceiling_finish, ceiling_height, notes, source.
     """
     rooms = []
-    if not _PROJ_SUMM_PATH.exists():
+    if project_mode != "standard_model":
         return rooms
+
+    proj_summ_path = _resolve_proj_summ_path()
+    if proj_summ_path is None:
+        return rooms
+
     try:
-        wb = openpyxl.load_workbook(str(_PROJ_SUMM_PATH), read_only=True, data_only=True)
+        wb = openpyxl.load_workbook(str(proj_summ_path), read_only=True, data_only=True)
         if "Room Schedule" not in wb.sheetnames:
             wb.close()
             return rooms
@@ -259,7 +366,7 @@ def _load_proj_summary_rooms(openpyxl) -> list[dict]:
                 "wall_finish":     str(row[5] or "").strip(),
                 "ceiling_finish":  str(row[6] or "").strip(),
                 "notes":           str(row[7] or "").strip(),
-                "source":          f"reference_summary ({_PROJ_SUMM_PATH.name})",
+                "source":          f"reference_summary ({proj_summ_path.name})",
             })
         wb.close()
     except Exception as exc:
@@ -484,7 +591,7 @@ def _write_item_detail(ws, rows: list[dict], openpyxl) -> None:
 
 # ─── Sheet 3: Room Schedule ───────────────────────────────────────────────────
 
-def _write_room_schedule(ws, merged: dict, openpyxl) -> None:
+def _write_room_schedule(ws, merged: dict, openpyxl, project_mode: str = "custom_project") -> None:
     from openpyxl.styles import Font, Alignment
     _hdr(ws, 1, "ROOM SCHEDULE", openpyxl, 5)
     headers = ["Room Name", "Level", "Floor Area (m²)", "Source", "Notes"]
@@ -498,10 +605,12 @@ def _write_room_schedule(ws, merged: dict, openpyxl) -> None:
 
     fallback_used = ""
     if not rooms:
-        # Priority 2: standard geometry fallback
-        rooms = _load_std_geo_rooms(openpyxl)
-        if rooms:
-            fallback_used = f"standard_geometry ({_STD_GEO_PATH.name})"
+        # Priority 2: standard geometry fallback — only for standard_model projects
+        fallback_rooms = _load_std_geo_rooms(openpyxl, project_mode)
+        if fallback_rooms:
+            rooms = fallback_rooms
+            std_path = _resolve_std_geo_path()
+            fallback_used = f"standard_geometry ({std_path.name if std_path else 'unknown'})"
 
     r = 3
     for room in rooms:
@@ -685,7 +794,7 @@ def _write_window_schedule(ws, merged: dict, openpyxl) -> None:
 
 # ─── Sheet 6: Finish Schedule ─────────────────────────────────────────────────
 
-def _write_finish_schedule(ws, merged: dict, openpyxl) -> None:
+def _write_finish_schedule(ws, merged: dict, openpyxl, project_mode: str = "custom_project") -> None:
     from openpyxl.styles import Font, Alignment
     _hdr(ws, 1, "FINISH SCHEDULE", openpyxl, 7)
     headers = ["Room", "Level", "Floor Area (m²)", "Floor Finish", "Wall Finish", "Ceiling Finish", "Source"]
@@ -697,13 +806,13 @@ def _write_finish_schedule(ws, merged: dict, openpyxl) -> None:
     # Priority 1: merged finishes from PDF (finishes list has room + finish fields)
     finishes = merged.get("finishes", []) or []
 
-    # Priority 2: load from project summary reference file (has room + finish + area)
+    # Priority 2: load from reference file — only for standard_model projects
     if not finishes:
-        finishes = _load_proj_summary_rooms(openpyxl)
+        finishes = _load_proj_summary_rooms(openpyxl, project_mode)
 
     # Build room-area lookup to fill in missing areas (default_finishes have area=0)
     rooms_list = (merged.get("geometry", {}).get("rooms", []) or
-                  _load_std_geo_rooms(openpyxl))
+                  _load_std_geo_rooms(openpyxl, project_mode))
     room_area_by_name: dict[str, float] = {}
     for rm in rooms_list:
         name = (rm.get("name") or "").strip()
