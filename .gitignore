@@ -6,3 +6,5 @@ input/drawings/*.dxf
 input/drawings/*.dwg
 input/pdfs/*.pdf
 input/bom/*.xlsx
+v2_ddc_pipeline/outputs/
+.claude/
