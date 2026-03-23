@@ -158,74 +158,97 @@ def build_project_model(
     bom_totals = framecad_data.get("totals", {})
 
     def _ifc_sum(*keys: str) -> float:
-        """Sum multiple IFC result keys (named + inferred variants)."""
         return sum(ifc_data.get(k, 0.0) for k in keys)
 
-    def _struct_lm(key_bom: str, *ifc_keys: str) -> dict:
-        if framecad_available:
-            return _pick_lm((bom_totals.get(key_bom, 0.0), "framecad_bom", "HIGH"))
+    def _bom_or_ifc(bom_key: str, *ifc_keys: str) -> dict:
+        """
+        Pick value in priority order: FrameCAD BOM > IFC > zero.
+        BOM quantities are always HIGH confidence (authoritative source).
+        IFC quantities are HIGH confidence when present.
+        """
+        if framecad_available and bom_totals.get(bom_key, 0.0) > 0:
+            return _pick_lm((bom_totals[bom_key], "framecad_bom", "HIGH"))
         if ifc_has_members:
             total = _ifc_sum(*ifc_keys)
-            return _pick_lm((total, "ifc_model", "HIGH"))
-        return _val(0.0, "dxf_derived", "LOW")
+            if total > 0:
+                return _pick_lm((total, "ifc_model", "HIGH"))
+        return _val(0.0, "none", "LOW")
 
-    # Wall stud = named W-type + inferred full-height + short stud
-    wall_stud_lm  = _struct_lm(
-        "wall_stud_lm",
+    # ── BOM-level structural totals (one row per FrameCAD tab) ───────────
+    #
+    # When a manufacturing summary is available, the BOM gives exact totals
+    # per structural system.  These are used DIRECTLY — no sub-classification
+    # by stud/plate/noggin, which would require a per-member BOM schedule.
+    #
+    # roof_panel_lm  = "Tab Roof Panels"  (purlins / roof panel frame 89S41)
+    # roof_truss_lm  = "Tab Roof Trusses" (truss chords + webs 89S41)
+    # wall_frame_lm  = "Tab Wall Panels"  (all wall stud/plate/noggin 89S41)
+    # lintel_lm      = 150x32x0.95 lintel sections
+    # wall_strap_lm  = 32x0.95 diagonal strap
+    # roof_batten_lm = FRAMECAD BATTEN pieces (from layout PDF)
+
+    roof_panel_lm  = _bom_or_ifc(
+        "roof_panel_lm",
+        "lgs_unclassified_lm",   # IFC fallback: 2440.000050 group = roof purlins
+    )
+    roof_truss_lm  = _bom_or_ifc(
+        "roof_truss_lm",
+        # IFC fallback: T-type top chords + B-type bottom chords + R-type
+        "wall_frame_top_plate_lm",    # re-interpreted as truss chords when no BOM
+        "wall_frame_bottom_plate_lm",
+        "roof_rafter_lm",
+    )
+    wall_frame_lm  = _bom_or_ifc(
+        "wall_frame_lm",
+        # IFC fallback: all wall member categories summed
         "wall_frame_stud_lm",
         "wall_stud_inferred_lm",
         "wall_stud_short_inferred_lm",
-    )
-    # Wall plate = named T-type top plates + inferred plates from bare-desc
-    wall_plate_lm = _struct_lm(
-        "plate_lm",
-        "wall_frame_top_plate_lm",
         "wall_plate_lm",
         "wall_plate_inferred_lm",
-    )
-    # Wall noggin = named N-type + inferred noggins from bare-desc
-    wall_noggin_lm = _struct_lm(
-        "noggin_lm",
         "wall_noggin_lm",
         "wall_noggin_inferred_lm",
-    )
-    # Bottom plate (separate — anomalous lengths flagged in extractor)
-    wall_btm_plate_lm = _struct_lm(
-        "bottom_plate_lm",
         "wall_frame_bottom_plate_lm",
     )
-    roof_rafter_lm = _struct_lm("rafter_lm",   "roof_rafter_lm")
-    roof_plate_lm  = _struct_lm("plate_lm",    "roof_plate_lm")
-    roof_noggin_lm = _struct_lm("noggin_lm",   "roof_noggin_lm")
-    verandah_lm    = _struct_lm("verandah_lm", "verandah_frame_lm")
-    floor_joist_lm = _struct_lm("joist_lm",    "floor_joist_lm", "lgs_unclassified_lm")
-    girt_lm        = _struct_lm("girt_lm",     "girt_lm")
+    lintel_lm      = _bom_or_ifc("lintel_lm",     "lintel_lm")
+    wall_strap_lm  = _bom_or_ifc("wall_strap_lm", "wall_strap_lm")
+    verandah_lm    = _bom_or_ifc("verandah_lm",   "verandah_frame_lm")
 
-    # SHS / RHS structural steel — NOT LGS, always separate BOQ item
+    # Roof batten — from layout PDF batten schedule; no IFC fallback
+    bom_batten_lm   = bom_totals.get("roof_batten_lm", 0.0)
+    bom_batten_nr   = bom_totals.get("roof_batten_nr", 0)
+    roof_batten_lm  = _val(
+        round(bom_batten_lm, 2),
+        "framecad_bom" if framecad_available and bom_batten_lm > 0 else "none",
+        "HIGH" if bom_batten_lm > 0 else "LOW",
+    )
+
+    # SHS / RHS structural steel — always from IFC (not in BOM)
     steel_shs_lm = _val(
         round(_ifc_sum("steel_shs_lm"), 2),
         "ifc_model",
         "HIGH" if ifc_has_members else "LOW",
     )
 
+    # Total LGS check
+    bom_total_lgs = bom_totals.get("total_lgs_lm", 0.0)
+
     structural = {
-        "wall_stud_lm":              wall_stud_lm,
-        "wall_plate_lm":             wall_plate_lm,
-        "wall_btm_plate_lm":         wall_btm_plate_lm,
-        "wall_noggin_lm":            wall_noggin_lm,
-        "roof_rafter_lm":            roof_rafter_lm,
-        "roof_plate_lm":             roof_plate_lm,
-        "roof_noggin_lm":            roof_noggin_lm,
-        "floor_joist_lm":            floor_joist_lm,
+        # ── BOM-level totals (preferred when BOM present) ──────────────
+        "roof_panel_lm":             roof_panel_lm,
+        "roof_truss_lm":             roof_truss_lm,
+        "wall_frame_lm":             wall_frame_lm,
+        "lintel_lm":                 lintel_lm,
+        "wall_strap_lm":             wall_strap_lm,
+        "roof_batten_lm":            roof_batten_lm,
+        "roof_batten_nr":            _val(bom_batten_nr, "framecad_bom", "HIGH"),
         "verandah_frame_lm":         verandah_lm,
-        "girt_lm":                   girt_lm,
         "steel_shs_lm":              steel_shs_lm,
-        "lgs_unclassified_lm":       _val(
-            round(_ifc_sum("lgs_unclassified_lm"), 2), "ifc_model", "LOW"
+        # ── BOM verification total ──────────────────────────────────────
+        "bom_total_lgs_lm":          _val(
+            round(bom_total_lgs, 2), "framecad_bom", "HIGH" if bom_total_lgs > 0 else "LOW"
         ),
-        "ifc_manual_review_lm":      _val(
-            round(ifc_data.get("manual_review_lm", 0.0), 2), "ifc_model", "MEDIUM"
-        ),
+        # ── IFC raw totals (for cross-check only) ──────────────────────
         "total_column_lm":           _val(ifc_data.get("total_column_lm", 0.0), "ifc_model", "HIGH"),
         "total_beam_lm":             _val(ifc_data.get("total_beam_lm",   0.0), "ifc_model", "HIGH"),
         "column_count":              _val(ifc_data.get("column_count",    0),   "ifc_model", "HIGH"),
@@ -233,6 +256,7 @@ def build_project_model(
         "source_priority_used":      struct_priority,
         "member_breakdown":          ifc_data.get("member_breakdown", {}),
         "ifc_classification_notes":  ifc_data.get("classification_notes", []),
+        "bom_batten_entries":        framecad_data.get("batten_entries", []),
     }
 
     # ── Openings detail ───────────────────────────────────────────────────

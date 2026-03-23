@@ -109,76 +109,129 @@ def _build_structure(pm: dict) -> list[dict]:
     rows: list[dict] = []
     struct_priority = pm.get("structural", {}).get("source_priority_used", "unknown")
     src_label       = struct_priority  # "framecad_bom" | "ifc_model" | "dxf_derived"
+    is_bom          = src_label == "framecad_bom"
+    is_ifc          = src_label == "ifc_model"
 
-    def _row(element_type, subtype, lm_value, conf, rule="direct from source"):
-        if lm_value and lm_value > 0:
+    def _measured_row(element_type, subtype, qty, unit, evidence, conf,
+                      rule="direct from source", assumption="", manual_review=False):
+        if qty and qty > 0:
+            basis = "measured" if (is_bom or is_ifc) else "provisional"
             rows.append(_qrow(
                 "Structure", element_type, subtype,
-                round(lm_value, 2), "lm",
-                "measured" if src_label in ("framecad_bom", "ifc_model") else "provisional",
-                rule,
-                f"{src_label}: {element_type} {subtype}",
-                conf,
+                round(qty, 2) if isinstance(qty, float) else qty, unit,
+                basis, rule, evidence, conf,
+                assumption=assumption, manual_review=manual_review,
                 v2_extractor_source=src_label,
             ))
 
-    ifc_conf = "HIGH" if src_label != "dxf_derived" else "LOW"
-    _row("Wall Frame", "Stud",       _s(pm, "wall_stud_lm"),     ifc_conf)
-    _row("Wall Frame", "Top Plate",  _s(pm, "wall_plate_lm"),    ifc_conf)
-    _row("Wall Frame", "Noggin",     _s(pm, "wall_noggin_lm"),   ifc_conf)
-    _row("Roof Frame", "Rafter",     _s(pm, "roof_rafter_lm"),   ifc_conf)
-    _row("Roof Frame", "Plate",      _s(pm, "roof_plate_lm"),    ifc_conf)
-    _row("Roof Frame", "Noggin",     _s(pm, "roof_noggin_lm"),   ifc_conf)
-    _row("Floor",      "Joist",      _s(pm, "floor_joist_lm"),   "MEDIUM")
-    _row("Verandah",   "Frame",      _s(pm, "verandah_frame_lm"), ifc_conf)
-    _row("Structure",  "Girt",       _s(pm, "girt_lm"),          "MEDIUM")
+    # ── BOM-tab structural totals (HIGH confidence when BOM present) ───────
+    # When FrameCAD manufacturing summary is the source, each tab becomes
+    # one authoritative BOQ row.  No stud/plate/noggin sub-splitting is
+    # attempted from BOM data (that requires a per-member schedule).
 
-    # Bottom plate — separate row, marked manual_review due to anomalous IFC lengths
-    btm_plate = _s(pm, "wall_btm_plate_lm")
-    if btm_plate and btm_plate > 0:
-        rows.append(_qrow(
-            "Structure", "Wall Frame", "Bottom Plate",
-            round(btm_plate, 2), "lm",
-            "measured", "direct from source",
-            f"{src_label}: Wall Frame Bottom Plate",
-            "LOW",  # LOW — all B members are 15.0 m (anomalous) — needs BOM confirm
-            assumption="IFC B-type members all 15.0 m — likely cumulative length artifact, not cut lengths. Confirm with FrameCAD BOM.",
-            manual_review=True,
-            v2_extractor_source=src_label,
-        ))
+    roof_panel = _s(pm, "roof_panel_lm")
+    roof_truss = _s(pm, "roof_truss_lm")
+    wall_frame = _s(pm, "wall_frame_lm")
+    lintel     = _s(pm, "lintel_lm")
+    strap      = _s(pm, "wall_strap_lm")
+    verandah   = _s(pm, "verandah_frame_lm")
+    shs_lm     = _s(pm, "steel_shs_lm")
+    bom_total  = _s(pm, "bom_total_lgs_lm")
 
-    # Structural steel SHS posts — always separate from LGS wall frame
-    shs_lm = _s(pm, "steel_shs_lm")
+    conf_main = "HIGH" if (is_bom or is_ifc) else "LOW"
+
+    # Roof Panels (purlins) — BOM "Tab Roof Panels"
+    # IFC fallback: previously "lgs_unclassified" 2440.000050 group (481.74 lm exact match)
+    _measured_row(
+        "Roof Panel Frame", "purlin / roof panel 89S41",
+        roof_panel, "lm",
+        f"{src_label}: Tab Roof Panels" if is_bom else f"{src_label}: numeric-desc IfcBeam (481.74 lm)",
+        conf_main,
+        rule="direct from source — BOM Tab Roof Panels" if is_bom else "IFC 2440.000050 group matches BOM",
+    )
+
+    # Roof Trusses — BOM "Tab Roof Trusses"
+    # IFC fallback: T-type (top chord) + B-type (bottom chord) + R-type
+    _measured_row(
+        "Roof Truss Frame", "truss chord + web 89S41",
+        roof_truss, "lm",
+        f"{src_label}: Tab Roof Trusses" if is_bom else f"{src_label}: T+B+R type members",
+        conf_main,
+        rule="direct from source — BOM Tab Roof Trusses" if is_bom
+             else "IFC T-type (top chord) + B-type (bottom chord) + R-type",
+    )
+
+    # Wall Panels — BOM "Tab Wall Panels" (all wall members: studs + plates + noggins)
+    # IFC fallback: sum of all wall member categories
+    _measured_row(
+        "Wall Frame", "all wall members 89S41",
+        wall_frame, "lm",
+        f"{src_label}: Tab Wall Panels" if is_bom else f"{src_label}: W+T+B+bare-desc wall members",
+        conf_main,
+        rule="direct from source — BOM Tab Wall Panels (studs + plates + noggins combined)" if is_bom
+             else "IFC all wall categories summed",
+    )
+
+    # Lintel
+    if lintel and lintel > 0:
+        _measured_row(
+            "Wall Frame", "lintel 150×32×0.95",
+            lintel, "lm",
+            f"{src_label}: 150x32x0.95 Lintel",
+            conf_main,
+            rule="direct from source — BOM lintel entry",
+        )
+
+    # Diagonal strap
+    if strap and strap > 0:
+        _measured_row(
+            "Wall Frame", "diagonal strap 32×0.95",
+            strap, "lm",
+            f"{src_label}: FRAMECAD 32x0.95 Strap",
+            conf_main,
+            rule="direct from source — BOM strap entry",
+        )
+
+    # Verandah frame
+    _measured_row(
+        "Verandah Frame", "89S41 V1 panel",
+        verandah, "lm",
+        f"{src_label}: verandah_frame (V1-T members)",
+        conf_main,
+        rule="direct from source",
+    )
+
+    # Structural steel SHS (not LGS — always from IFC)
     if shs_lm and shs_lm > 0:
         rows.append(_qrow(
             "Structure", "Structural Steel Post", "75×75×4 SHS",
             round(shs_lm, 2), "lm",
             "measured", "direct from source",
-            f"{src_label}: SHS steel (desc=XX/00, name=75x75x4 SHS)",
+            "ifc_model: SHS steel (desc=XX/00, name=75×75×4 SHS)",
             "HIGH",
-            assumption="Structural steel hollow section (not LGS). Confirm post type and size from structural drawings.",
-            v2_extractor_source=src_label,
+            assumption="Steel hollow section posts — NOT LGS framing. "
+                       "Verify post type, height, and fixing from structural drawings.",
+            v2_extractor_source="ifc_model",
         ))
 
-    # Unclassified LGS — separate provisional row
-    lgs_unc = _s(pm, "lgs_unclassified_lm")
-    if lgs_unc and lgs_unc > 0:
+    # BOM verification note (zero-qty row for traceability)
+    if is_bom and bom_total and bom_total > 0:
         rows.append(_qrow(
-            "Structure", "LGS Members", "unclassified (desc=numeric artifact)",
-            round(lgs_unc, 2), "lm",
-            "provisional", "FrameCAD export artifact — type unknown",
-            f"{src_label}: 128 × ~3.7 m IfcBeam, desc='2440.000050'",
-            "LOW",
-            assumption="128 LGS beams (~3.7 m each, 89S41-075-500) with numeric description. Likely floor-joist cassette or ceiling purlin. Confirm with FrameCAD BOM.",
-            manual_review=True,
-            v2_extractor_source=src_label,
+            "Structure", "BOM Total LGS Check", "89S41-075-500 all tabs",
+            round(bom_total, 2), "lm",
+            "measured", "BOM Job Summary total",
+            "framecad_bom: Job Summary 89S41-075-500",
+            "HIGH",
+            assumption="Verification row only. Sum of Roof Panels + Roof Trusses + Wall Panels "
+                       "should equal this figure. Do not order from this row.",
+            v2_extractor_source="framecad_bom",
         ))
 
     # Post count from DXF STRUCTURE CIRCLE
     post_count = _g(pm, "post_count")
     if post_count and post_count > 0:
         rows.append(_qrow(
-            "Structure", "Post/Column", "circular",
+            "Structure", "Post/Column", "circular — DXF count",
             post_count, "nr",
             "measured", "DXF STRUCTURE CIRCLE count",
             "dxf_geometry: STRUCTURE layer CIRCLE entities",
@@ -195,6 +248,11 @@ def _build_roof(pm: dict) -> list[dict]:
     floor_area   = _g(pm, "floor_area_m2")  or 0.0
     src, conf    = _src(pm, "geometry", "roof_area_m2")
 
+    # BOM batten data (measured, HIGH confidence when available)
+    bom_batten_lm_val = _s(pm, "roof_batten_lm")
+    bom_batten_nr_val = _s(pm, "roof_batten_nr")
+    batten_entries    = pm.get("structural", {}).get("bom_batten_entries", [])
+
     if roof_area > 0:
         rows.append(_qrow(
             "Roof", "Roof Sheeting", "corrugated iron / CGI",
@@ -210,13 +268,43 @@ def _build_roof(pm: dict) -> list[dict]:
             f"derived from roof_area_m2={roof_area:.2f}",
             conf, v2_extractor_source="derived",
         ))
-        rows.append(_qrow(
-            "Roof", "Roof Battens", "timber/steel",
-            roof_batten_lm(roof_area), "lm",
-            "derived", f"roof_area / ({900}/1000)",
-            f"derived from roof_area_m2={roof_area:.2f}",
-            "MEDIUM", v2_extractor_source="derived",
-        ))
+
+        # Roof battens — BOM preferred, derived as fallback
+        if bom_batten_lm_val and bom_batten_lm_val > 0:
+            # Build evidence string from batten schedule entries
+            if batten_entries:
+                detail = "; ".join(
+                    f"{e['qty']}×{e['length_mm']}mm grade{e['grade_mm']}"
+                    for e in batten_entries
+                )
+                evidence = f"framecad_bom: {detail}"
+                rule = f"sum(qty × length): {detail}"
+            else:
+                evidence = "framecad_bom: FRAMECAD BATTEN schedule"
+                rule = "BOM batten schedule (qty × length)"
+            rows.append(_qrow(
+                "Roof", "Roof Battens", "FRAMECAD BATTEN (structural steel)",
+                bom_batten_lm_val, "lm",
+                "measured", rule, evidence,
+                "HIGH", v2_extractor_source="framecad_bom",
+            ))
+            if bom_batten_nr_val and bom_batten_nr_val > 0:
+                rows.append(_qrow(
+                    "Roof", "Roof Battens", "count",
+                    bom_batten_nr_val, "nr",
+                    "measured", "BOM batten count",
+                    "framecad_bom: FRAMECAD BATTEN schedule",
+                    "HIGH", v2_extractor_source="framecad_bom",
+                ))
+        else:
+            rows.append(_qrow(
+                "Roof", "Roof Battens", "timber/steel",
+                roof_batten_lm(roof_area), "lm",
+                "derived", f"roof_area / ({900}/1000)",
+                f"derived from roof_area_m2={roof_area:.2f}",
+                "MEDIUM", v2_extractor_source="derived",
+            ))
+
         rows.append(_qrow(
             "Roof", "Roof Fixings", "screws/bolts",
             roof_fixings_boxes(roof_area), "boxes",

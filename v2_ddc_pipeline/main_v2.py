@@ -152,8 +152,14 @@ def run(project: str) -> None:
     framecad_data = extract_framecad_bom(project_input_dir)
     if framecad_data.get("found"):
         totals = framecad_data.get("totals", {})
-        print(f"       -> BOM found: {Path(framecad_data['source_file']).name}")
-        print(f"       -> {len(framecad_data['members'])} member rows  total={totals.get('total_lm',0):.1f} lm")
+        src_type = framecad_data.get("source_type", "unknown")
+        print(f"       -> BOM found: {Path(framecad_data['source_file']).name}  [{src_type}]")
+        print(f"       -> roof_panel={totals.get('roof_panel_lm',0):.1f} lm  "
+              f"roof_truss={totals.get('roof_truss_lm',0):.1f} lm  "
+              f"wall_frame={totals.get('wall_frame_lm',0):.1f} lm")
+        if totals.get("roof_batten_lm"):
+            print(f"       -> battens: {totals.get('roof_batten_nr',0)} pcs  "
+                  f"{totals.get('roof_batten_lm',0):.1f} lm")
         for rec in source_inventory:
             if framecad_data.get("source_file") and rec["path"] == framecad_data["source_file"]:
                 rec["parsed_successfully"] = True
