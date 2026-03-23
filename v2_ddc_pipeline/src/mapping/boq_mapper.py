@@ -17,14 +17,15 @@ log = logging.getLogger("boq.v2.boq_mapper")
 # ─── Static section map ───────────────────────────────────────────────────────
 
 _SECTION_MAP: dict[str, str] = {
-    "Structure": "A - Structural Frame",
-    "Roof":      "B - Roof",
-    "Openings":  "C - Openings",
-    "Linings":   "D - Linings & Ceilings",
-    "Finishes":  "E - Finishes",
-    "Services":  "F - Services",
-    "Stairs":    "G - Stairs",
-    "External":  "H - External Works",
+    "Structure":  "A - Structural Frame",
+    "Roof":       "B - Roof",
+    "Openings":   "C - Openings",
+    "Linings":    "D - Linings & Ceilings",
+    "Insulation": "E - Insulation",
+    "Finishes":   "F - Finishes",
+    "Services":   "G - Services",
+    "Stairs":     "H - Stairs",
+    "External":   "I - External Works",
 }
 
 # ─── helpers ──────────────────────────────────────────────────────────────────

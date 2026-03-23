@@ -13,17 +13,30 @@ import logging
 from typing import Any
 
 from src.quantity.derivation_rules import (
+    ARCHITRAVE_DOOR_LM_EACH,
+    ARCHITRAVE_WINDOW_LM_EACH,
+    INT_WALL_LM_RATIO,
+    architrave_door_lm,
+    architrave_window_lm,
     ceiling_batten_lm,
+    cornice_lm,
     downpipe_count,
     ext_wall_area_m2,
     fascia_lm,
     fc_ceiling_sheets,
     fc_wall_sheets,
     gutter_lm,
+    insulation_roof_m2,
+    insulation_wall_m2,
+    int_wall_lm_estimate,
+    int_wall_one_face_m2,
+    paint_external_m2,
+    paint_internal_m2,
     ridgecap_lm,
     roof_batten_lm,
     roof_fixings_boxes,
     sisalation_rolls,
+    skirting_lm,
 )
 
 log = logging.getLogger("boq.v2.quantity_builder")
@@ -317,9 +330,11 @@ def _build_roof(pm: dict) -> list[dict]:
         rows.append(_qrow(
             "Roof", "Gutters", "eaves gutter",
             gutter_lm(roof_perim), "lm",
-            "derived", "roof_perimeter / 2",
+            "derived", "roof_perimeter (all-sides eaves — hip roof assumed)",
             f"derived from roof_perimeter_m={roof_perim:.2f}",
-            "MEDIUM", v2_extractor_source="derived",
+            "MEDIUM",
+            assumption="Hip roof assumed (gutters all sides). Reduce by ~40% if gable roof.",
+            v2_extractor_source="derived",
         ))
         rows.append(_qrow(
             "Roof", "Fascia", "fascia board",
@@ -393,28 +408,74 @@ def _build_openings(pm: dict) -> list[dict]:
                 "HIGH", v2_extractor_source="pdf_schedule",
             ))
 
+    # Door accessories — derived from door count
+    if door_count > 0:
+        def _door_acc(subtype, rule):
+            return _qrow(
+                "Openings", "Door Accessory", subtype,
+                door_count, "nr",
+                "derived", rule,
+                f"derived from door_count={door_count} [{door_src}]",
+                door_conf, v2_extractor_source="derived",
+            )
+        rows.append(_door_acc("lockset",          f"1 per door × {door_count} doors"))
+        rows.append(_door_acc("hinge set (pair)", f"1 pair per door × {door_count} doors"))
+        rows.append(_door_acc("door stop",        f"1 per door × {door_count} doors"))
+
+    # Window flyscreen — derived from window count (standard for PNG climate)
+    if window_count > 0:
+        rows.append(_qrow(
+            "Openings", "Window Accessory", "flyscreen",
+            window_count, "nr",
+            "derived", f"1 per window × {window_count} windows",
+            f"derived from window_count={window_count} [{window_src}]",
+            window_conf,
+            assumption="All windows assumed to have flyscreen (PNG climate standard).",
+            v2_extractor_source="derived",
+        ))
+
     return rows
 
 
 def _build_linings(pm: dict) -> list[dict]:
     rows: list[dict] = []
-    ceiling_area   = _g(pm, "ceiling_area_m2")      or 0.0
-    ext_wall_perim = _g(pm, "ext_wall_perimeter_m") or 0.0
+    floor_area      = _g(pm, "floor_area_m2")         or 0.0
+    verandah_area   = _g(pm, "verandah_area_m2")      or 0.0
+    ext_wall_perim  = _g(pm, "ext_wall_perimeter_m")  or 0.0
+    _raw_ceil       = _g(pm, "ceiling_area_m2")        or 0.0
     src_ceil, conf_ceil = _src(pm, "geometry", "ceiling_area_m2")
+
+    # Use floor_area - verandah_area as ceiling estimate when DXF ceiling polygon
+    # captures only a partial area (common when ceiling layer is not fully closed).
+    _derived_ceil = round(floor_area - verandah_area, 2) if floor_area > 0 else 0.0
+    if _raw_ceil > 0 and _raw_ceil >= _derived_ceil * 0.9:
+        ceiling_area  = _raw_ceil
+        ceil_evidence = f"{src_ceil}: ceiling_area_m2={_raw_ceil:.2f}"
+    elif _derived_ceil > 0:
+        ceiling_area  = _derived_ceil
+        conf_ceil     = "MEDIUM"
+        ceil_evidence = (
+            f"derived: floor_area({floor_area:.2f}) − verandah_area({verandah_area:.2f}) = {_derived_ceil:.2f} m² "
+            f"[DXF ceiling polygon={_raw_ceil:.2f} m² appears partial]"
+        )
+        src_ceil = "derived"
+    else:
+        ceiling_area  = _raw_ceil
+        ceil_evidence = f"{src_ceil}: ceiling_area_m2={_raw_ceil:.2f}"
 
     if ceiling_area > 0:
         rows.append(_qrow(
             "Linings", "Ceiling Lining", "FC sheet",
             fc_ceiling_sheets(ceiling_area), "sheets",
             "derived", f"ceil(ceiling_area * {1.05} / {2.88})",
-            f"derived from ceiling_area_m2={ceiling_area:.2f} [{src_ceil}]",
+            f"derived from ceiling_area_m2={ceiling_area:.2f}; {ceil_evidence}",
             conf_ceil, v2_extractor_source="derived",
         ))
         rows.append(_qrow(
             "Linings", "Ceiling Battens", "timber/steel",
             ceiling_batten_lm(ceiling_area), "lm",
             "derived", f"ceiling_area / ({400}/1000)",
-            f"derived from ceiling_area_m2={ceiling_area:.2f}",
+            f"derived from ceiling_area_m2={ceiling_area:.2f}; {ceil_evidence}",
             "MEDIUM", v2_extractor_source="derived",
         ))
 
@@ -423,9 +484,77 @@ def _build_linings(pm: dict) -> list[dict]:
         rows.append(_qrow(
             "Linings", "External Wall Lining", "FC sheet / cladding",
             fc_wall_sheets(wall_area), "sheets",
-            "derived", f"ceil(wall_area * {1.05} / {3.24})",
+            "derived", f"ceil(ext_wall_area * {1.05} / {3.24})",
             f"derived from ext_wall_perimeter_m={ext_wall_perim:.2f} → wall_area={wall_area:.2f}",
             "MEDIUM", v2_extractor_source="derived",
+        ))
+
+        # Internal wall lining — provisional (int_wall_lm not in model, use area ratio estimate)
+        if floor_area > 0:
+            est_int_lm = int_wall_lm_estimate(floor_area)
+            est_int_area = int_wall_one_face_m2(est_int_lm)
+            rows.append(_qrow(
+                "Linings", "Internal Wall Lining", "FC sheet / plasterboard",
+                fc_wall_sheets(est_int_area), "sheets",
+                "derived",
+                f"ceil(est_int_wall_area * {1.05} / {3.24}); "
+                f"est_int_wall_lm = floor_area × {INT_WALL_LM_RATIO}",
+                f"derived: int_wall_lm_estimate={est_int_lm:.1f} lm "
+                f"(floor_area={floor_area:.1f} × ratio {INT_WALL_LM_RATIO}) "
+                f"→ one_face={est_int_area:.2f} m²",
+                "LOW",
+                assumption=(
+                    f"Internal wall lm not measured from sources — estimated as "
+                    f"floor_area × {INT_WALL_LM_RATIO} = {est_int_lm:.1f} lm. "
+                    "Replace with measured value if DXF internal wall layer or "
+                    "room schedule is available."
+                ),
+                manual_review=True,
+                v2_extractor_source="derived",
+            ))
+
+        # Cornice / ceiling trim — runs along all internal faces of external walls
+        rows.append(_qrow(
+            "Linings", "Cornice / Ceiling Trim", "cove/cornice",
+            cornice_lm(ext_wall_perim), "lm",
+            "derived", "ext_wall_perimeter (all internal faces)",
+            f"derived from ext_wall_perimeter_m={ext_wall_perim:.2f}",
+            "MEDIUM",
+            assumption="Assumes cornice on external walls only. Add int_wall_lm if cornice runs on internal walls.",
+            v2_extractor_source="derived",
+        ))
+
+    return rows
+
+
+def _build_insulation(pm: dict) -> list[dict]:
+    """Insulation package — wall batts and roof batts derived from geometry."""
+    rows: list[dict] = []
+    ext_wall_perim = _g(pm, "ext_wall_perimeter_m") or 0.0
+    roof_area      = _g(pm, "roof_area_m2")          or 0.0
+    src_roof, conf_roof = _src(pm, "geometry", "roof_area_m2")
+
+    if ext_wall_perim > 0:
+        wall_ins_area = insulation_wall_m2(ext_wall_perim)
+        rows.append(_qrow(
+            "Insulation", "Insulation Batts", "external wall",
+            wall_ins_area, "m2",
+            "derived", "ext_wall_perimeter × wall_height (2.4 m)",
+            f"derived from ext_wall_perimeter_m={ext_wall_perim:.2f}",
+            "MEDIUM",
+            assumption="Gross wall area; deduct openings if required.",
+            v2_extractor_source="derived",
+        ))
+
+    if roof_area > 0:
+        rows.append(_qrow(
+            "Insulation", "Insulation Batts", "roof / ceiling",
+            insulation_roof_m2(roof_area), "m2",
+            "derived", "= roof_area_m2 (direct)",
+            f"derived from {src_roof}: roof_area_m2={roof_area:.2f}",
+            conf_roof,
+            assumption="Roof batts area taken as full roof area (including sarking overlap).",
+            v2_extractor_source="derived",
         ))
 
     return rows
@@ -433,8 +562,12 @@ def _build_linings(pm: dict) -> list[dict]:
 
 def _build_finishes(pm: dict) -> list[dict]:
     rows: list[dict] = []
-    floor_area = _g(pm, "floor_area_m2") or 0.0
-    src, conf  = _src(pm, "geometry", "floor_area_m2")
+    floor_area     = _g(pm, "floor_area_m2")         or 0.0
+    ceiling_area   = _g(pm, "ceiling_area_m2")        or 0.0
+    ext_wall_perim = _g(pm, "ext_wall_perimeter_m")  or 0.0
+    door_count     = _o(pm, "door_count")             or 0
+    window_count   = _o(pm, "window_count")           or 0
+    src, conf      = _src(pm, "geometry", "floor_area_m2")
 
     if floor_area > 0:
         rows.append(_qrow(
@@ -458,31 +591,161 @@ def _build_finishes(pm: dict) -> list[dict]:
                 v2_extractor_source="pdf_schedule",
             ))
 
+    # Skirting board — derived from perimeters
+    if ext_wall_perim > 0 and floor_area > 0:
+        est_int_lm = int_wall_lm_estimate(floor_area)
+        sk_lm = skirting_lm(ext_wall_perim, est_int_lm)
+        rows.append(_qrow(
+            "Finishes", "Skirting Board", "timber/MDF skirting",
+            sk_lm, "lm",
+            "derived",
+            f"ext_wall_perimeter + est_int_wall_lm = {ext_wall_perim:.1f} + {est_int_lm:.1f}",
+            f"derived from ext_wall_perimeter_m={ext_wall_perim:.2f}; "
+            f"est_int_wall_lm={est_int_lm:.1f} (floor_area × {INT_WALL_LM_RATIO})",
+            "LOW",
+            assumption=(
+                "Internal wall lm estimated from floor area ratio. "
+                "Replace with measured value when available."
+            ),
+            manual_review=True,
+            v2_extractor_source="derived",
+        ))
+
+    # Architraves — derived from door/window counts
+    if door_count > 0:
+        arch_d = architrave_door_lm(door_count)
+        rows.append(_qrow(
+            "Finishes", "Architrave", "door",
+            arch_d, "lm",
+            "derived",
+            f"door_count × {ARCHITRAVE_DOOR_LM_EACH} lm = {door_count} × {ARCHITRAVE_DOOR_LM_EACH}",
+            f"derived from door_count={door_count} [{_src(pm,'openings','door_count')[0]}]",
+            "MEDIUM",
+            v2_extractor_source="derived",
+        ))
+
+    if window_count > 0:
+        arch_w = architrave_window_lm(window_count)
+        rows.append(_qrow(
+            "Finishes", "Architrave", "window",
+            arch_w, "lm",
+            "derived",
+            f"window_count × {ARCHITRAVE_WINDOW_LM_EACH} lm = {window_count} × {ARCHITRAVE_WINDOW_LM_EACH}",
+            f"derived from window_count={window_count} [{_src(pm,'openings','window_count')[0]}]",
+            "MEDIUM",
+            v2_extractor_source="derived",
+        ))
+
+    # Paint — external wall face
+    if ext_wall_perim > 0:
+        p_ext = paint_external_m2(ext_wall_perim)
+        rows.append(_qrow(
+            "Finishes", "Paint", "external",
+            p_ext, "m2",
+            "derived", "ext_wall_perimeter × wall_height (2.4 m)",
+            f"derived from ext_wall_perimeter_m={ext_wall_perim:.2f}",
+            "MEDIUM",
+            assumption="Gross area; no deduction for openings.",
+            v2_extractor_source="derived",
+        ))
+
+    # Paint — internal (ceiling + internal walls)
+    if floor_area > 0:
+        verandah_area_fin = _g(pm, "verandah_area_m2") or 0.0
+        _raw_ceil_fin  = _g(pm, "ceiling_area_m2") or 0.0
+        _deriv_ceil_fin = round(floor_area - verandah_area_fin, 2) if floor_area > 0 else 0.0
+        if _raw_ceil_fin > 0 and _raw_ceil_fin >= _deriv_ceil_fin * 0.9:
+            ceil_for_paint  = _raw_ceil_fin
+            ceil_paint_note = f"dxf ceiling layer={_raw_ceil_fin:.2f} m²"
+        else:
+            ceil_for_paint  = _deriv_ceil_fin
+            ceil_paint_note = f"floor({floor_area:.2f})−verandah({verandah_area_fin:.2f})={_deriv_ceil_fin:.2f} m²"
+        est_int_lm = int_wall_lm_estimate(floor_area)
+        p_int = paint_internal_m2(ceil_for_paint, est_int_lm)
+        rows.append(_qrow(
+            "Finishes", "Paint", "internal",
+            p_int, "m2",
+            "derived",
+            f"ceiling_area + (est_int_wall_lm × 2.4 m) = {ceil_for_paint:.1f} + {est_int_lm:.1f}×2.4",
+            f"derived: ceiling_area={ceil_paint_note}; est_int_wall_lm={est_int_lm:.1f}",
+            "LOW",
+            assumption=(
+                "Ceiling area: " + ceil_paint_note + ". "
+                "Internal wall lm estimated from floor area ratio. "
+                "Includes ext-wall internal face in int_wall estimate. Manual check recommended."
+            ),
+            manual_review=True,
+            v2_extractor_source="derived",
+        ))
+
     return rows
 
 
 def _build_services(pm: dict) -> list[dict]:
+    """
+    Services placeholder package.
+
+    Items are always provisional (no services schedules extracted from V2
+    sources).  Builder's works items represent the civil/structural scope
+    provided by the building contractor to facilitate services installations.
+    All items require manual review before pricing.
+    """
     rows: list[dict] = []
     floor_area = _g(pm, "floor_area_m2") or 0.0
+    rooms      = pm.get("rooms", [])
+
+    # Detect wet-area evidence from room names
+    wet_area_keywords = {"bathroom", "toilet", "wc", "laundry", "kitchen", "wet"}
+    room_names = [r.get("name", "").lower() for r in rooms if isinstance(r, dict)]
+    wet_area_detected = any(
+        any(kw in name for kw in wet_area_keywords)
+        for name in room_names
+    )
+    wet_evidence = (
+        f"room schedule: {[n for n in room_names if any(k in n for k in wet_area_keywords)]}"
+        if wet_area_detected
+        else "no room schedule — assumed present (pharmacy/residential building)"
+    )
 
     if floor_area > 0:
-        # Provisional service items — placeholder counts
-        rows.append(_qrow(
-            "Services", "Electrical", "light points",
-            0, "nr",
-            "provisional", "manual review required",
-            "no electrical schedule in sources",
-            "LOW", assumption="Electrical schedule not found — manual review required",
-            manual_review=True, v2_extractor_source="provisional",
+        def _prov(element_type, subtype, evidence_note=""):
+            return _qrow(
+                "Services", element_type, subtype,
+                0, "item",
+                "provisional", "manual review required",
+                evidence_note or "no services schedule in sources",
+                "LOW",
+                assumption=f"{element_type} ({subtype}) — quantity not derivable from available sources. "
+                           "Confirm scope with services engineer.",
+                manual_review=True, v2_extractor_source="provisional",
+            )
+
+        rows.append(_prov(
+            "Builder's Works", "electrical",
+            "no electrical schedule; allow PC sum for conduit penetrations, cable trays, DB board rough-in",
+        ))
+        rows.append(_prov(
+            "Builder's Works", "plumbing",
+            "no plumbing schedule; allow PC sum for floor wastes, pipe penetrations, slab core-outs",
         ))
         rows.append(_qrow(
-            "Services", "Plumbing", "wet areas",
-            0, "nr",
+            "Services", "Wet Area Waterproofing", "membrane",
+            0, "m2",
             "provisional", "manual review required",
-            "no plumbing schedule in sources",
-            "LOW", assumption="Plumbing schedule not found — manual review required",
+            wet_evidence,
+            "LOW" if not wet_area_detected else "MEDIUM",
+            assumption=(
+                "Wet area waterproofing required for bathrooms/toilets/kitchens. "
+                "Quantity = sum of wet room floor areas. "
+                + ("Room schedule not available — area must be confirmed on site." if not wet_area_detected else "")
+            ),
             manual_review=True, v2_extractor_source="provisional",
         ))
+        rows.append(_prov(
+            "Sanitary Fixtures", "provisional allowance",
+            "no fixture schedule; provisional PC sum for basin, WC, shower, sink as applicable",
+        ))
+
     return rows
 
 
@@ -511,18 +774,36 @@ def _build_stairs(pm: dict) -> list[dict]:
             "MEDIUM", assumption="Stair geometry detected in DXF — type/details require manual review",
             manual_review=True, v2_extractor_source="dxf_geometry",
         ))
+
+    # Stair balustrade and handrail — provisional whenever stairs detected
+    if pdf_stairs or stair_ev:
+        for label, subtype in [("Balustrade", "steel / glass balustrade"), ("Handrail", "steel / timber handrail")]:
+            rows.append(_qrow(
+                "Stairs", label, subtype,
+                0, "lm",
+                "provisional", "manual review required — stair run length not measured",
+                "stair geometry detected but run length not derived from available sources",
+                "LOW",
+                assumption=(
+                    f"Stair {label.lower()} required. Length = stair run × number of flights. "
+                    "Confirm from architectural drawings."
+                ),
+                manual_review=True, v2_extractor_source="provisional",
+            ))
+
     return rows
 
 
 def _build_external(pm: dict) -> list[dict]:
     rows: list[dict] = []
-    verandah_area  = _g(pm, "verandah_area_m2")   or 0.0
+    verandah_area  = _g(pm, "verandah_area_m2")    or 0.0
     verandah_perim = _g(pm, "verandah_perimeter_m") or 0.0
+    stair_ev       = _g(pm, "stair_evidence")       or False
     src, conf      = _src(pm, "geometry", "verandah_area_m2")
 
     if verandah_area > 0:
         rows.append(_qrow(
-            "External", "Verandah", "deck / slab",
+            "External", "Verandah Decking", "timber / composite deck",
             round(verandah_area, 2), "m2",
             "measured", "DXF VERANDAH LWPOLYLINE area",
             f"{src}: verandah_area_m2={verandah_area:.2f}",
@@ -531,12 +812,54 @@ def _build_external(pm: dict) -> list[dict]:
 
     if verandah_perim > 0:
         rows.append(_qrow(
-            "External", "Verandah Perimeter", "balustrade / edge",
+            "External", "Verandah Balustrade", "balustrade / edge trim",
             round(verandah_perim, 2), "lm",
             "measured", "DXF VERANDAH LWPOLYLINE perimeter",
             f"dxf_geometry: verandah_perimeter_m={verandah_perim:.2f}",
             conf, v2_extractor_source="dxf_geometry",
         ))
+        rows.append(_qrow(
+            "External", "Verandah Handrail", "steel / timber handrail",
+            round(verandah_perim, 2), "lm",
+            "derived", "= verandah_perimeter (one rail along open edge)",
+            f"derived from dxf_geometry: verandah_perimeter_m={verandah_perim:.2f}",
+            "MEDIUM",
+            assumption=(
+                "Handrail assumed on full verandah perimeter. "
+                "Reduce if one side is against building wall."
+            ),
+            v2_extractor_source="derived",
+        ))
+
+    # Ramp — provisional if stair evidence detected (building may have access ramp)
+    if stair_ev:
+        rows.append(_qrow(
+            "External", "Access Ramp", "concrete / timber ramp",
+            0, "item",
+            "provisional", "DXF STAIRS layer detected — ramp may be present",
+            f"dxf_geometry: stair_evidence=True",
+            "LOW",
+            assumption=(
+                "Stair geometry detected in DXF. Building may also require an access ramp. "
+                "Confirm ramp requirement, dimensions, and material from architectural drawings."
+            ),
+            manual_review=True, v2_extractor_source="dxf_geometry",
+        ))
+
+    # Site preparation — always provisional (scope depends on site survey)
+    rows.append(_qrow(
+        "External", "Site Preparation", "clearing / levelling / fill",
+        0, "item",
+        "provisional", "standard allowance — no site survey data",
+        "no site survey in sources",
+        "LOW",
+        assumption=(
+            "Site preparation scope (clearing, levelling, fill, termite treatment) "
+            "cannot be derived from architectural drawings alone. "
+            "Confirm with civil engineer / site survey."
+        ),
+        manual_review=True, v2_extractor_source="provisional",
+    ))
 
     return rows
 
@@ -545,7 +868,7 @@ def _build_external(pm: dict) -> list[dict]:
 
 def _completeness(all_rows: list[dict]) -> dict:
     packages = [
-        "Structure", "Roof", "Openings", "Linings",
+        "Structure", "Roof", "Openings", "Linings", "Insulation",
         "Finishes", "Services", "Stairs", "External",
     ]
     result: dict = {}
@@ -587,6 +910,7 @@ def build_quantity_model(project_model: dict) -> dict:
     all_rows.extend(_build_roof(project_model))
     all_rows.extend(_build_openings(project_model))
     all_rows.extend(_build_linings(project_model))
+    all_rows.extend(_build_insulation(project_model))
     all_rows.extend(_build_finishes(project_model))
     all_rows.extend(_build_services(project_model))
     all_rows.extend(_build_stairs(project_model))
