@@ -1,0 +1,455 @@
+# assembly_rules.yaml
+# Procurement decomposition rules — document-driven, project-agnostic.
+# These rules convert measured/derived geometry into individual BOQ procurement items.
+# Rules are applied by the AssemblyEngine (assemblies/assembly_engine.py).
+#
+# Rule schema:
+#   input: geometry variable from element model (lm / m2 / nr / m3)
+#   items: list of procurement items derived from that input
+#     qty_expr: Python-evaluatable expression; 'x' = the input value
+#     unit: procurement unit
+#     note: optional guidance
+
+# ── ROOF ────────────────────────────────────────────────────────────────────────
+roof_cladding:
+  description: Items derived per m2 of roof area
+  input_unit: m2
+  items:
+    - name: Roof Cladding Sheet (corrugated / CGI)
+      unit: m2
+      qty_expr: "x"
+      confidence: high
+    # Sheet count (nr) is computed in roof_quantifier.py using run_m from eaves_lm
+    # to select the correct stock length — NOT here, to avoid wrong area/sheet formula
+    - name: Roof Tek Screws
+      unit: boxes
+      qty_expr: "ceil(x / 10)"
+      note: "1 box per 10 m² (approx 250 screws/box at 25 screws/m²)"
+      confidence: medium
+
+roof_ridge:
+  description: Items derived per lm of ridge length
+  input_unit: lm
+  items:
+    - name: Ridge Capping
+      unit: lm
+      qty_expr: "x"
+      confidence: high
+    - name: Ridge Cap Fixing Screws
+      unit: nr
+      qty_expr: "ceil(x / 0.3)"
+      note: "1 screw per 300 mm"
+      confidence: medium
+    - name: Ridge End Cap
+      unit: nr
+      qty_expr: "2"
+      note: "2 end caps per ridge run (one each end)"
+      confidence: medium
+
+roof_eaves:
+  description: Items derived per lm of eaves (all sides)
+  input_unit: lm
+  items:
+    - name: Fascia Board
+      unit: lm
+      qty_expr: "x"
+      confidence: high
+    - name: Fascia Clips
+      unit: nr
+      qty_expr: "ceil(x / 0.6)"
+      note: "1 clip per 600 mm"
+      confidence: medium
+    - name: Birdproof Foam Strip
+      unit: lm
+      qty_expr: "x"
+      note: "runs full eaves length"
+      confidence: medium
+    - name: Eaves Gutter
+      unit: lm
+      qty_expr: "x"
+      confidence: high
+    - name: Gutter Joiner
+      unit: nr
+      qty_expr: "ceil(x / 3.6)"
+      note: "1 joiner per 3.6 m gutter length"
+      confidence: medium
+    - name: Gutter Stop End
+      unit: nr
+      qty_expr: "max(2, ceil(x / 20) * 2)"
+      note: "2 per run; add 2 per extra run > 20 m"
+      confidence: medium
+
+roof_drainage:
+  description: Items derived per nr of downpipes
+  input_unit: nr
+  items:
+    - name: PVC Downpipe
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    - name: Gutter Drop Outlet
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    - name: Downpipe Elbow (90°)
+      unit: nr
+      qty_expr: "x * 2"
+      note: "top + bottom elbow per downpipe"
+      confidence: medium
+    - name: Downpipe Clip / Saddle
+      unit: nr
+      qty_expr: "x * 3"
+      note: "approx 3 clips per 3 m drop"
+      confidence: medium
+
+roof_valley:
+  description: Items per lm of valley (where detected)
+  input_unit: lm
+  items:
+    - name: Valley Flashing
+      unit: lm
+      qty_expr: "x"
+      confidence: high
+
+roof_apron:
+  description: Items per lm of apron / eaves-to-wall junction flashing
+  input_unit: lm
+  items:
+    - name: Apron Flashing
+      unit: lm
+      qty_expr: "x"
+      confidence: high
+    - name: Apron Flashing Screws
+      unit: nr
+      qty_expr: "ceil(x / 0.6)"
+      note: "1 screw per 600 mm"
+      confidence: low
+
+roof_barge:
+  description: Items per lm of barge / gable edge
+  input_unit: lm
+  items:
+    - name: Barge Capping
+      unit: lm
+      qty_expr: "x"
+      confidence: high
+    - name: Barge End Cap
+      unit: nr
+      qty_expr: "2"
+      note: "2 end caps per barge run (ridge peak and eaves)"
+      confidence: medium
+
+# ── LINING ──────────────────────────────────────────────────────────────────────
+wall_lining_fc:
+  description: FC sheet wall lining items per m2 of wall face area
+  input_unit: m2
+  sheet_width_m: 1.2
+  sheet_height_m: 2.7
+  sheet_area_m2: 3.24
+  waste_factor: 1.05
+  items:
+    - name: FC Wall Sheet (6mm, 1200×2700)
+      unit: sheets
+      qty_expr: "ceil(x * 1.05 / 3.24)"
+      confidence: medium
+    - name: FC Sheet Joiner Strip
+      unit: lm
+      qty_expr: "ceil(x / 1.2) * 2.7"
+      note: "1 vertical strip per sheet width"
+      confidence: low
+    - name: FC Sheet Screws
+      unit: boxes
+      qty_expr: "ceil(x * 25 / 200)"
+      note: "25 screws/m²; 200/box"
+      confidence: low
+
+ceiling_lining_fc:
+  description: FC sheet ceiling lining items per m2
+  input_unit: m2
+  sheet_width_m: 1.2
+  sheet_height_m: 2.4
+  sheet_area_m2: 2.88
+  waste_factor: 1.05
+  items:
+    - name: FC Ceiling Sheet (6mm, 1200×2400)
+      unit: sheets
+      qty_expr: "ceil(x * 1.05 / 2.88)"
+      confidence: medium
+    - name: Ceiling Batten (LGS / timber)
+      unit: lm
+      qty_expr: "round(x / 0.4, 1)"
+      note: "1 batten per 400 mm"
+      confidence: medium
+    - name: Cornice / Ceiling Trim
+      unit: lm
+      qty_expr: "0"
+      note: "use ext_wall_perimeter separately — cannot derive from area"
+      confidence: placeholder
+
+# ── OPENINGS — DOORS ────────────────────────────────────────────────────────────
+door_single_hinged:
+  description: Component items per standard single hinged door
+  input_unit: nr
+  items:
+    - name: Door Leaf
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    - name: Door Frame Set
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    - name: Door Hinge (pair)
+      unit: nr
+      qty_expr: "x * 3"
+      note: "3 pairs per door (standard)"
+      confidence: medium
+    - name: Door Lockset
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    - name: Door Stop
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    # Note: Door Head Flashing and Sill Flashing are computed in opening_quantifier.py
+    # using actual door widths from DXF block names — NOT here where width is unknown.
+
+door_single_sliding:
+  description: Component items per single sliding door
+  input_unit: nr
+  items:
+    - name: Sliding Door Panel
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    - name: Sliding Door Frame Set
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    - name: Sliding Door Track / Gear Set
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    - name: Door Stop / Buffer
+      unit: nr
+      qty_expr: "x * 2"
+      note: "2 buffers per sliding door"
+      confidence: medium
+
+# ── OPENINGS — WINDOWS ──────────────────────────────────────────────────────────
+window_louvre:
+  description: Component items per louvre window
+  input_unit: nr
+  items:
+    - name: Louvre Window Frame
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    - name: Louvre Blade Set
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    - name: Flyscreen
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    # Note: Window Head Flashing is computed in opening_quantifier.py using configured
+    # default window width — NOT here where width is unknown.
+
+window_standard:
+  description: Component items per standard fixed / casement window
+  input_unit: nr
+  items:
+    - name: Window Frame + Glazing
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    - name: Flyscreen
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    # Note: Window Head Flashing is computed in opening_quantifier.py.
+
+# ── FLOOR SYSTEM ────────────────────────────────────────────────────────────────
+floor_panel_assembly:
+  description: Items derived per floor panel assembly (FrameCAD or schedule)
+  input_unit: nr
+  items:
+    - name: Floor Panel (prefabricated)
+      unit: nr
+      qty_expr: "x"
+      confidence: high
+    - name: Floor Bearer (pair)
+      unit: nr
+      qty_expr: "x"
+      note: "1 bearer pair per panel (from panel schedule)"
+      confidence: medium
+
+floor_sheeting:
+  description: Floor sheeting per m2 of floor area
+  input_unit: m2
+  sheet_area_m2: 2.88
+  waste_factor: 1.05
+  items:
+    - name: Floor Sheet (FC / plywood / particle board)
+      unit: sheets
+      qty_expr: "ceil(x * 1.05 / 2.88)"
+      confidence: medium
+    - name: Floor Sheet Fixing Screws
+      unit: boxes
+      qty_expr: "ceil(x * 16 / 200)"
+      note: "approx 16 fixings per sheet"
+      confidence: low
+
+# ── FINISHES ────────────────────────────────────────────────────────────────────
+skirting:
+  description: Skirting items per lm
+  input_unit: lm
+  items:
+    - name: Skirting Board
+      unit: lm
+      qty_expr: "x"
+      confidence: medium
+
+architrave:
+  description: Architrave per lm
+  input_unit: lm
+  items:
+    - name: Architrave
+      unit: lm
+      qty_expr: "x"
+      confidence: medium
+
+# ── INSULATION ──────────────────────────────────────────────────────────────────
+insulation_wall:
+  description: Wall insulation items per m2
+  input_unit: m2
+  items:
+    - name: Wall Insulation Batts
+      unit: m2
+      qty_expr: "x"
+      confidence: medium
+
+insulation_roof:
+  description: Roof/ceiling insulation items per m2
+  input_unit: m2
+  items:
+    - name: Roof/Ceiling Insulation Batts
+      unit: m2
+      qty_expr: "x"
+      confidence: medium
+
+# ── FOOTINGS ────────────────────────────────────────────────────────────────────
+footing_pad:
+  description: Items per nr of pad footings
+  input_unit: nr
+  items:
+    - name: Pad Footing (concrete)
+      unit: nr
+      qty_expr: "x"
+      confidence: medium
+    - name: Footing Excavation
+      unit: m3
+      qty_expr: "x * 0.35"
+      note: "assumes 700×700×700 mm pad; 0.343 m³ each"
+      confidence: low
+
+slab_on_ground:
+  description: Items per m2 of slab
+  input_unit: m2
+  items:
+    - name: Slab on Ground (concrete)
+      unit: m2
+      qty_expr: "x"
+      confidence: medium
+    - name: Slab Mesh (SL72 or similar)
+      unit: m2
+      qty_expr: "round(x * 1.1, 1)"
+      note: "10% lap waste"
+      confidence: medium
+    - name: Slab Concrete (m3)
+      unit: m3
+      qty_expr: "round(x * 0.1, 2)"
+      note: "100 mm slab = 0.1 m³/m²"
+      confidence: low
+    - name: Vapour Barrier
+      unit: m2
+      qty_expr: "round(x * 1.1, 1)"
+      confidence: medium
+    - name: Slab Edge Formwork
+      unit: lm
+      qty_expr: "0"
+      note: "use ext_wall_perimeter separately"
+      confidence: placeholder
+
+# ── STAIRS ──────────────────────────────────────────────────────────────────────
+stair_flight:
+  description: Items per nr of stair flights
+  input_unit: nr
+  items:
+    - name: Stair Stringer (prefabricated set)
+      unit: nr
+      qty_expr: "x"
+      confidence: medium
+    - name: Stair Treads
+      unit: nr
+      qty_expr: "x * 5"
+      note: "assumes 5-riser flight; override from schedule if available"
+      confidence: low
+    - name: Stair Handrail
+      unit: lm
+      qty_expr: "x * 1.2 * 5"
+      note: "riser_height(~0.18 m) × run(~1.0 m) ≈ 1.2 m horizontal per riser"
+      confidence: low
+    - name: Stair Newel Post
+      unit: nr
+      qty_expr: "x * 2"
+      note: "2 newel posts per flight (top and bottom)"
+      confidence: medium
+
+stair_ramp:
+  description: Items per m2 of access ramp area
+  input_unit: m2
+  items:
+    - name: Ramp Surface (concrete / non-slip)
+      unit: m2
+      qty_expr: "x"
+      confidence: low
+    - name: Ramp Handrail (both sides)
+      unit: lm
+      qty_expr: "round(x / 1.5 * 2, 1)"
+      note: "handrail both sides; assumes ~1.5 m ramp width; length = area / width"
+      confidence: low
+    - name: Ramp Edge / Kerb Guard
+      unit: lm
+      qty_expr: "round(x / 1.5 * 2, 1)"
+      note: "kerb guard both sides at floor level"
+      confidence: low
+
+balustrade:
+  description: Balustrade / handrail items per lm
+  input_unit: lm
+  items:
+    - name: Balustrade Top Rail
+      unit: lm
+      qty_expr: "x"
+      confidence: medium
+    - name: Handrail
+      unit: lm
+      qty_expr: "x"
+      confidence: medium
+    - name: Balustrade Post
+      unit: nr
+      qty_expr: "ceil(x / 1.2)"
+      note: "1 post per 1.2 m"
+      confidence: low
+    - name: Balustrade Infill Panel (glass / mesh / picket)
+      unit: m2
+      qty_expr: "round(x * 1.0, 2)"
+      note: "area = lm × 1.0 m assumed infill height; adjust for actual guard height"
+      confidence: low
+    - name: Balustrade Bottom Rail / Shoe
+      unit: lm
+      qty_expr: "x"
+      confidence: low

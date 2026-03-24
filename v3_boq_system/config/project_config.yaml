@@ -1,0 +1,171 @@
+# project_config.yaml
+# Project-level parameters.  Override values per-project.
+# All project-specific settings belong here — NEVER hardcode in Python modules.
+
+project:
+  name: "unnamed_project"
+  type: "commercial_low_rise"       # residential | commercial_low_rise | pharmacy | warehouse
+  levels: 1
+  building_height_m: 4.2            # top of wall (used for downpipe lengths)
+  wall_height_m: 2.4
+  verandah_present: true
+
+geometry:
+  # DXF layer names to search for geometry (comma-separated patterns)
+  floor_layers:     ["WALLS", "FLOOR", "FLOOR PLAN", "GROUND FLOOR"]
+  roof_layers:      ["ROOF", "ROOF PLAN", "ROOFING"]
+  verandah_layers:  ["VERANDAH", "VERANDA", "DECK", "PORCH"]
+  ceiling_layers:   ["CEILING", "CEILING PLAN", "REFLECTED"]
+  stair_layers:     ["STAIR", "STAIRS", "STEP"]
+  door_block_prefix: ["DOOR_", "D-", "DR_"]
+  window_block_prefix: ["WINDOW_", "WIN_", "W-"]
+
+structural:
+  lgs_section: "89S41"
+  wall_stud_spacing_mm: 600
+  wall_height_m: 2.4
+  # Floor system defaults (used when no BOM floor panel data)
+  floor_joist_spacing_mm: 450
+  floor_bearer_spacing_mm: 1800
+  floor_sheet_thickness_mm: 18
+  # Steel floor cassette panel defaults (when floor_type=steel but no schedule)
+  floor_panel_width_m: 0.6      # joist spacing / cassette width (600mm typical)
+  floor_panel_length_m: 3.6     # typical bay span (may be overridden by DXF span)
+  floor_panel_height_mm: 200    # cassette depth (200mm typical LGS floor joist)
+  # Batten defaults
+  roof_batten_spacing_mm: 900
+  ceiling_batten_spacing_mm: 400
+
+lining:
+  default_wall_board: "fc_6mm"       # fc_6mm | plasterboard_10mm | plasterboard_13mm
+  default_ceiling_board: "fc_6mm"
+  # Sheet sizes (m)
+  fc_wall_sheet_w: 1.2
+  fc_wall_sheet_h: 2.7
+  fc_wall_sheet_area_m2: 3.24
+  fc_ceiling_sheet_w: 1.2
+  fc_ceiling_sheet_h: 2.4
+  fc_ceiling_sheet_area_m2: 2.88
+  waste_factor: 1.05
+  # Internal wall estimation ratio (lm per m² floor)
+  # Use 0 to disable estimation and mark as placeholder
+  int_wall_lm_ratio: 0.34
+
+roof:
+  # Pitch type affects accessory selection
+  roof_type: "hip"         # hip | gable | shed | dutch_hip
+  # Sisalation roll coverage
+  sisalation_roll_m2: 73.0
+  # Downpipe sizing
+  min_downpipes: 2
+  downpipe_spacing_m: 10.0       # 1 downpipe per N metres of eaves
+
+openings:
+  # Default hardware sets (can be overridden per opening mark)
+  default_door_hardware: "standard_hinged"
+  commercial_closer_rooms: ["entrance", "exit", "fire", "plant"]  # trigger closer spec
+  # Block name → door width mapping (from DXF block names)
+  door_block_width_map:
+    "DOOR_60": 0.60
+    "DOOR_72": 0.72
+    "DOOR_82": 0.82
+    "DOOR_90": 0.90
+    "DOOR_100": 1.00
+    "DOOR_120": 1.20
+  # Default door height (m) when not in schedule
+  default_door_height_m: 2.04
+  # Default window width (m) when not encoded in block name
+  default_window_width_m: 1.2
+  # Default louvre window width (m) — often narrower than standard
+  default_louvre_width_m: 1.1
+  # Default louvre window height (m) — used for blade count when height not in schedule
+  default_louvre_height_m: 0.75
+  # Flashing overrun each side (m) — head and sill flashing extends beyond opening
+  flashing_overrun_m: 0.05
+
+footings:
+  type: "slab_on_ground"   # slab_on_ground | pad_footing | strip_footing | pile
+  slab_thickness_mm: 100
+  mesh_type: "SL72"
+  # Pad footing default dimensions (m)
+  pad_size_m: 0.70
+  pad_depth_m: 0.70
+  # Strip footing defaults (used when floor_type=steel)
+  strip_footing_depth_m: 0.50
+  strip_footing_width_m: 0.40
+
+finishes:
+  floor_finish_type: "tiles"    # tiles | vinyl | timber | screed | carpet
+  architrave_door_lm_each: 6.0   # lm per door (one side, 3-leg set)
+  architrave_window_lm_each: 4.8 # lm per window
+
+services:
+  # Used when no room schedule is available
+  building_type_service_profile: "pharmacy"   # pharmacy | residential | office | school
+  # Smoke detector coverage
+  smoke_detector_coverage_m2: 40
+
+# ── Configured room schedule ──────────────────────────────────────────────────
+# Used when no machine-readable room schedule exists in any input source.
+# Areas are estimates derived from floor plan geometry (total ~64.8 m²).
+# Mark is_wet_area=true for rooms requiring waterproofing.
+# All items carry confidence=LOW and manual_review=true as these are configured
+# estimates — verify from final architectural drawings.
+room_schedule:
+  - name: "Dispensary"
+    room_type: "pharmacy"
+    area_m2: 24.0
+    is_wet_area: false
+  - name: "Waiting / Reception"
+    room_type: "waiting"
+    area_m2: 14.0
+    is_wet_area: false
+  - name: "Consultation Room"
+    room_type: "consulting"
+    area_m2: 8.0
+    is_wet_area: false
+  - name: "Staff Room"
+    room_type: "office"
+    area_m2: 6.5
+    is_wet_area: false
+  - name: "Toilet"
+    room_type: "toilet"
+    area_m2: 4.5
+    is_wet_area: true
+  - name: "Storage"
+    room_type: "store"
+    area_m2: 7.8
+    is_wet_area: false
+
+# ── Configured stair schedule ─────────────────────────────────────────────────
+# Used when no machine-readable stair schedule is available.
+# DXF STAIRS layer detected 14 lines = evidence of at least one entry stair set.
+# Confident in prefab steel stair type from FrameCAD floor system context.
+# Riser counts are LOW confidence — verify from architectural drawings.
+stair_schedule:
+  - element_id: "STR-1"
+    stair_type: "prefab"
+    flights: 1
+    risers_per_flight: 3
+    tread_depth_mm: 250
+    riser_height_mm: 175
+    width_m: 1.2
+    source: "project_config"
+    confidence: "LOW"
+    notes: "Entry stair — riser count estimated from raised floor height (~525mm). Verify from architectural drawings."
+
+output:
+  boq_excel_filename: "{project_name}_BOQ_V3.xlsx"
+  json_filename: "{project_name}_boq_items_v3.json"
+  qa_filename: "{project_name}_qa_report_v3.json"
+  excel_section_colours:
+    structural: "D6E4F0"
+    roof: "D5F5E3"
+    openings: "FCF3CF"
+    linings: "FDEBD0"
+    insulation: "E8DAEF"
+    finishes: "FDEDEC"
+    services: "EBF5FB"
+    stairs: "FEF9E7"
+    external: "EAFAF1"
+    footings: "F2F3F4"

@@ -41,8 +41,10 @@ log = logging.getLogger("boq.v2.framecad_extractor")
 
 # Pattern for FrameCAD manufacturing summary PDF
 _MFGSUMMARY_MARKERS = ("Manufacturing Summary", "Summary for Tab")
-# Regex to detect an LGS section code (e.g. 89S41-075-500)
+# Regex to detect an LGS section code (e.g. 89S41-075-500 or 89C41-100-500)
 _LGS_PROFILE_RE  = re.compile(r"^\d+[A-Z]\d+-\d+-\d+")
+# C-section floor joist profile (e.g. 89C41-100-500 or 150C39-120-600)
+_FLOOR_JOIST_PROFILE_RE = re.compile(r"^(\d+C\d+-\d+-\d+)\s+(\d+)\s+(\d+)")
 # Regex for lintel profile (e.g. 150x32x0.95 Lintel)
 _LINTEL_RE       = re.compile(r"\d+x\d+x[\d.]+\s+[Ll]intel\s+([\d.]+)")
 # Regex for strap (e.g. FRAMECAD 32x0.95 Strap 10g-5  49.734)
@@ -51,10 +53,23 @@ _STRAP_RE        = re.compile(r"32x[\d.]+\s+Strap.*?([\d.]+)\s*$")
 _BATTEN_RE       = re.compile(r"BATTEN\s+(\d+)\s+(\d+)\s+(\d+)")
 
 _TAB_MAP = {
-    "Roof Panels":  "roof_panel_lm",
-    "Roof Trusses": "roof_truss_lm",
-    "Wall Panels":  "wall_frame_lm",
+    "Roof Panels":   "roof_panel_lm",
+    "Roof Trusses":  "roof_truss_lm",
+    "Wall Panels":   "wall_frame_lm",
+    "Floor Panels":  "floor_panel_lm",
+    "Floor":         "floor_panel_lm",
+    "Floor Frame":   "floor_panel_lm",
 }
+
+_FLOOR_TABS = frozenset({"Floor Panels", "Floor", "Floor Frame"})
+
+# Floor type / spec detection from Design Summary or engineering notes in layout PDFs
+_FLOOR_TYPE_RE    = re.compile(r"Floor\s+Type\s+(\S+)", re.IGNORECASE)
+_LOAD_CLASS_RE    = re.compile(r"(?:Floor\s+Load|Load\s+Class)[^\d]*([\d.]+)\s*kPa", re.IGNORECASE)
+_JOIST_SPACING_RE = re.compile(r"(?:Joist|Floor\s+Frame)\s+(?:Spacing|@|Centers?)\s+(\d+)\s*(?:mm|crs|c/?c)?", re.IGNORECASE)
+_JOIST_SPEC_RE    = re.compile(r"(?:Floor\s+Joist|Joist\s+Section|F\.J\.)\s*[:\-–]\s*([0-9A-Za-z\-/\s]{3,25})", re.IGNORECASE)
+_BEARER_SPEC_RE   = re.compile(r"(?:Bearer|Rim\s+Board|Floor\s+Bearer)\s*[:\-–]\s*([0-9A-Za-z\-/\s×x]{3,30})", re.IGNORECASE)
+_PANEL_SIZE_RE    = re.compile(r"(?:Panel|Cassette)\s+(?:Size|Width|Depth)\s*[:\-–]?\s*(\d+)\s*[xX×]\s*(\d+)", re.IGNORECASE)
 
 
 def _parse_manufacturing_pdf(pdf_path: Path) -> dict | None:
@@ -86,6 +101,7 @@ def _parse_manufacturing_pdf(pdf_path: Path) -> dict | None:
     lintel_lm    = 0.0
     strap_lm     = 0.0
     batten_entries: list[dict] = []
+    floor_panel_members: list[dict] = []   # per-member floor data when floor tab exists
     fixings: list[dict] = []
     current_tab: str | None = None
 
@@ -105,7 +121,23 @@ def _parse_manufacturing_pdf(pdf_path: Path) -> dict | None:
             current_tab = None
             continue
 
-        # LGS profile line (e.g. "89S41-075-500 481.740 549.2")
+        # LGS profile line within a floor tab: capture per-member detail
+        # e.g. "89C41-100-500  18  4800  86.400"  → profile, qty, length_mm, total_lm
+        if current_tab and current_tab in _FLOOR_TABS:
+            m = _FLOOR_JOIST_PROFILE_RE.match(line)
+            if m:
+                profile   = m.group(1)
+                qty       = int(m.group(2))
+                length_mm = int(m.group(3))
+                total_lm  = round(qty * length_mm / 1000.0, 3)
+                floor_panel_members.append({
+                    "profile":    profile,
+                    "qty":        qty,
+                    "length_mm":  length_mm,
+                    "total_lm":   total_lm,
+                })
+
+        # LGS profile line — total per tab (e.g. "89S41-075-500 481.740 549.2")
         if _LGS_PROFILE_RE.match(line) and current_tab:
             parts = line.split()
             for p in parts[1:]:
@@ -164,6 +196,12 @@ def _parse_manufacturing_pdf(pdf_path: Path) -> dict | None:
         totals["roof_batten_lm"] = round(sum(e["total_lm"] for e in batten_entries), 3)
         totals["roof_batten_nr"] = sum(e["qty"] for e in batten_entries)
 
+    if floor_panel_members:
+        totals["floor_panel_member_lm"] = round(sum(m["total_lm"] for m in floor_panel_members), 3)
+        totals["floor_panel_member_nr"] = sum(m["qty"] for m in floor_panel_members)
+        log.info("FrameCAD floor panel members: %d pieces, %.1f lm",
+                 totals["floor_panel_member_nr"], totals["floor_panel_member_lm"])
+
     log.info(
         "FrameCAD PDF BOM: roof_panel=%.1f  roof_truss=%.1f  wall_frame=%.1f  "
         "lintel=%.3f  strap=%.3f  total_lgs=%.1f lm",
@@ -176,37 +214,48 @@ def _parse_manufacturing_pdf(pdf_path: Path) -> dict | None:
     )
 
     return {
-        "found":          True,
-        "source_file":    str(pdf_path),
-        "source_type":    "pdf_manufacturing_summary",
-        "lm_by_tab":      lm_by_tab,
-        "totals":         totals,
-        "batten_entries": batten_entries,
-        "fixings":        fixings,
-        "warnings":       [],
+        "found":                  True,
+        "source_file":            str(pdf_path),
+        "source_type":            "pdf_manufacturing_summary",
+        "lm_by_tab":              lm_by_tab,
+        "totals":                 totals,
+        "batten_entries":         batten_entries,
+        "floor_panel_members":    floor_panel_members,
+        "fixings":                fixings,
+        "warnings":               [],
     }
 
 
 def _scan_for_batten_data(project_dir: Path, bom_data: dict) -> dict:
     """
-    Scan all PDFs in project_dir for FRAMECAD BATTEN entries.
+    Scan all PDFs in project_dir for FRAMECAD BATTEN entries and Design Summary
+    (floor type, load class).
     Adds to bom_data["batten_entries"] and totals if new entries found.
-    Skips if batten data already present from manufacturing summary.
+    Skips batten scan if batten data already present from manufacturing summary.
     """
     if bom_data.get("batten_entries"):
-        # Already populated from the main summary PDF
         entries = bom_data["batten_entries"]
     else:
         entries = []
-        try:
-            import pdfplumber
-            for pdf in sorted(project_dir.rglob("*.pdf")):
-                if pdf.name == Path(bom_data.get("source_file", "")).name:
-                    continue   # already parsed
-                try:
-                    with pdfplumber.open(str(pdf)) as p:
-                        for page in p.pages:
-                            for line in (page.extract_text() or "").splitlines():
+
+    floor_type     = bom_data.get("floor_type",       "")
+    load_class     = bom_data.get("floor_load_class", "")
+    joist_spec     = bom_data.get("floor_joist_spec", "")
+    bearer_spec    = bom_data.get("floor_bearer_spec", "")
+    joist_spacing  = bom_data.get("floor_joist_spacing_mm", 0)
+    panel_size     = bom_data.get("floor_panel_size", "")
+
+    try:
+        import pdfplumber
+        for pdf in sorted(project_dir.rglob("*.pdf")):
+            skip_battens = bool(bom_data.get("batten_entries"))
+            try:
+                with pdfplumber.open(str(pdf)) as p:
+                    for page in p.pages:
+                        text = page.extract_text() or ""
+                        for line in text.splitlines():
+                            # Batten (skip if already populated)
+                            if not skip_battens:
                                 m = _BATTEN_RE.search(line)
                                 if m:
                                     entries.append({
@@ -216,18 +265,77 @@ def _scan_for_batten_data(project_dir: Path, bom_data: dict) -> dict:
                                         "total_lm":  round(int(m.group(2)) * int(m.group(3)) / 1000.0, 3),
                                         "source_pdf": pdf.name,
                                     })
-                except Exception:
-                    pass
-        except ImportError:
-            pass
+                            # Floor type (from Design Summary block)
+                            if not floor_type:
+                                fm = _FLOOR_TYPE_RE.search(line)
+                                if fm:
+                                    floor_type = fm.group(1).strip().lower()
+                                    log.info("FrameCAD floor type: '%s' (from %s)",
+                                             floor_type, pdf.name)
+                            # Load class
+                            if not load_class:
+                                lm = _LOAD_CLASS_RE.search(line)
+                                if lm:
+                                    load_class = f"{lm.group(1)} kPa"
+                                    log.info("FrameCAD load class: '%s' (from %s)",
+                                             load_class, pdf.name)
+                            # Joist spacing
+                            if not joist_spacing:
+                                sm = _JOIST_SPACING_RE.search(line)
+                                if sm:
+                                    try:
+                                        joist_spacing = int(sm.group(1))
+                                        log.info("FrameCAD joist spacing: %d mm (from %s)",
+                                                 joist_spacing, pdf.name)
+                                    except ValueError:
+                                        pass
+                            # Joist section spec
+                            if not joist_spec:
+                                js = _JOIST_SPEC_RE.search(line)
+                                if js:
+                                    joist_spec = js.group(1).strip()
+                                    log.info("FrameCAD joist spec: '%s' (from %s)",
+                                             joist_spec, pdf.name)
+                            # Bearer spec
+                            if not bearer_spec:
+                                bs = _BEARER_SPEC_RE.search(line)
+                                if bs:
+                                    bearer_spec = bs.group(1).strip()
+                                    log.info("FrameCAD bearer spec: '%s' (from %s)",
+                                             bearer_spec, pdf.name)
+                            # Panel/cassette size
+                            if not panel_size:
+                                ps = _PANEL_SIZE_RE.search(line)
+                                if ps:
+                                    panel_size = f"{ps.group(1)}x{ps.group(2)}"
+                                    log.info("FrameCAD panel size: '%s' (from %s)",
+                                             panel_size, pdf.name)
+            except Exception:
+                pass
+    except ImportError:
+        pass
 
     if entries:
         total_lm = round(sum(e["total_lm"] for e in entries), 3)
         total_nr = sum(e["qty"] for e in entries)
-        bom_data["batten_entries"]         = entries
+        bom_data["batten_entries"]           = entries
         bom_data["totals"]["roof_batten_lm"] = total_lm
         bom_data["totals"]["roof_batten_nr"] = total_nr
         log.info("FrameCAD roof battens: %d pieces, %.1f lm", total_nr, total_lm)
+
+    if floor_type:
+        bom_data["floor_type"] = floor_type
+    if load_class:
+        bom_data["floor_load_class"] = load_class
+    if joist_spec:
+        bom_data["floor_joist_spec"] = joist_spec
+    if bearer_spec:
+        bom_data["floor_bearer_spec"] = bearer_spec
+    if joist_spacing:
+        bom_data["floor_joist_spacing_mm"] = joist_spacing
+    if panel_size:
+        bom_data["floor_panel_size"] = panel_size
+
     return bom_data
 
 

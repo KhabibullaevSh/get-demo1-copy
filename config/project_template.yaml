@@ -1,0 +1,220 @@
+# project_template.yaml — V3 BOQ System project onboarding template
+#
+# INSTRUCTIONS
+# ─────────────
+# 1. Copy this file to:  input/projects/<project_slug>/project_config.yaml
+# 2. Fill in every field marked [REQUIRED]
+# 3. Review all [REVIEW] fields and update to match project specifics
+# 4. Leave [OPTIONAL] fields blank or at default if not applicable
+# 5. Do NOT add room_schedule, stair_schedule, or floor_schedule from a
+#    reference BOQ — only from actual project source documents or site visits
+#
+# SOURCE PRIORITY RULE (do not violate):
+#   FrameCAD BOM > IFC model > PDF schedule > DXF geometry > this config file
+# Config fallbacks are LOW confidence and must be verified before procurement.
+
+project:
+  # [REQUIRED] Short slug used in filenames — lowercase, underscores, no spaces
+  name: "project_X"
+  # [REQUIRED] Display name for reports and Excel output
+  display_name: "Project X — Building Description"
+  # [REQUIRED] Building type — controls service profile and assembly rules
+  # Options: residential | commercial_low_rise | pharmacy | medical | office | warehouse | school
+  type: "commercial_low_rise"
+  # [REVIEW] Number of above-ground storeys
+  levels: 1
+  # [REVIEW] Overall building height to roof eaves (m) — affects downpipe lengths
+  building_height_m: 3.6
+  # [REVIEW] Typical wall height (m)
+  wall_height_m: 2.4
+  # [REVIEW] Does the project have a verandah / deck?
+  verandah_present: false
+
+geometry:
+  # [OPTIONAL] DXF layer names to search for each geometry type.
+  # Default patterns cover most FrameCAD / Archicad layer conventions.
+  # Override if your DXF uses non-standard layer names.
+  floor_layers:    ["WALLS", "FLOOR", "FLOOR PLAN", "GROUND FLOOR"]
+  roof_layers:     ["ROOF", "ROOF PLAN", "ROOFING"]
+  verandah_layers: ["VERANDAH", "VERANDA", "DECK", "PORCH"]
+  ceiling_layers:  ["CEILING", "CEILING PLAN", "REFLECTED"]
+  stair_layers:    ["STAIR", "STAIRS", "STEP"]
+  door_block_prefix:   ["DOOR_", "D-", "DR_"]
+  window_block_prefix: ["WINDOW_", "WIN_", "W-", "LOUVRE_"]
+
+structural:
+  # [REVIEW] LGS section type — from FrameCAD BOM if available
+  lgs_section: "89S41"
+  # [REVIEW] Wall stud spacing
+  wall_stud_spacing_mm: 600
+  wall_height_m: 2.4
+  # [REVIEW] Floor system defaults (used ONLY if no FrameCAD floor panel tab in BOM)
+  # Check BOM for actual panel schedule before using these defaults.
+  floor_joist_spacing_mm: 450
+  floor_bearer_spacing_mm: 1800
+  floor_sheet_thickness_mm: 18
+  floor_panel_width_m: 0.6
+  floor_panel_length_m: 3.6
+  floor_panel_height_mm: 200
+  # [OPTIONAL] Batten spacing defaults
+  roof_batten_spacing_mm: 900
+  ceiling_batten_spacing_mm: 400
+
+lining:
+  # [REVIEW] Board type for walls and ceilings
+  # Options: fc_6mm | plasterboard_10mm | plasterboard_13mm
+  default_wall_board: "fc_6mm"
+  default_ceiling_board: "fc_6mm"
+  fc_wall_sheet_w: 1.2
+  fc_wall_sheet_h: 2.7
+  fc_wall_sheet_area_m2: 3.24
+  fc_ceiling_sheet_w: 1.2
+  fc_ceiling_sheet_h: 2.4
+  fc_ceiling_sheet_area_m2: 2.88
+  waste_factor: 1.05
+  # [REVIEW] Internal wall estimation ratio (lm of internal wall per m² floor area)
+  # Set to 0 to disable estimation and flag as placeholder instead.
+  # Typical commercial: 0.30–0.40 | typical residential: 0.40–0.55
+  int_wall_lm_ratio: 0.34
+
+roof:
+  # [REVIEW] Roof profile — affects hip end calculations
+  # Options: hip | gable | shed | dutch_hip
+  roof_type: "hip"
+  # [REVIEW] Sisalation roll coverage (m²/roll) — check product spec
+  sisalation_roll_m2: 73.0
+  # [REVIEW] Downpipe sizing
+  min_downpipes: 2
+  downpipe_spacing_m: 10.0
+
+openings:
+  # [REVIEW] Default hardware set for doors without explicit schedule
+  # Options: standard_hinged | commercial_closer | sliding | bi_fold
+  default_door_hardware: "standard_hinged"
+  # [OPTIONAL] Room types that trigger commercial-grade door closers
+  commercial_closer_rooms: ["entrance", "exit", "fire", "plant"]
+  # [REVIEW] Door block name → nominal width mapping for DXF block names
+  # Add or remove entries to match your project's DXF block naming convention.
+  door_block_width_map:
+    "DOOR_60": 0.60
+    "DOOR_72": 0.72
+    "DOOR_82": 0.82
+    "DOOR_90": 0.90
+    "DOOR_100": 1.00
+    "DOOR_120": 1.20
+  # [REVIEW] Default door height when not in schedule
+  default_door_height_m: 2.04
+  # [REVIEW] Default window width when not encoded in block name
+  default_window_width_m: 1.2
+  # [REVIEW] Default louvre window width
+  default_louvre_width_m: 1.1
+  # [REVIEW] Default louvre height for blade count (use actual from window schedule if available)
+  default_louvre_height_m: 0.75
+  # [OPTIONAL] Flashing extension past opening each side (m)
+  flashing_overrun_m: 0.05
+
+footings:
+  # [REQUIRED] Footing type — drives which substructure items are generated
+  # Options: slab_on_ground | pad_footing | strip_footing | pile
+  type: "slab_on_ground"
+  # [REVIEW] Slab parameters (if slab_on_ground)
+  slab_thickness_mm: 100
+  mesh_type: "SL72"
+  # [REVIEW] Pad footing parameters (if pad_footing or strip_footing with pads)
+  pad_size_m: 0.70
+  pad_depth_m: 0.70
+  # [REVIEW] Strip footing parameters (if strip_footing)
+  strip_footing_depth_m: 0.50
+  strip_footing_width_m: 0.40
+
+finishes:
+  # [REVIEW] Primary floor finish type
+  # Options: tiles | vinyl | timber | screed | carpet
+  floor_finish_type: "tiles"
+  # [OPTIONAL] Architrave length per opening (lm, one side)
+  architrave_door_lm_each: 6.0
+  architrave_window_lm_each: 4.8
+
+services:
+  # [REVIEW] Drives whole-building service template and mechanical placeholder
+  # Options: pharmacy | residential | commercial_low_rise | office | school | medical
+  building_type_service_profile: "commercial_low_rise"
+  # [OPTIONAL] Smoke detector coverage area (m² per detector, BCA requirement)
+  smoke_detector_coverage_m2: 40
+
+# ── Room schedule (config fallback) ───────────────────────────────────────────
+# USE ONLY when no machine-readable room schedule exists in any source document.
+# If a room schedule PDF or spreadsheet is available, extract it directly —
+# do not re-type it here.
+# All config-sourced rooms are tagged: confidence=LOW, manual_review=true.
+# Delete this section if a real room schedule is being extracted.
+#
+# room_schedule:
+#   - name: "Room Name"             # [REQUIRED] Matches architectural room label
+#     room_type: "office"           # [REQUIRED] See room_templates.yaml for valid types
+#     area_m2: 0.0                  # [REQUIRED] Estimated area from DXF or measurements
+#     is_wet_area: false            # [REVIEW] True for rooms needing waterproofing
+#   - name: "Toilet"
+#     room_type: "toilet"
+#     area_m2: 4.5
+#     is_wet_area: true
+
+# ── Stair schedule (config fallback) ──────────────────────────────────────────
+# USE ONLY when no stair schedule exists in source documents.
+# If stair schedule is in PDF or DXF, extract it directly.
+# All config-sourced stairs are tagged: confidence=LOW, manual_review=true.
+# Delete this section if stairs are extracted from source documents.
+#
+# stair_schedule:
+#   - element_id: "STR-1"          # [REQUIRED] Identifier for traceability
+#     stair_type: "prefab"         # [REVIEW] prefab | in-situ | spiral
+#     flights: 1                   # [REVIEW] Number of flights
+#     risers_per_flight: 4         # [REVIEW] From structural drawings
+#     tread_depth_mm: 250          # [REVIEW] From stair schedule or code minimum
+#     riser_height_mm: 175         # [REVIEW] From structural drawings
+#     width_m: 1.2                 # [REVIEW] Clear stair width
+#     source: "project_config"     # Do not change — triggers LOW confidence flag
+#     confidence: "LOW"            # Do not change
+#     notes: "Describe what is known and what needs verification."
+
+# ── Package toggles ───────────────────────────────────────────────────────────
+# [OPTIONAL] Disable specific BOQ packages if not applicable to this project.
+# Default: all packages enabled.
+packages:
+  structural_frame: true
+  roof: true
+  insulation: true
+  openings: true
+  linings: true
+  finishes: true
+  floor_system: true
+  substructure: true
+  services: true
+  stairs: true
+  external_works: true
+  external_cladding: true
+
+output:
+  boq_excel_filename: "{project_name}_BOQ_V3.xlsx"
+  json_filename: "{project_name}_boq_items_v3.json"
+  qa_filename: "{project_name}_qa_report_v3.json"
+  excel_section_colours:
+    structural: "D6E4F0"
+    roof: "D5F5E3"
+    openings: "FCF3CF"
+    linings: "FDEBD0"
+    insulation: "E8DAEF"
+    finishes: "FDEDEC"
+    services: "EBF5FB"
+    stairs: "FEF9E7"
+    external: "EAFAF1"
+    footings: "F2F3F4"
+
+# ── Notes for estimators ──────────────────────────────────────────────────────
+# [OPTIONAL] Free-text notes about this project's specific circumstances,
+# data gaps, or things the pipeline cannot derive from available documents.
+# These appear in the QA report.
+notes: |
+  [Add any project-specific notes here]
+  e.g. "Floor panel schedule not available — obtain from FrameCAD before ordering floor system."
+  e.g. "Room schedule from config estimates only — verify all room areas from architectural drawings."

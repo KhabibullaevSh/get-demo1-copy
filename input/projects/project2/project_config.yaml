@@ -1,0 +1,86 @@
+# project_config.yaml — Project 2 (Angau Pharmacy)
+# Per-project config overlay — merged on top of v3_boq_system/config/project_config.yaml
+#
+# Only include fields that differ from the shared defaults.
+# This file travels with the project's input documents.
+
+project:
+  name: "project 2"
+  display_name: "Angau Pharmacy"
+  type: "pharmacy"
+  levels: 1
+  building_height_m: 4.2
+  wall_height_m: 2.4
+  verandah_present: true
+
+footings:
+  type: "strip_footing"
+  strip_footing_depth_m: 0.50
+  strip_footing_width_m: 0.40
+  pad_size_m: 0.70
+  pad_depth_m: 0.70
+
+services:
+  building_type_service_profile: "pharmacy"
+  smoke_detector_coverage_m2: 40
+
+openings:
+  default_louvre_height_m: 0.75
+  door_block_width_map:
+    "DOOR_60": 0.60
+    "DOOR_72": 0.72
+    "DOOR_82": 0.82
+    "DOOR_90": 0.90
+    "DOOR_100": 1.00
+    "DOOR_120": 1.20
+
+# Room schedule — estimated from DXF floor area (total ~64.8 m²).
+# No machine-readable room schedule in any source document.
+# All items: confidence=LOW, manual_review=true.
+room_schedule:
+  - name: "Dispensary"
+    room_type: "pharmacy"
+    area_m2: 24.0
+    is_wet_area: false
+  - name: "Waiting / Reception"
+    room_type: "waiting"
+    area_m2: 14.0
+    is_wet_area: false
+  - name: "Consultation Room"
+    room_type: "consulting"
+    area_m2: 8.0
+    is_wet_area: false
+  - name: "Staff Room"
+    room_type: "office"
+    area_m2: 6.5
+    is_wet_area: false
+  - name: "Toilet"
+    room_type: "toilet"
+    area_m2: 4.5
+    is_wet_area: true
+  - name: "Storage"
+    room_type: "store"
+    area_m2: 7.8
+    is_wet_area: false
+
+# Stair schedule — config estimate, LOW confidence.
+# DXF STAIRS layer detected stair evidence; riser count estimated from raised floor height.
+stair_schedule:
+  - element_id: "STR-1"
+    stair_type: "prefab"
+    flights: 1
+    risers_per_flight: 3
+    tread_depth_mm: 250
+    riser_height_mm: 175
+    width_m: 1.2
+    source: "project_config"
+    confidence: "LOW"
+    notes: "Entry stair — riser count estimated from raised floor height (~525mm). Verify from architectural drawings."
+
+# Known data gaps for this project
+notes: |
+  Floor panel schedule not available — no FrameCAD floor panel tab in BOM.
+  Room schedule is config estimate — verify all areas from architectural drawings.
+  Truss lm discrepancy: IFC 1634.29 lm vs reference ~490 lm (IFC over-classifies purlins).
+  Batten count: BOM 266 pieces (all zones) vs reference ~47 nr (roof only) — reconcile before ordering.
+  SHS steel: IFC 96.69 lm vs reference ~24.9 lm — verify from structural drawings.

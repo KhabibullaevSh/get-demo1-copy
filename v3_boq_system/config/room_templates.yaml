@@ -1,0 +1,291 @@
+# room_templates.yaml
+# Room-based services inference templates.
+# When direct MEP schedules are not available, these templates infer probable
+# fixture/service bundles from detected room types.
+#
+# All inferred items carry:
+#   quantity_status: inferred
+#   confidence: low (unless direct schedule evidence)
+#   manual_review: true
+
+# ── Room type keyword matching ─────────────────────────────────────────────────
+# Patterns used to classify detected room names into template keys.
+room_type_patterns:
+  toilet:         ["toilet", "wc", "water closet", "sanitary"]
+  accessible_wc:  ["accessible wc", "disabled toilet", "accessible toilet"]
+  bathroom:       ["bathroom", "bath", "shower room"]
+  laundry:        ["laundry", "wash", "launder"]
+  kitchen:        ["kitchen", "kitchenette", "tea point", "pantry"]
+  consulting:     ["consult", "consulting", "consultation", "exam", "examination", "treatment"]
+  pharmacy:       ["pharmacy", "dispensary", "dispensing", "drug store"]
+  office:         ["office", "admin", "administration", "manager", "staff"]
+  store:          ["store", "storage", "storeroom", "stock"]
+  waiting:        ["waiting", "reception", "lobby", "foyer"]
+  corridor:       ["corridor", "passage", "hallway", "hall", "circulation"]
+  plant:          ["plant", "electrical", "switchroom", "switch room", "mechanical", "hvac"]
+  cleaner:        ["cleaner", "cleaning", "janitor", "mop"]
+  unknown:        []
+
+# ── Services bundles per room type ────────────────────────────────────────────
+# Each entry:
+#   wet_area: true/false — requires waterproofing
+#   fixtures: list of fixture/service items to include
+#     - name: BOQ item name
+#       qty: quantity per room (nr)
+#       unit: unit
+#       confidence: high/medium/low
+#       note: optional justification
+
+room_templates:
+
+  toilet:
+    wet_area: true
+    waterproofing_m2_each: 6.0
+    fixtures:
+      - name: WC Pan (close-coupled)
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: WC Cistern
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Hand Basin
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Tapware (basin)
+        qty: 1
+        unit: set
+        confidence: medium
+      - name: Mirror / Medicine Cabinet
+        qty: 1
+        unit: nr
+        confidence: low
+      - name: Toilet Roll Holder
+        qty: 1
+        unit: nr
+        confidence: low
+      - name: Hand Towel Rail / Dryer
+        qty: 1
+        unit: nr
+        confidence: low
+      - name: Floor Waste
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Builder's Works — Plumbing (toilet)
+        qty: 1
+        unit: item
+        confidence: medium
+
+  accessible_wc:
+    wet_area: true
+    waterproofing_m2_each: 10.0
+    fixtures:
+      - name: WC Pan (wall-hung accessible)
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Hand Basin (accessible)
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Tapware (basin, lever)
+        qty: 1
+        unit: set
+        confidence: medium
+      - name: Grab Rail Set
+        qty: 1
+        unit: set
+        confidence: medium
+      - name: Floor Waste
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Builder's Works — Plumbing (accessible WC)
+        qty: 1
+        unit: item
+        confidence: medium
+
+  bathroom:
+    wet_area: true
+    waterproofing_m2_each: 8.0
+    fixtures:
+      - name: Shower Screen / Cubicle
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Shower Rose + Arm
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Hand Basin
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Tapware (basin)
+        qty: 1
+        unit: set
+        confidence: medium
+      - name: Floor Waste
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Towel Rail
+        qty: 1
+        unit: nr
+        confidence: low
+      - name: Builder's Works — Plumbing (bathroom)
+        qty: 1
+        unit: item
+        confidence: medium
+
+  laundry:
+    wet_area: true
+    waterproofing_m2_each: 5.0
+    fixtures:
+      - name: Laundry Trough / Tub
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Tapware (laundry)
+        qty: 1
+        unit: set
+        confidence: medium
+      - name: Floor Waste
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Washing Machine Connection Point
+        qty: 1
+        unit: nr
+        confidence: low
+      - name: Builder's Works — Plumbing (laundry)
+        qty: 1
+        unit: item
+        confidence: medium
+
+  kitchen:
+    wet_area: true
+    waterproofing_m2_each: 3.0
+    fixtures:
+      - name: Kitchen Sink (double bowl)
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Tapware (kitchen)
+        qty: 1
+        unit: set
+        confidence: medium
+      - name: Hot Water System (allowance)
+        qty: 1
+        unit: item
+        confidence: low
+      - name: Builder's Works — Plumbing (kitchen)
+        qty: 1
+        unit: item
+        confidence: medium
+      - name: Builder's Works — Electrical (kitchen)
+        qty: 1
+        unit: item
+        confidence: medium
+
+  consulting:
+    wet_area: false
+    waterproofing_m2_each: 0
+    fixtures:
+      - name: Hand Basin (consulting room)
+        qty: 1
+        unit: nr
+        confidence: low
+      - name: Tapware (basin)
+        qty: 1
+        unit: set
+        confidence: low
+      - name: Builder's Works — Plumbing (consulting)
+        qty: 1
+        unit: item
+        confidence: low
+
+  pharmacy:
+    wet_area: false
+    waterproofing_m2_each: 0
+    fixtures:
+      - name: Hand Basin (dispensary)
+        qty: 1
+        unit: nr
+        confidence: low
+      - name: Tapware (basin)
+        qty: 1
+        unit: set
+        confidence: low
+      - name: Cold Room / Refrigeration Allowance
+        qty: 1
+        unit: item
+        confidence: low
+      - name: Builder's Works — Electrical (pharmacy)
+        qty: 1
+        unit: item
+        confidence: low
+
+  office:
+    wet_area: false
+    waterproofing_m2_each: 0
+    fixtures:
+      - name: Builder's Works — Electrical (office)
+        qty: 1
+        unit: item
+        confidence: low
+
+  cleaner:
+    wet_area: true
+    waterproofing_m2_each: 4.0
+    fixtures:
+      - name: Cleaner's Sink / Mop Sink
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Tapware (mop sink)
+        qty: 1
+        unit: set
+        confidence: medium
+      - name: Floor Waste
+        qty: 1
+        unit: nr
+        confidence: medium
+      - name: Builder's Works — Plumbing (cleaner)
+        qty: 1
+        unit: item
+        confidence: medium
+
+  unknown:
+    wet_area: false
+    waterproofing_m2_each: 0
+    fixtures:
+      - name: Builder's Works — Services (unclassified room)
+        qty: 1
+        unit: item
+        confidence: low
+
+# ── Default services (whole-building, not room-specific) ──────────────────────
+whole_building_services:
+  - name: Main Electrical Switchboard / Distribution Board
+    qty: 1
+    unit: item
+    confidence: low
+    note: "1 per building; adjust for sub-boards"
+  - name: Main Water Meter / Stopcock
+    qty: 1
+    unit: item
+    confidence: low
+  - name: Hot Water System (central)
+    qty: 1
+    unit: item
+    confidence: low
+    note: "only if not allocated to individual rooms"
+  - name: Smoke Detectors (provisional)
+    qty_rule: "ceil(floor_area / 40)"
+    unit: nr
+    confidence: low
+    note: "1 per 40 m² floor area (indicative)"

@@ -1,0 +1,102 @@
+{
+  "version": "v3.0-project2-benchmark",
+  "date": "2026-03-24",
+  "project_name": "project 2",
+  "project_display": "Angau Pharmacy",
+  "pipeline_version": "v3",
+
+  "item_count": 155,
+  "placeholder_count": 5,
+  "manual_review_count": 58,
+  "tests_passed": 61,
+  "tests_total": 61,
+
+  "status_breakdown": {
+    "measured": 22,
+    "calculated": 91,
+    "inferred": 37,
+    "placeholder": 5
+  },
+  "confidence_breakdown": {
+    "HIGH": 36,
+    "MEDIUM": 63,
+    "LOW": 56
+  },
+
+  "packages_covered": [
+    "A - Structural Frame",
+    "B - Roof",
+    "C - Insulation",
+    "D - Openings",
+    "E - Linings & Ceilings",
+    "F - Finishes",
+    "G - Floor System",
+    "H - Substructure",
+    "I - Services",
+    "J - Stairs",
+    "K - External Works"
+  ],
+  "package_item_counts": {
+    "A - Structural Frame": 13,
+    "B - Roof": 19,
+    "C - Insulation": 2,
+    "D - Openings": 41,
+    "E - Linings & Ceilings": 10,
+    "F - Finishes": 6,
+    "G - Floor System": 5,
+    "H - Substructure": 8,
+    "I - Services": 27,
+    "J - Stairs": 10,
+    "K - External Works": 14
+  },
+
+  "placeholder_items": [
+    "Structural Fixings & Connectors — PLACEHOLDER (obtain from FrameCAD fixing schedule)",
+    "Bulk Earthworks / Level (provisional)",
+    "Air Conditioning / Mechanical Ventilation — PLACEHOLDER",
+    "Exhaust Fan — Wet Area (toilet / laundry)",
+    "Site Preparation (Provisional)"
+  ],
+
+  "source_files_used": [
+    "ANGAU PHARMACY 01_arch.dxf",
+    "Angau Pharmacy.ifc",
+    "Angau Pharmacy-Layouts.pdf",
+    "Angau Pharmacy Summary.pdf",
+    "ANGAU PHARMACY MARKETING SET.pdf"
+  ],
+
+  "primary_sources": {
+    "geometry": "DXF (floor area, wall lm, verandah, openings)",
+    "structural_frame": "FrameCAD BOM tabs (roof panel, truss, wall frame, battens) + IFC (SHS, verandah)",
+    "roof": "DXF roof polygon (area, perimeter, ridge, eaves, barge)",
+    "openings": "DXF INSERT blocks (door/window mark, width, count)",
+    "rooms": "project_config room_schedule (no machine-readable schedule in sources)",
+    "stairs": "project_config stair_schedule (DXF STAIRS layer = evidence only)",
+    "floor_system": "IFC floor elements (inferred — no FrameCAD floor panel tab for this project)"
+  },
+
+  "known_discrepancies": {
+    "truss_lm": "IFC reports 1634.29 lm vs reference ~490 lm — likely IFC over-classifies purlins as trusses",
+    "batten_count": "FrameCAD BOM reports 266 pieces (1385.3 lm) vs reference ~47 nr — BOM may cover all zones not just roof",
+    "shs_lm": "IFC reports 96.69 lm SHS vs reference ~24.9 lm — IFC may include non-structural members"
+  },
+
+  "remaining_manual_review": {
+    "fixing_schedule": "256+ structural fixings/connectors — requires FrameCAD connection report",
+    "floor_panel_families": "1.8kPa and 4kPa panel types not in BOM for this project — obtain floor panel schedule",
+    "ph_brackets": "Post holder brackets (PHA/PHB/PHD) — requires connection schedule",
+    "stair_detail": "Riser count/height from project_config estimate (LOW confidence) — verify from drawings",
+    "room_areas": "Room schedule from project_config (LOW confidence) — verify from architectural drawings",
+    "ac_mechanical": "No mechanical schedule in sources — obtain from services engineer",
+    "toilet_tiling": "Inferred from room type — no finish schedule in sources"
+  },
+
+  "invariants": {
+    "no_template_contamination": true,
+    "no_z_unclassified_rows": true,
+    "all_rows_have_traceability": true,
+    "placeholders_labeled": true,
+    "no_quantity_copied_from_reference_boq": true
+  }
+}
