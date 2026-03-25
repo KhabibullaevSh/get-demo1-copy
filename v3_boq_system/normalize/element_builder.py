@@ -565,36 +565,32 @@ def build_element_model(
         ))
 
     # ── Room area cross-validation against DXF floor geometry ────────────────
-    # When rooms come from config estimates, check whether their total area matches
-    # the DXF-measured interior floor area (floor_area − verandah).  A close match
-    # does not validate individual room breakdowns, but it validates the total and
-    # justifies upgrading confidence from LOW → MEDIUM.
+    # Cross-check the SUM of config room areas against the DXF-measured interior
+    # floor area (floor_area − verandah).  This validates the total only.
+    # Individual room areas remain config estimates (LOW confidence) — the DXF
+    # geometry does not tell us how the interior is partitioned.
+    # Confidence is NOT upgraded: individual areas are still unverified estimates.
     if room_source_tag == "project_config" and model.rooms:
         interior_area = round(floor_area - ver_area, 2) if ver_area > 0 else floor_area
         room_area_sum = round(sum(r.area_m2 for r in model.rooms), 2)
         if interior_area > 0 and room_area_sum > 0:
             tol = interior_area * 0.05   # 5% tolerance
             if abs(room_area_sum - interior_area) <= tol:
-                for room in model.rooms:
-                    room.confidence = "MEDIUM"
-                    room.notes = (
-                        f"Config estimate — room areas sum ({room_area_sum:.1f} m²) validated "
-                        f"against DXF interior floor area ({interior_area:.1f} m²). "
-                        "Individual room breakdown is still estimated; verify layout from drawings."
-                    )
                 log.info(
-                    "Room schedule: sum %.1f m² matches DXF interior %.1f m² — "
-                    "confidence upgraded LOW → MEDIUM for %d rooms",
-                    room_area_sum, interior_area, len(model.rooms),
+                    "Room schedule total check: config sum %.1f m² matches DXF interior %.1f m². "
+                    "Individual room areas remain LOW confidence (config estimates).",
+                    room_area_sum, interior_area,
                 )
                 model.extraction_notes.append(
-                    f"Room schedule validation: config total {room_area_sum:.1f} m² matches "
-                    f"DXF interior floor area {interior_area:.1f} m² — confidence MEDIUM."
+                    f"Room schedule total check: config sum {room_area_sum:.1f} m² matches "
+                    f"DXF interior floor area {interior_area:.1f} m². "
+                    "Individual room areas remain LOW confidence — breakdown is a config estimate, "
+                    "not derived from source geometry."
                 )
             else:
                 log.warning(
                     "Room schedule: config sum %.1f m² differs from DXF interior %.1f m² "
-                    "(delta %.1f m²) — keeping LOW confidence",
+                    "(delta %.1f m²) — room areas remain LOW confidence",
                     room_area_sum, interior_area, abs(room_area_sum - interior_area),
                 )
 
