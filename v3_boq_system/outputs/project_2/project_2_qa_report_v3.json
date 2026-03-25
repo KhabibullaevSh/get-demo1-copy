@@ -1,15 +1,15 @@
 {
-  "project_type": "commercial_low_rise",
-  "total_items": 155,
+  "project_type": "pharmacy",
+  "total_items": 171,
   "package_completeness": {
     "structural_frame": {
       "present": true,
-      "item_count": 9,
+      "item_count": 8,
       "measured": 8,
       "calculated": 0,
       "inferred": 0,
-      "placeholder": 1,
-      "manual_review": 1,
+      "placeholder": 0,
+      "manual_review": 0,
       "status": "OK"
     },
     "roof_cladding": {
@@ -52,6 +52,16 @@
       "manual_review": 0,
       "status": "OK"
     },
+    "wall_lining_internal": {
+      "present": true,
+      "item_count": 3,
+      "measured": 0,
+      "calculated": 3,
+      "inferred": 0,
+      "placeholder": 0,
+      "manual_review": 0,
+      "status": "OK"
+    },
     "ceiling_lining": {
       "present": true,
       "item_count": 3,
@@ -74,12 +84,12 @@
     },
     "floor_system": {
       "present": true,
-      "item_count": 5,
+      "item_count": 8,
       "measured": 0,
       "calculated": 2,
-      "inferred": 3,
+      "inferred": 6,
       "placeholder": 0,
-      "manual_review": 4,
+      "manual_review": 7,
       "status": "UNCONFIRMED"
     },
     "footings": {
@@ -101,19 +111,29 @@
       "placeholder": 2,
       "manual_review": 27,
       "status": "OK"
+    },
+    "insulation": {
+      "present": true,
+      "item_count": 2,
+      "measured": 0,
+      "calculated": 2,
+      "inferred": 0,
+      "placeholder": 0,
+      "manual_review": 0,
+      "status": "OK"
     }
   },
   "provenance_summary": {
-    "total": 155,
+    "total": 171,
     "measured": 22,
-    "calculated": 91,
-    "inferred": 37,
+    "calculated": 103,
+    "inferred": 41,
     "placeholder": 5,
-    "pct_measured": 14.2,
-    "pct_calculated": 58.7,
-    "pct_inferred": 23.9,
-    "pct_placeholder": 3.2,
-    "manual_review_count": 58
+    "pct_measured": 12.9,
+    "pct_calculated": 60.2,
+    "pct_inferred": 24.0,
+    "pct_placeholder": 2.9,
+    "manual_review_count": 71
   },
   "benchmark_comparison": {},
   "traceability_check": {
@@ -124,15 +144,6 @@
     "status": "OK"
   },
   "manual_review_items": [
-    {
-      "item_no": "A09",
-      "section": "A - Structural Frame",
-      "item_name": "Structural Fixings & Connectors \u2014 PLACEHOLDER (obtain from FrameCAD fixing schedule)",
-      "quantity": 0,
-      "unit": "item",
-      "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. PLACEHOLDER. Obtain FrameCAD connection/fixing report. Typical items include: tek screws (12G-14\u00d720, 10G-24\u00d740, 10G-14\u00d716), sleeve anchors (M12\u00d775), hex bolts (M10, M12, M16), PH post brackets (PHA/PHB/PHD), triple grips, fix plates, hold-down washers, grommets, angle bracing. Reference BOQ shows 256+ fixing line items requiring engineering schedule."
-    },
     {
       "item_no": "B04",
       "section": "B - Roof",
@@ -197,34 +208,97 @@
       "notes": "MANUAL REVIEW REQUIRED. Frame height 750 mm (config_default=750mm). 8 blades per frame at 100 mm pitch. Verify blade count and size from window schedule."
     },
     {
+      "item_no": "D42",
+      "section": "D - Openings",
+      "item_name": "Fly Screen \u2014 WINDOW_LOUVRE_1100",
+      "quantity": 6.48,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Fly screen for louvre window WINDOW_LOUVRE_1100 (8 nr). Area: 1.08m \u00d7 0.750m = 0.810 m\u00b2 each. Tropical building \u2014 all louvre openings require insect screening. Verify frame height from window schedule."
+    },
+    {
+      "item_no": "D43",
+      "section": "D - Openings",
+      "item_name": "Fly Screen \u2014 WINDOW_LOUVRE_800",
+      "quantity": 1.2,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Fly screen for louvre window WINDOW_LOUVRE_800 (2 nr). Area: 0.80m \u00d7 0.750m = 0.599 m\u00b2 each. Tropical building \u2014 all louvre openings require insect screening. Verify frame height from window schedule."
+    },
+    {
+      "item_no": "D44",
+      "section": "D - Openings",
+      "item_name": "Fly Screen \u2014 WINDOW_LOUVRE_1800",
+      "quantity": 1.39,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Fly screen for louvre window WINDOW_LOUVRE_1800 (1 nr). Area: 1.85m \u00d7 0.750m = 1.385 m\u00b2 each. Tropical building \u2014 all louvre openings require insect screening. Verify frame height from window schedule."
+    },
+    {
+      "item_no": "D45",
+      "section": "D - Openings",
+      "item_name": "Door Closer \u2014 Hydraulic (main entrance)",
+      "quantity": 1,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Door closer inferred for pharmacy entrance doors. Marks: DOOR_90 (1 nr). Verify which doors require closers from door schedule and architect. Commercial pharmacy may require controlled entry."
+    },
+    {
       "item_no": "G01",
       "section": "G - Floor System",
-      "item_name": "Floor Joist / LGS Cassette",
-      "quantity": 195.3,
-      "unit": "lm",
+      "item_name": "Floor Panel \u2014 Standard Load Floor Panel \u2014 General Areas (1.8kPa)",
+      "quantity": 28,
+      "unit": "nr",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Steel floor frame confirmed (FrameCAD layout). No panel schedule \u2014 derived from floor area 86.4 m\u00b2 at 450 mm joist spacing. Obtain panel schedule from engineer."
+      "notes": "MANUAL REVIEW REQUIRED. General pharmacy areas (waiting, consultation, staff, storage). 70% area estimate from building use. No FrameCAD floor tab available \u2014 obtain actual panel schedule from engineer. Panel dimensions assumed 600mm \u00d7 3600mm (2.16m\u00b2 each)."
     },
     {
       "item_no": "G02",
       "section": "G - Floor System",
-      "item_name": "Floor Bearer (pair)",
-      "quantity": 6,
-      "unit": "nr",
+      "item_name": "Floor Joist LGS \u2014 1.8kPa Zone",
+      "quantity": 136.7,
+      "unit": "lm",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Bearer spacing assumed 1800 mm. Verify from structural drawings."
+      "notes": "MANUAL REVIEW REQUIRED. General pharmacy areas (waiting, consultation, staff, storage). 70% area estimate from building use. No FrameCAD floor tab available \u2014 obtain actual panel schedule from engineer. Joist count at 450mm spacing across 9.3m short span, 9.3m run."
     },
     {
       "item_no": "G03",
       "section": "G - Floor System",
-      "item_name": "Floor Joist End Cleats / Fixings",
-      "quantity": 42,
+      "item_name": "Floor Bearer (pair) \u2014 1.8kPa Zone",
+      "quantity": 4,
       "unit": "nr",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. 2 end cleats per joist estimated. Verify against FrameCAD connection schedule."
+      "notes": "MANUAL REVIEW REQUIRED. General pharmacy areas (waiting, consultation, staff, storage). 70% area estimate from building use. No FrameCAD floor tab available \u2014 obtain actual panel schedule from engineer. Bearer pairs at 1800mm spacing. Verify from structural schedule."
     },
     {
       "item_no": "G04",
+      "section": "G - Floor System",
+      "item_name": "Floor Panel \u2014 High-Load Floor Panel \u2014 Dispensary (4kPa)",
+      "quantity": 12,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Dispensary area with heavy shelving/equipment. 30% area estimate. Obtain actual panel schedule from FrameCAD engineer before ordering. Panel dimensions assumed 600mm \u00d7 3600mm (2.16m\u00b2 each)."
+    },
+    {
+      "item_no": "G05",
+      "section": "G - Floor System",
+      "item_name": "Floor Joist LGS \u2014 4kPa Zone",
+      "quantity": 58.6,
+      "unit": "lm",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Dispensary area with heavy shelving/equipment. 30% area estimate. Obtain actual panel schedule from FrameCAD engineer before ordering. Joist count at 450mm spacing across 9.3m short span, 9.3m run."
+    },
+    {
+      "item_no": "G06",
+      "section": "G - Floor System",
+      "item_name": "Floor Bearer (pair) \u2014 4kPa Zone",
+      "quantity": 2,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Dispensary area with heavy shelving/equipment. 30% area estimate. Obtain actual panel schedule from FrameCAD engineer before ordering. Bearer pairs at 1800mm spacing. Verify from structural schedule."
+    },
+    {
+      "item_no": "G07",
       "section": "G - Floor System",
       "item_name": "Floor Sheet (FC / plywood)",
       "quantity": 32,
@@ -602,43 +676,106 @@
       "notes": "MANUAL REVIEW REQUIRED. Weatherboard: 200mm exposure, 4200mm stock length. Count includes 5% waste.  Verify board profile and lap from spec."
     },
     {
-      "item_no": "K06",
-      "section": "K - External Works",
-      "item_name": "FC Weatherboard H-Joiner Extrusion",
-      "quantity": 108,
+      "item_no": "A13",
+      "section": "A - Structural Frame",
+      "item_name": "Framing Screw 12G-14\u00d720 HEX Head (LGS stud-to-track)",
+      "quantity": 19,
+      "unit": "boxes",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Stud-to-track connections: 2300.4lm \u00d7 4.0 per m = ~9202 screws, 19 boxes (500/box). Density: 2 screws per stud end (top+bottom). Verify with FrameCAD connection schedule."
+    },
+    {
+      "item_no": "A14",
+      "section": "A - Structural Frame",
+      "item_name": "Framing Screw 10G-24\u00d740 Countersunk (roof panel)",
+      "quantity": 3,
+      "unit": "boxes",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Purlin-to-rafter / roof panel connections: 481.7lm \u00d7 3.0 per m = ~1445 screws, 3 boxes. Verify with FrameCAD connection report."
+    },
+    {
+      "item_no": "A15",
+      "section": "A - Structural Frame",
+      "item_name": "Framing Screw 10G-14\u00d716 Wafer Head (batten-to-purlin)",
+      "quantity": 7,
+      "unit": "boxes",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Batten-to-purlin connections: 1385.3lm total batten \u00d7 2.5 per m = ~3463. Includes roof, wall, and ceiling batten zones from FrameCAD BOM. Verify zone scope before ordering."
+    },
+    {
+      "item_no": "A16",
+      "section": "A - Structural Frame",
+      "item_name": "Sleeve Anchor M12\u00d775 \u2014 Pad Footings",
+      "quantity": 60,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. 15 pad footings \u00d7 4 M12\u00d775 anchors each (4-bolt base plate). Verify anchor embedment depth and edge distance from structural engineer."
+    },
+    {
+      "item_no": "A17",
+      "section": "A - Structural Frame",
+      "item_name": "PH Post Holder Bracket (PHA/PHB/PHD)",
+      "quantity": 28,
       "unit": "nr",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. One H-joiner per butt-join between boards in same row. Verify from cladding layout."
+      "notes": "MANUAL REVIEW REQUIRED. Post holder brackets at column bases. Count estimated from IFC steel post lm. Verify bracket type (PHA/PHB/PHD) against post size and load from structural drawings."
     },
     {
-      "item_no": "K07",
-      "section": "K - External Works",
-      "item_name": "External Corner Flashing (FC cladding)",
-      "quantity": 6,
+      "item_no": "A18",
+      "section": "A - Structural Frame",
+      "item_name": "Triple Grip Connector (roof-to-wall uplift)",
+      "quantity": 36,
       "unit": "nr",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Corner count estimated. Verify from floor plan \u2014 count each change of direction."
+      "notes": "MANUAL REVIEW REQUIRED. Roof-to-wall-plate cyclonic uplift connections at 1.2m centres along 42.4m eave line = 36 nr. Verify spacing and type from structural engineer (cyclone region requirement)."
     },
     {
-      "item_no": "K08",
-      "section": "K - External Works",
-      "item_name": "Internal Corner Flashing (FC cladding)",
-      "quantity": 2,
+      "item_no": "A19",
+      "section": "A - Structural Frame",
+      "item_name": "Hold-Down Washer \u2014 Cyclonic (post base)",
+      "quantity": 60,
       "unit": "nr",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Internal corner count estimated. Verify from floor plan."
+      "notes": "MANUAL REVIEW REQUIRED. Hold-down washers at post base connections. 15 pads \u00d7 4 = 60 nr. Verify washer specification (size, grade) from structural drawings."
     },
     {
-      "item_no": "K09",
-      "section": "K - External Works",
-      "item_name": "External Corner Trim / Angle Bead",
-      "quantity": 14.4,
-      "unit": "lm",
+      "item_no": "A20",
+      "section": "A - Structural Frame",
+      "item_name": "Fix Plate / Gusset Plate (strap bracing connection)",
+      "quantity": 18,
+      "unit": "nr",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. One trim per corner, full wall height. Verify profile and spec."
+      "notes": "MANUAL REVIEW REQUIRED. Fix plates at strap bracing termination points: 49.7lm \u00d7 0.35 = 18 nr. Verify against FrameCAD connection schedule."
     },
     {
-      "item_no": "K14",
+      "item_no": "A21",
+      "section": "A - Structural Frame",
+      "item_name": "Diagonal Strap Tensioner / Anchor (bracing strap end)",
+      "quantity": 34,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Strap termination anchors: 49.7lm \u00f7 3m avg run = 17 runs \u00d7 2 ends. Verify strap count and anchor type from FrameCAD connection schedule."
+    },
+    {
+      "item_no": "A22",
+      "section": "A - Structural Frame",
+      "item_name": "Cable Grommet (LGS service penetration)",
+      "quantity": 45,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Cable/conduit grommets at LGS stud penetrations. 29.4m internal wall \u00d7 1.5 per m = 45 nr. Quantity depends on electrical/hydraulic layout. Verify from services drawings."
+    },
+    {
+      "item_no": "A23",
+      "section": "A - Structural Frame",
+      "item_name": "Structural Fixings Remainder \u2014 Hex Bolts / Angles / Misc (PLACEHOLDER)",
+      "quantity": 0,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. PLACEHOLDER for connection schedule items not derivable from member lm alone. Typical items: M10/M12/M16 hex bolts (hold-down posts), angle brackets (knee bracing, ridge connections), spring washers, nyloc nuts. Obtain FrameCAD connection report for full schedule. Reference BOQ includes 256+ individual fixing line items \u2014 this row represents residual scope."
+    },
+    {
+      "item_no": "K13",
       "section": "K - External Works",
       "item_name": "Site Preparation (Provisional)",
       "quantity": 0,
@@ -656,12 +793,12 @@
     }
   ],
   "confidence_summary": {
-    "HIGH": 36,
-    "MEDIUM": 63,
-    "LOW": 56,
-    "pct_high": 23.2,
-    "pct_medium": 40.6,
-    "pct_low": 36.1
+    "HIGH": 33,
+    "MEDIUM": 71,
+    "LOW": 67,
+    "pct_high": 19.3,
+    "pct_medium": 41.5,
+    "pct_low": 39.2
   },
   "warnings": [
     "Template contamination check: PASSED \u2014 no BOQ template quantities detected."

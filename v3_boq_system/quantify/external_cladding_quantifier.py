@@ -42,18 +42,28 @@ def _row(
 
 def _corner_count_from_perimeter(ext_lm: float, wall_h: float) -> int:
     """
-    Estimate number of external corners from perimeter.
-    A simple rectangle = 4 corners; each re-entrant adds 2 (1 ext + 1 int).
-    For pharmacy buildings, assume 6 external + 2 internal corners as default
-    (i.e., one recess/alcove in the facade).  This is LOW confidence and must
-    be verified from the floor plan.
+    Fallback corner estimate from perimeter alone (LOW confidence).
+    Used only when building L/W cannot be derived.
     """
-    # Heuristic: corners ≈ 4 + 2 × (perimeter / 4 / wall_h - 1) capped at reason
-    # Simpler: fixed estimate from building type — rectangular = 4 ext corners
-    # For perimeter > 30 m assume at least one change of direction = 6 ext corners
     if ext_lm > 30:
         return 6
     return 4
+
+
+def _derive_LW(floor_area: float, floor_perim: float) -> tuple[float, float]:
+    """
+    Solve for building long (L) and short (W) dimensions from floor area + perimeter.
+    Returns (L, W) in metres, or (0, 0) if geometry is invalid.
+    """
+    if floor_area <= 0 or floor_perim <= 0:
+        return 0.0, 0.0
+    half_p = floor_perim / 2          # L + W
+    disc   = half_p ** 2 - 4 * floor_area
+    if disc < 0:
+        return 0.0, 0.0
+    L = round((half_p + math.sqrt(disc)) / 2, 1)
+    W = round((half_p - math.sqrt(disc)) / 2, 1)
+    return (L, W) if W > 0 else (0.0, 0.0)
 
 
 def quantify_external_cladding(
@@ -117,13 +127,20 @@ def quantify_external_cladding(
         notes=area_note,
     ))
 
+    # ── Derive building L and W from floor geometry ───────────────────────────
+    # More accurate than perimeter-heuristics alone: derive long (L) and short (W)
+    # dimensions by solving area + perimeter simultaneously.
+    floor_area_m2  = sum(f.area_m2 for f in model.floors)
+    floor_perim_m  = sum(f.perimeter_m for f in model.floors)
+    L_m, W_m = _derive_LW(floor_area_m2, floor_perim_m)
+    geom_available = (L_m > 0 and W_m > 0)
+    board_length_m = board_length_mm / 1000
+
     # ── Board count ───────────────────────────────────────────────────────────
-    # Each row of boards runs the full perimeter; number of horizontal rows = ceil(h / exposure)
-    rows_of_boards   = math.ceil(ext_h * 1000 / board_exposure_mm)
-    run_per_row_m    = ext_lm
-    board_length_m   = board_length_mm / 1000
-    boards_per_row   = math.ceil(run_per_row_m / board_length_m)
-    total_boards     = math.ceil(boards_per_row * rows_of_boards * waste_factor)
+    rows_of_boards = math.ceil(ext_h * 1000 / board_exposure_mm)
+    run_per_row_m  = ext_lm
+    boards_per_row = math.ceil(run_per_row_m / board_length_m)
+    total_boards   = math.ceil(boards_per_row * rows_of_boards * waste_factor)
 
     rows.append(_row(
         "external_cladding",
@@ -136,7 +153,7 @@ def quantify_external_cladding(
             f"waste={waste_factor}"
         ),
         f"{src}: ext_lm={ext_lm:.2f} m, wall_h={ext_h:.1f} m",
-        f"ceil(h/exp) × ceil(lm/board_l) × waste",
+        "ceil(h/exp) × ceil(lm/board_l) × waste",
         "MEDIUM",
         manual_review=True,
         notes=(
@@ -145,39 +162,94 @@ def quantify_external_cladding(
         ),
     ))
 
-    # ── H-joiners ─────────────────────────────────────────────────────────────
-    # H-joiners occur at butt-joins within each board row.
-    # Joins per row = boards_per_row − 1 (each join between two boards)
-    h_joiner_count = max(0, (boards_per_row - 1)) * rows_of_boards
+    # ── H-joiners (per-façade method when L/W available) ─────────────────────
+    # H-joiners occur at butt-joins WITHIN a wall run, not at corners.
+    # Per-façade method avoids over-counting by treating each face independently.
+    if geom_available:
+        joiners_long  = max(0, math.ceil(L_m / board_length_m) - 1)  # per long face
+        joiners_short = max(0, math.ceil(W_m / board_length_m) - 1)  # per short face
+        # Rectangle has 2 long faces and 2 short faces
+        h_joiner_count = (joiners_long * 2 + joiners_short * 2) * rows_of_boards
+        joiner_basis = (
+            f"per-façade: 2×L-face ({joiners_long}×2={joiners_long*2} joiners/row) + "
+            f"2×W-face ({joiners_short}×2={joiners_short*2} joiners/row) "
+            f"× {rows_of_boards} rows; "
+            f"derived from floor L={L_m:.1f}m W={W_m:.1f}m"
+        )
+        joiner_src  = (f"dxf_geometry: floor_area={floor_area_m2:.1f}m² "
+                       f"+ ext_perim={floor_perim_m:.1f}m → L={L_m:.1f}m W={W_m:.1f}m")
+        joiner_conf = "MEDIUM"
+        joiner_mr   = False
+    else:
+        h_joiner_count = max(0, (boards_per_row - 1)) * rows_of_boards
+        joiner_basis = f"(boards_per_row−1) × rows = ({boards_per_row}−1) × {rows_of_boards}"
+        joiner_src   = f"derived from board count: boards_per_row={boards_per_row}, rows={rows_of_boards}"
+        joiner_conf  = "LOW"
+        joiner_mr    = True
 
     rows.append(_row(
         "external_cladding",
         "FC Weatherboard H-Joiner Extrusion",
         "nr", h_joiner_count,
         "calculated",
-        f"(boards_per_row−1) × rows = ({boards_per_row}−1) × {rows_of_boards}",
-        f"derived from board count: boards_per_row={boards_per_row}, rows={rows_of_boards}",
-        "(boards_per_row − 1) × rows_of_boards",
-        "LOW",
-        manual_review=True,
-        notes="One H-joiner per butt-join between boards in same row. Verify from cladding layout.",
+        joiner_basis,
+        joiner_src,
+        "per-façade: joiners per face × rows_of_boards" if geom_available else "(boards_per_row − 1) × rows_of_boards",
+        joiner_conf,
+        manual_review=joiner_mr,
+        notes=(
+            "H-joiners per façade face (joiners at butt-joins only, not corners). "
+            "Verify count from cladding layout."
+            if geom_available
+            else "One H-joiner per butt-join between boards in same row. Verify from cladding layout."
+        ),
     ))
 
-    # ── Corner flashings ──────────────────────────────────────────────────────
-    ext_corners = _corner_count_from_perimeter(ext_lm, ext_h)
-    int_corners = max(0, ext_corners - 4)   # internal corners = extra beyond rectangle
+    # ── Corner flashings (geometry-derived when L/W available) ───────────────
+    if geom_available:
+        # Check if the footprint is rectangular (L×W perimeter matches measured perimeter)
+        rect_perim = 2 * (L_m + W_m)
+        if abs(rect_perim - floor_perim_m) < 0.5:
+            # Rectangular building → 4 external corners, 0 internal
+            ext_corners  = 4
+            int_corners  = 0
+            corner_basis = (
+                f"rectangular footprint: L={L_m:.1f}m × W={W_m:.1f}m "
+                f"(2×(L+W)={rect_perim:.1f}m ≈ measured perim {floor_perim_m:.1f}m)"
+            )
+            corner_conf  = "MEDIUM"
+            corner_mr    = False
+        else:
+            # Non-rectangular — use perimeter heuristic
+            ext_corners  = _corner_count_from_perimeter(ext_lm, ext_h)
+            int_corners  = max(0, ext_corners - 4)
+            corner_basis = f"estimated from perimeter ({ext_lm:.1f}m) — non-rectangular footprint"
+            corner_conf  = "LOW"
+            corner_mr    = True
+    else:
+        ext_corners  = _corner_count_from_perimeter(ext_lm, ext_h)
+        int_corners  = max(0, ext_corners - 4)
+        corner_basis = f"estimated from perimeter ({ext_lm:.1f}m)"
+        corner_conf  = "LOW"
+        corner_mr    = True
 
     rows.append(_row(
         "external_cladding",
         "External Corner Flashing (FC cladding)",
         "nr", ext_corners,
         "inferred",
-        f"estimated {ext_corners} external corners from perimeter ({ext_lm:.1f} m)",
-        f"derived: ext_wall_perimeter={ext_lm:.1f} m",
-        "estimated from perimeter — rectangular + allowance",
-        "LOW",
-        manual_review=True,
-        notes="Corner count estimated. Verify from floor plan — count each change of direction.",
+        corner_basis,
+        f"dxf_geometry: ext_wall_perimeter={ext_lm:.1f}m"
+        + (f", floor_area={floor_area_m2:.1f}m² → L={L_m:.1f}m W={W_m:.1f}m" if geom_available else ""),
+        "geometry-derived corner count" if geom_available else "estimated from perimeter",
+        corner_conf,
+        manual_review=corner_mr,
+        notes=(
+            f"Corner count from building geometry (L={L_m:.1f}m × W={W_m:.1f}m rectangular = 4 corners). "
+            "Verify against floor plan."
+            if (geom_available and corner_conf == "MEDIUM")
+            else "Corner count estimated. Verify from floor plan — count each change of direction."
+        ),
     ))
 
     if int_corners > 0:
@@ -204,8 +276,8 @@ def quantify_external_cladding(
         f"ext_corners({ext_corners}) × wall_h({ext_h:.1f}m)",
         f"derived: {ext_corners} corners × {ext_h:.1f} m",
         "corners × wall_height",
-        "LOW",
-        manual_review=True,
+        corner_conf,
+        manual_review=corner_mr,
         notes="One trim per corner, full wall height. Verify profile and spec.",
     ))
 

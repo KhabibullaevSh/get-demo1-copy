@@ -150,11 +150,15 @@ class TestDuplicationGuards:
 
     def test_roof_battens_not_duplicated(self):
         """
-        'Roof Battens (FRAMECAD BATTEN)' must appear exactly once.
+        Exactly 1 batten summary (all-zones total) row must be present.
         'Structural Frame — roof_batten' must NOT appear (was a duplicate in earlier builds).
         """
         items = _load_output()
-        batten_summary = [i for i in items if i["item_name"] == "Roof Battens (FRAMECAD BATTEN)"]
+        # Accept either the old name or the new zone-labelled name
+        batten_summary = [
+            i for i in items
+            if i["item_name"].startswith("Roof Battens (FRAMECAD BATTEN")
+        ]
         assert len(batten_summary) == 1, (
             f"Expected exactly 1 batten summary row, got {len(batten_summary)}"
         )

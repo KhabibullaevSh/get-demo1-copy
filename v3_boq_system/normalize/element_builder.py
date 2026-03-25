@@ -476,6 +476,19 @@ def build_element_model(
             width_m = 0.0
             w_conf  = "LOW"
             w_note  = "Width not available from block geometry — use config default"
+
+        # Attempt height extraction from DXF block geometry.
+        # The DXF extractor may store height_m on window inserts when the block
+        # bounding-box or explicit height LINE is available.
+        geom_heights = [i["height_m"] for i in inserts if i.get("height_m", 0) > 0]
+        if geom_heights:
+            height_m = round(sum(geom_heights) / len(geom_heights), 3)
+            h_note   = f"height from DXF block geometry: {height_m:.3f} m"
+            log.info("Window %s: height %.3f m from DXF block geometry", bn, height_m)
+        else:
+            height_m = 0.0  # will fall back to config default in quantifier
+            h_note   = "height not in DXF block — quantifier will use config default"
+
         # Mark encodes block + size for display (e.g. WINDOW_LOUVRE_1080)
         mark = f"{bn}_{w_bucket_mm}" if w_bucket_mm > 0 else bn
         model.openings.append(OpeningElement(
@@ -483,13 +496,14 @@ def build_element_model(
             opening_type="window",
             mark=mark,
             width_m=width_m,
+            height_m=height_m,
             quantity=qty,
             swing_type=swing,
             has_flyscreen=True,   # standard for tropical climate
             source="dxf_blocks",
             source_reference=f"DXF INSERT block={bn} count={qty} width~{w_bucket_mm}mm",
             confidence=w_conf,
-            notes=w_note,
+            notes=f"{w_note}; {h_note}",
         ))
 
     # Fallback to total counts if no insert detail
@@ -549,6 +563,40 @@ def build_element_model(
             notes=("Configured estimate — verify room layout and areas from architectural drawings."
                    if room_source_tag == "project_config" else ""),
         ))
+
+    # ── Room area cross-validation against DXF floor geometry ────────────────
+    # When rooms come from config estimates, check whether their total area matches
+    # the DXF-measured interior floor area (floor_area − verandah).  A close match
+    # does not validate individual room breakdowns, but it validates the total and
+    # justifies upgrading confidence from LOW → MEDIUM.
+    if room_source_tag == "project_config" and model.rooms:
+        interior_area = round(floor_area - ver_area, 2) if ver_area > 0 else floor_area
+        room_area_sum = round(sum(r.area_m2 for r in model.rooms), 2)
+        if interior_area > 0 and room_area_sum > 0:
+            tol = interior_area * 0.05   # 5% tolerance
+            if abs(room_area_sum - interior_area) <= tol:
+                for room in model.rooms:
+                    room.confidence = "MEDIUM"
+                    room.notes = (
+                        f"Config estimate — room areas sum ({room_area_sum:.1f} m²) validated "
+                        f"against DXF interior floor area ({interior_area:.1f} m²). "
+                        "Individual room breakdown is still estimated; verify layout from drawings."
+                    )
+                log.info(
+                    "Room schedule: sum %.1f m² matches DXF interior %.1f m² — "
+                    "confidence upgraded LOW → MEDIUM for %d rooms",
+                    room_area_sum, interior_area, len(model.rooms),
+                )
+                model.extraction_notes.append(
+                    f"Room schedule validation: config total {room_area_sum:.1f} m² matches "
+                    f"DXF interior floor area {interior_area:.1f} m² — confidence MEDIUM."
+                )
+            else:
+                log.warning(
+                    "Room schedule: config sum %.1f m² differs from DXF interior %.1f m² "
+                    "(delta %.1f m²) — keeping LOW confidence",
+                    room_area_sum, interior_area, abs(room_area_sum - interior_area),
+                )
 
     # ── Stairs ───────────────────────────────────────────────────────────────
     stair_ev    = _val(geom, "stair_evidence") or False
