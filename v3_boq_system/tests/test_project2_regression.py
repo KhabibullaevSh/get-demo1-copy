@@ -29,7 +29,11 @@ from pathlib import Path
 import pytest
 
 _REPO_ROOT = Path(__file__).parent.parent.parent
-_OUTPUT_JSON = _REPO_ROOT / "v3_boq_system" / "outputs" / "project_2" / "project_2_boq_items_v3.json"
+_OUTPUT_JSON = (
+    _REPO_ROOT / "v3_boq_system" / "outputs" / "project2" / "project2_boq_items_v3.json"
+    if (_REPO_ROOT / "v3_boq_system" / "outputs" / "project2" / "project2_boq_items_v3.json").exists()
+    else _REPO_ROOT / "v3_boq_system" / "outputs" / "project_2" / "project_2_boq_items_v3.json"
+)
 _BENCHMARK_JSON = _REPO_ROOT / "benchmarks" / "project2_v3" / "project2_benchmark.json"
 
 sys.path.insert(0, str(_REPO_ROOT))

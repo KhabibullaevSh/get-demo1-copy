@@ -97,10 +97,13 @@ def run_pipeline(project_name: str, config_override: dict | None = None) -> dict
     if config_override:
         config.update(config_override)
 
+    # Capture YAML project name BEFORE setdefault overwrites it with the CLI slug.
+    # e.g. YAML says name="project 2" but CLI slug is "project2".
+    _cfg_project_name = config.get("project", {}).get("name", project_name)
     config.setdefault("project", {})["name"] = project_name
 
     # ── [1] Locate input files ────────────────────────────────────────────────
-    # Check legacy path first, then new per-project path
+    # Config dir: per-project YAML overlay lives here
     input_dir = _ROOT / "input" / project_name
     if not input_dir.exists():
         input_dir = _ROOT / "input" / "projects" / _pslug
@@ -109,9 +112,27 @@ def run_pipeline(project_name: str, config_override: dict | None = None) -> dict
             f"Input directory not found: tried 'input/{project_name}' and 'input/projects/{_pslug}'"
         )
 
+    # Source files dir: DXF/IFC/PDF may live in a separate directory (e.g. "project 2" with space
+    # vs the config slug "project2").  Try config project.name from the loaded config overlay.
+    _source_dir_candidates = [
+        input_dir,
+        _ROOT / "input" / _cfg_project_name,
+        _ROOT / "input" / _pslug,
+    ]
+    source_dir = next(
+        (d for d in _source_dir_candidates if d != input_dir and d.exists()
+         and any(d.glob("*.dxf"))),
+        input_dir,
+    )
+
     # Re-use V2 extractor outputs if available (avoid re-running expensive IFC/DXF)
-    v2_output_dir = _ROOT / "v2_ddc_pipeline" / "outputs" / project_name.replace(" ", "_")
     _pname_key = project_name.replace(" ", "_")
+    # V2 outputs may use "project_2" naming (underscore before digit) for "project2"
+    import re as _re
+    _pname_v2 = _re.sub(r'([a-zA-Z])(\d)', r'\1_\2', _pname_key)
+    v2_output_dir = _ROOT / "v2_ddc_pipeline" / "outputs" / _pname_key
+    if not v2_output_dir.exists() and _pname_v2 != _pname_key:
+        v2_output_dir = _ROOT / "v2_ddc_pipeline" / "outputs" / _pname_v2
 
     v2_model_path = v2_output_dir / "project_model.json"
     if v2_model_path.exists():
@@ -136,7 +157,7 @@ def run_pipeline(project_name: str, config_override: dict | None = None) -> dict
     sys.path.insert(0, str(_ROOT / "v2_ddc_pipeline"))
     try:
         from src.extractors.dxf_extractor import extract_dxf as _extract_dxf
-        dxf_files = list(input_dir.glob("*.dxf"))
+        dxf_files = list(source_dir.glob("*.dxf")) or list(input_dir.glob("*.dxf"))
         # Re-extract if any new fields are missing (int_wall_lm, post_positions, insert widths)
         _door_have_widths  = all(
             ins.get("width_m") is not None
@@ -165,7 +186,7 @@ def run_pipeline(project_name: str, config_override: dict | None = None) -> dict
         _fc_new_keys = ("floor_type", "floor_joist_spec", "floor_bearer_spec",
                         "floor_joist_spacing_mm", "floor_panel_size", "floor_panel_members")
         if any(k not in raw_framecad for k in _fc_new_keys):
-            fresh_fc = _extract_fc(input_dir)
+            fresh_fc = _extract_fc(source_dir if source_dir != input_dir else input_dir)
             for key in ("floor_type", "floor_load_class", "floor_joist_spec",
                         "floor_bearer_spec", "floor_joist_spacing_mm",
                         "floor_panel_size", "floor_panel_members",
@@ -343,9 +364,10 @@ def _run_v2_extractors(project_name: str, input_dir: Path, config: dict) -> dict
         raw_framecad = extract_framecad_bom(pdf_files)       if pdf_files  else {}
         raw_pdf      = {}
 
-        classification = classify_project(raw_dxf, raw_ifc, raw_framecad, project_name)
+        classification = classify_project(input_dir)
         return build_project_model(
-            raw_dxf, raw_ifc, raw_framecad, raw_pdf,
+            raw_dxf, raw_ifc, raw_pdf, raw_framecad,
+            source_inventory=[],
             project_name=project_name,
             classification=classification,
         )
