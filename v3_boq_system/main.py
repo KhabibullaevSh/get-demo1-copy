@@ -73,11 +73,20 @@ def run_pipeline(project_name: str, config_override: dict | None = None) -> dict
     assembly_rules = _load_yaml(asm_path)
     room_templates = _load_yaml(rm_path)
 
-    # Per-project config overlay (input/projects/<slug>/project_config.yaml)
+    # Per-project config overlay — try slug forms: "project_2", "project2", "project 2"
     _pslug = project_name.replace(" ", "_").lower()
-    _proj_cfg = _ROOT / "input" / "projects" / _pslug / "project_config.yaml"
-    if _proj_cfg.exists():
+    _pslug_nounderscore = project_name.replace(" ", "").lower()
+    _proj_cfg = next(
+        (p for p in [
+            _ROOT / "input" / "projects" / _pslug / "project_config.yaml",
+            _ROOT / "input" / "projects" / _pslug_nounderscore / "project_config.yaml",
+            _ROOT / "input" / "projects" / project_name / "project_config.yaml",
+        ] if p.exists()),
+        None,
+    )
+    if _proj_cfg is not None:
         log.info("[0] Loading per-project config overlay: %s", _proj_cfg)
+
         _overlay = _load_yaml(_proj_cfg)
         for key, val in _overlay.items():
             if isinstance(val, dict) and isinstance(config.get(key), dict):
@@ -129,14 +138,19 @@ def run_pipeline(project_name: str, config_override: dict | None = None) -> dict
         from src.extractors.dxf_extractor import extract_dxf as _extract_dxf
         dxf_files = list(input_dir.glob("*.dxf"))
         # Re-extract if any new fields are missing (int_wall_lm, post_positions, insert widths)
-        _door_have_widths = all(
+        _door_have_widths  = all(
             ins.get("width_m") is not None
             for ins in raw_dxf.get("door_inserts", [])
+        )
+        _win_have_heights  = all(
+            ins.get("height_m") is not None
+            for ins in raw_dxf.get("window_inserts", [])
         )
         if dxf_files and (
             "int_wall_lm" not in raw_dxf
             or "post_positions" not in raw_dxf
             or not _door_have_widths
+            or not _win_have_heights   # re-extract when window heights are missing
         ):
             fresh_dxf = _extract_dxf(str(dxf_files[0]))
             raw_dxf.update(fresh_dxf)   # overlay new fields onto cached data
@@ -189,7 +203,8 @@ def run_pipeline(project_name: str, config_override: dict | None = None) -> dict
     from v3_boq_system.quantify.footing_quantifier          import quantify_footings
     from v3_boq_system.quantify.stair_ramp_quantifier       import quantify_stairs
     from v3_boq_system.quantify.services_quantifier         import quantify_services, quantify_finishes
-    from v3_boq_system.quantify.external_cladding_quantifier import quantify_external_cladding
+    from v3_boq_system.quantify.external_cladding_quantifier  import quantify_external_cladding
+    from v3_boq_system.quantify.structural_fixings_quantifier import quantify_structural_fixings
 
     all_rows += quantify_roof(element_model, config, assembly_rules)
     log.info("   → roof: %d rows", len(all_rows))
@@ -222,6 +237,10 @@ def run_pipeline(project_name: str, config_override: dict | None = None) -> dict
     n_prev = len(all_rows)
     all_rows += quantify_external_cladding(element_model, config)
     log.info("   → external cladding: +%d rows", len(all_rows) - n_prev)
+
+    n_prev = len(all_rows)
+    all_rows += quantify_structural_fixings(element_model, config)
+    log.info("   → structural fixings: +%d rows", len(all_rows) - n_prev)
 
     # Add verandah (external works)
     all_rows += _build_verandah_rows(element_model)

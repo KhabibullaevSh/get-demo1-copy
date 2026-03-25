@@ -247,7 +247,7 @@
       "item_no": "G01",
       "section": "G - Floor System",
       "item_name": "Floor Panel \u2014 Standard Load Floor Panel \u2014 General Areas (1.8kPa)",
-      "quantity": 28,
+      "quantity": 21,
       "unit": "nr",
       "confidence": "LOW",
       "notes": "MANUAL REVIEW REQUIRED. General pharmacy areas (waiting, consultation, staff, storage). 70% area estimate from building use. No FrameCAD floor tab available \u2014 obtain actual panel schedule from engineer. Panel dimensions assumed 600mm \u00d7 3600mm (2.16m\u00b2 each)."
@@ -256,16 +256,16 @@
       "item_no": "G02",
       "section": "G - Floor System",
       "item_name": "Floor Joist LGS \u2014 1.8kPa Zone",
-      "quantity": 136.7,
+      "quantity": 100.8,
       "unit": "lm",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. General pharmacy areas (waiting, consultation, staff, storage). 70% area estimate from building use. No FrameCAD floor tab available \u2014 obtain actual panel schedule from engineer. Joist count at 450mm spacing across 9.3m short span, 9.3m run."
+      "notes": "MANUAL REVIEW REQUIRED. General pharmacy areas (waiting, consultation, staff, storage). 70% area estimate from building use. No FrameCAD floor tab available \u2014 obtain actual panel schedule from engineer. Joist count at 450mm spacing across 7.2m span, 9.0m run."
     },
     {
       "item_no": "G03",
       "section": "G - Floor System",
       "item_name": "Floor Bearer (pair) \u2014 1.8kPa Zone",
-      "quantity": 4,
+      "quantity": 3,
       "unit": "nr",
       "confidence": "LOW",
       "notes": "MANUAL REVIEW REQUIRED. General pharmacy areas (waiting, consultation, staff, storage). 70% area estimate from building use. No FrameCAD floor tab available \u2014 obtain actual panel schedule from engineer. Bearer pairs at 1800mm spacing. Verify from structural schedule."
@@ -274,7 +274,7 @@
       "item_no": "G04",
       "section": "G - Floor System",
       "item_name": "Floor Panel \u2014 High-Load Floor Panel \u2014 Dispensary (4kPa)",
-      "quantity": 12,
+      "quantity": 9,
       "unit": "nr",
       "confidence": "LOW",
       "notes": "MANUAL REVIEW REQUIRED. Dispensary area with heavy shelving/equipment. 30% area estimate. Obtain actual panel schedule from FrameCAD engineer before ordering. Panel dimensions assumed 600mm \u00d7 3600mm (2.16m\u00b2 each)."
@@ -283,10 +283,10 @@
       "item_no": "G05",
       "section": "G - Floor System",
       "item_name": "Floor Joist LGS \u2014 4kPa Zone",
-      "quantity": 58.6,
+      "quantity": 43.2,
       "unit": "lm",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Dispensary area with heavy shelving/equipment. 30% area estimate. Obtain actual panel schedule from FrameCAD engineer before ordering. Joist count at 450mm spacing across 9.3m short span, 9.3m run."
+      "notes": "MANUAL REVIEW REQUIRED. Dispensary area with heavy shelving/equipment. 30% area estimate. Obtain actual panel schedule from FrameCAD engineer before ordering. Joist count at 450mm spacing across 7.2m span, 9.0m run."
     },
     {
       "item_no": "G06",
@@ -301,7 +301,7 @@
       "item_no": "G07",
       "section": "G - Floor System",
       "item_name": "Floor Sheet (FC / plywood)",
-      "quantity": 32,
+      "quantity": 24,
       "unit": "sheets",
       "confidence": "LOW",
       "notes": "MANUAL REVIEW REQUIRED. Sheet size assumed same as ceiling FC sheet (1.2\u00d72.4). Adjust if different."

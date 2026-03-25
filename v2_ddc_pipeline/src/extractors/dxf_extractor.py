@@ -88,30 +88,47 @@ def _hatch_areas_m2(msp, layer_name: str) -> list[float]:
 
 # ─── main extractor ────────────────────────────────────────────────────────────
 
-def _block_base_widths(doc) -> dict[str, float]:
+def _block_base_dimensions(doc) -> dict[str, tuple[float, float]]:
     """
-    Pre-scan block definitions for the longest LINE entity (= nominal opening width in mm).
-    Returns {block_name: width_mm} for door/window blocks.
+    Pre-scan block definitions for nominal opening width and height (both in mm).
+
+    Width  = maximum X-direction extent across all LINE entities in the block.
+    Height = maximum Y-direction extent across all LINE entities in the block.
+
+    For door/window blocks drawn with the opening horizontal (X = span, Y = height),
+    this gives the nominal frame dimensions before insert scaling is applied.
+
+    Returns {block_name: (width_mm, height_mm)}.  Either value may be 0.0 if no
+    suitable LINE geometry was found in that direction.
     """
-    widths: dict[str, float] = {}
+    dims: dict[str, tuple[float, float]] = {}
     for blk in doc.blocks:
         bn = blk.name
         if not any(k in bn.upper() for k in ("DOOR", "WINDOW", "WIN_")):
             continue
-        max_len = 0.0
+        max_dx = 0.0   # largest X-direction LINE extent → width
+        max_dy = 0.0   # largest Y-direction LINE extent → height
         for ent in blk:
             try:
                 if ent.dxftype() == "LINE":
                     s = ent.dxf.start
                     e = ent.dxf.end
-                    ln = math.sqrt((e[0] - s[0]) ** 2 + (e[1] - s[1]) ** 2)
-                    if ln > max_len:
-                        max_len = ln
+                    dx = abs(e[0] - s[0])
+                    dy = abs(e[1] - s[1])
+                    if dx > max_dx:
+                        max_dx = dx
+                    if dy > max_dy:
+                        max_dy = dy
             except Exception:
                 pass
-        if max_len > 0:
-            widths[bn] = round(max_len, 1)
-    return widths
+        if max_dx > 0 or max_dy > 0:
+            dims[bn] = (round(max_dx, 1), round(max_dy, 1))
+    return dims
+
+
+def _block_base_widths(doc) -> dict[str, float]:
+    """Backward-compatible wrapper — returns width only."""
+    return {bn: wh[0] for bn, wh in _block_base_dimensions(doc).items()}
 
 
 def extract_dxf(dxf_path: Path) -> dict:
@@ -160,8 +177,9 @@ def extract_dxf(dxf_path: Path) -> dict:
     layer_names = {layer.dxf.name.upper() for layer in doc.layers}
     log.info("DXF layers: %s", sorted(layer_names))
 
-    # Pre-scan block definitions for door/window widths
-    block_widths = _block_base_widths(doc)
+    # Pre-scan block definitions for door/window widths AND heights
+    block_dims   = _block_base_dimensions(doc)
+    block_widths = {bn: wh[0] for bn, wh in block_dims.items()}  # width-only compat
 
     # Helper: find entities by layer (case-insensitive prefix matching)
     def query_layer(entity_type: str, target: str) -> list:
@@ -314,22 +332,31 @@ def extract_dxf(dxf_path: Path) -> dict:
         for e in window_inserts_raw:
             bn = e.dxf.get("name", "")
             xs = e.dxf.get("xscale", 1.0)
-            base_w = block_widths.get(bn, 0.0)
-            width_m = round(base_w * xs / 1000, 3) if base_w > 0 else 0.0
+            ys = e.dxf.get("yscale", 1.0)
+            base_w, base_h = block_dims.get(bn, (0.0, 0.0))
+            width_m  = round(base_w * xs / 1000, 3) if base_w > 0 else 0.0
+            # height_m: Y-direction extent of the block × yscale.
+            # This is directly extracted from block LINE geometry — not inferred.
+            # If the block has no Y-direction LINE entities, height_m = 0.0.
+            height_m = round(base_h * ys / 1000, 3) if base_h > 0 else 0.0
             inserts.append({
                 "block_name":    bn,
                 "insert_x_m":   round(e.dxf.insert[0] * MM_TO_M, 3),
                 "insert_y_m":   round(e.dxf.insert[1] * MM_TO_M, 3),
                 "rotation_deg": round(e.dxf.get("rotation", 0.0), 1),
                 "width_m":      width_m,
+                "height_m":     height_m,
                 "xscale":       round(xs, 4),
+                "yscale":       round(ys, 4),
             })
         result["window_inserts"] = inserts
-        # Log unique widths
-        widths_seen = sorted(set(i["width_m"] for i in inserts if i["width_m"] > 0))
-        log.info("WINDOWS INSERT → %d windows (unique widths: %s)",
+        # Log unique widths and heights
+        widths_seen  = sorted(set(i["width_m"]  for i in inserts if i["width_m"]  > 0))
+        heights_seen = sorted(set(i["height_m"] for i in inserts if i["height_m"] > 0))
+        log.info("WINDOWS INSERT → %d windows (widths: %s | heights: %s)",
                  result["window_count"],
-                 ", ".join(f"{w:.3f}m" for w in widths_seen))
+                 ", ".join(f"{w:.3f}m" for w in widths_seen),
+                 ", ".join(f"{h:.3f}m" for h in heights_seen) or "none extracted")
     else:
         warnings.append("No INSERT entities on WINDOWS layer")
 
