@@ -3,13 +3,26 @@ boq_mapper.py — Map raw quantifier rows to final BOQ output items.
 
 Responsibilities:
   1. Assign BOQ section letter/name based on package tag
-  2. Look up stock codes from item library (reference only)
-  3. Assign sequential item numbers
-  4. Normalise units
-  5. Tag manual review items
+  2. Assign final BOQ numeric package codes (50106–50129) for export alignment
+  3. Apply display name normalization (Category | Specification format)
+  4. Look up stock codes from item library (reference only)
+  5. Assign sequential item numbers
+  6. Normalise units
+  7. Tag manual review items
+  8. Sort output by final BOQ package order
 
-CRITICAL: Quantities are NEVER sourced from the item library.
+CRITICAL: Quantities are NEVER sourced from the item library or the final BOQ.
 The item library provides: stock_code, description style, unit.  That is all.
+
+STRUCTURE ALIGNMENT NOTE:
+  The final approved BOQ uses numeric package codes (50106–50129) and a
+  "Category | Specification" naming convention.  This mapper adds:
+    package_code      — e.g. "50107"
+    boq_section_final — e.g. "50107 - Structural & Base Steel & Footings"
+    item_display_name — normalized per final BOQ naming convention
+
+  item_name is preserved unchanged for internal use / tests.
+  Quantities are NOT changed by this layer.
 """
 from __future__ import annotations
 
@@ -18,53 +31,33 @@ from typing import Any
 
 log = logging.getLogger("boq.v3.boq_mapper")
 
-# ── Section map — package tag → BOQ section ───────────────────────────────────
-# Package tags are set by the quantifier modules.
-
+# ── Internal section map (A–K) — kept for backward compat / JSON output ───────
 _SECTION_MAP: dict[str, str] = {
-    # Structural
     "structural_frame":        "A - Structural Frame",
     "roof_battens":            "A - Structural Frame",
-
-    # Roof
+    "structural_fixings":      "A - Structural Frame",
     "roof_cladding":           "B - Roof",
     "roof_ridge_accessories":  "B - Roof",
     "roof_eaves_drainage":     "B - Roof",
     "roof_flashings":          "B - Roof",
     "insulation":              "C - Insulation",
-
-    # Openings
     "openings_doors":          "D - Openings",
     "openings_windows":        "D - Openings",
     "openings_door_hardware":  "D - Openings",
     "openings_window_hardware": "D - Openings",
     "openings_finishes":       "F - Finishes",
-
-    # Linings
     "wall_lining_external":    "E - Linings & Ceilings",
     "wall_lining_internal":    "E - Linings & Ceilings",
     "wall_lining_wet":         "E - Linings & Ceilings",
     "ceiling_lining":          "E - Linings & Ceilings",
     "ceiling_trim":            "E - Linings & Ceilings",
-
-    # Finishes
     "finishes":                "F - Finishes",
     "finishes_trim":           "F - Finishes",
-
-    # Floor
     "floor_system":            "G - Floor System",
-
-    # Footings / substructure
     "footings":                "H - Substructure",
-
-    # Services
     "services":                "I - Services",
-
-    # Stairs / Balustrades
     "stairs":                  "J - Stairs",
     "external_balustrade":     "K - External Works",
-
-    # External
     "external_works":          "K - External Works",
     "external_verandah":       "K - External Works",
     "external_cladding":       "K - External Works",
@@ -72,9 +65,368 @@ _SECTION_MAP: dict[str, str] = {
 
 _DEFAULT_SECTION = "Z - Unclassified"
 
+# ── Final BOQ numeric package codes ────────────────────────────────────────────
+# Maps V3 package tags → approved BOQ package codes (50106–50129).
+# Used for export alignment only — does NOT change quantities.
+
+_PACKAGE_CODE_MAP: dict[str, str] = {
+    "finishes_trim":           "50106",   # Timber / WPC items
+    "finishes":                "50106",   # Timber skirting/cornice also in WPC
+
+    "structural_frame":        "50107",   # FrameCAD frame + steel
+    "floor_system":            "50107",   # Floor panels are 50107 in final BOQ
+    "footings":                "50107",   # Footings co-located with structural
+
+    "structural_fixings":      "50111",   # All fixing / connector rows
+
+    "roof_cladding":           "50112",   # Roof cladding
+    "roof_ridge_accessories":  "50112",   # Ridge, barge
+    "roof_eaves_drainage":     "50112",   # Gutters, downpipes
+    "roof_flashings":          "50112",   # Flashings
+    "roof_battens":            "50107",   # Battens live in 50107 structural in final BOQ
+
+    "wall_lining_external":    "50113",   # External FC sheet cladding
+    "external_cladding":       "50113",
+    "external_works":          "50113",
+    "external_verandah":       "50113",
+
+    "openings_doors":          "50114",
+    "openings_windows":        "50114",
+    "openings_door_hardware":  "50114",
+    "openings_window_hardware": "50114",
+    "openings_finishes":       "50114",
+
+    "wall_lining_internal":    "50115",   # Internal linings
+    "wall_lining_wet":         "50115",
+    "ceiling_lining":          "50115",
+    "ceiling_trim":            "50115",
+
+    "services":                "50117",   # Services (hydraulics / plumbing partial)
+    # NOTE: electrical (50119) and FFE (50129) are not generated by V3.
+
+    "insulation":              "50118",
+
+    "stairs":                  "50124",
+    "external_balustrade":     "50124",
+}
+
+_DEFAULT_PACKAGE_CODE = "50199"   # Unclassified / not in final BOQ scope
+
+# ── Final BOQ section labels ────────────────────────────────────────────────────
+_PACKAGE_LABEL_MAP: dict[str, str] = {
+    "50106": "50106 - WPC (Timber)",
+    "50107": "50107 - Structural & Base Steel & Footings",
+    "50111": "50111 - Fixings & Connectors",
+    "50112": "50112 - Roof & Roof Plumbing",
+    "50113": "50113 - External Cladding",
+    "50114": "50114 - Openings",
+    "50115": "50115 - Internal Linings & Ceilings",
+    "50117": "50117 - Services (Hydraulics — Partial)",
+    "50118": "50118 - Insulation",
+    "50119": "50119 - Electrical [NOT GENERATED — no schedule]",
+    "50124": "50124 - Stairs & Balustrades",
+    "50129": "50129 - FFE [NOT GENERATED — no schedule]",
+    "50199": "50199 - Unclassified",
+}
+
+# ── Final BOQ package sort order ───────────────────────────────────────────────
+_PACKAGE_ORDER: list[str] = [
+    "50106", "50107", "50111", "50112", "50113",
+    "50114", "50115", "50117", "50118", "50119",
+    "50124", "50129", "50199",
+]
+
+
+def _pkg_sort_key(item: dict) -> tuple[int, str]:
+    code = item.get("package_code", "50199")
+    try:
+        idx = _PACKAGE_ORDER.index(code)
+    except ValueError:
+        idx = len(_PACKAGE_ORDER)
+    return (idx, item.get("item_no", ""))
+
+
+# ── Item display name normalization ────────────────────────────────────────────
+# Maps V3 item_name fragments → "Category | Specification" format used in final BOQ.
+# ONLY the display name changes — item_name, quantities, units are preserved.
+# Matching is prefix/substring based (longest match wins).
+
+_NAME_NORMALIZE: list[tuple[str, str]] = [
+    # FrameCAD structural frame
+    ("Roof Panel Frame",        "FrameCAD Roof Panel | LGS C89, 0.75BMT, G550, Z275"),
+    ("Roof Truss Frame",        "FrameCAD Roof Truss | LGS C89, 0.75BMT, G550, Z275"),
+    ("Wall Panel Frame",        "FrameCAD Wall Panel | LGS C89, 0.755BMT, G550, Z275"),
+    ("Wall Frame LGS",          "FrameCAD Wall Frame | LGS C89, 0.755BMT, G550, Z275"),
+    ("Lintel Frame LGS",        "FrameCAD Lintel | LGS C89, G550, Z275"),
+    ("Lintel LGS",              "FrameCAD Lintel | LGS C89, G550, Z275"),
+    ("Wall Strap Brace",        "FrameCAD Wall Strap Brace | G550, Z275, 0.95 x 32mm"),
+    ("Wall Strap",              "FrameCAD Wall Strap | G550, Z275"),
+
+    # Roof battens
+    ("Roof Top-Hat Batten G40 \u2014 6000mm",  "Roof Batten | 41mm Top Hat, G550, Z275, 6000mm"),
+    ("Roof Top-Hat Batten G40",                 "Roof Batten | 41mm Top Hat, G550, Z275"),
+    ("Ceiling/Wall Batten G22 \u2014 4800mm",   "Ceiling Batten | G22, 4800mm"),
+    ("Ceiling/Wall Batten G22 \u2014 6100mm",   "Ceiling Batten | G22, 6100mm"),
+    ("Ceiling/Wall Batten G22",                 "Ceiling Batten | G22"),
+    ("Roof Batten",             "Roof Batten | 41mm Top Hat, G550, Z275"),
+    ("Ceiling Batten",          "Ceiling Batten | G22"),
+
+    # Steel posts/beams
+    ("Steel Post SHS",          "Steel Post | 75 x 4mm SHS, Q345, HDG600"),
+    ("Steel Beam SHS",          "Steel Beam | 75 x 4mm SHS, Q345, HDG600"),
+    ("SHS Steel",               "Steel Section | 75 x 4mm SHS, Q345, HDG600"),
+
+    # Roof cladding
+    ("Roof Cladding Sheet (corrugated / CGI)",  "Roof Cladding | Custom Orb Corrugated CGI Sheet"),
+    ("Roof Cladding Sheet",     "Roof Cladding | Custom Orb CGI Sheet"),
+
+    # Ridge / barge
+    ("Ridge Cap (roll)",        "Ridge Cap | Galvanised Roll"),
+    ("Ridge Cap Fixing Screws", "Fixing | Ridge Cap Hex Head Screw"),
+    ("Barge Capping",           "Barge Cap | Galvanised, lm"),
+    ("Barge End Cap",           "Barge End Cap | Galvanised"),
+
+    # Eaves / drainage
+    ("PVC Gutter 150mm",        "SL-14 | PVC Box Gutter, 150mm"),
+    ("Gutter Outlet",           "SL-14 | PVC Gutter Outlet"),
+    ("Gutter Joiner",           "SL-14 | PVC Gutter Joiner"),
+    ("Downpipe 68mm PVC",       "SL-14 | PVC Downpipe, 68mm"),
+    ("Downpipe Saddle",         "SL-14 | PVC Downpipe Saddle"),
+    ("Gutter Hanger",           "SL-14 | PVC Gutter Hanger"),
+    ("Gutter",                  "SL-14 | PVC Box Gutter"),
+
+    # Flashings
+    ("Door Head Flashing",      "Flashing | Door Head, Galvanised"),
+    ("Door Sill Flashing",      "Flashing | Door Sill, Galvanised"),
+    ("Window Head Flashing",    "Flashing | Window Head, Galvanised"),
+    ("Window Sill Flashing",    "Flashing | Window Sill, Galvanised"),
+
+    # Insulation
+    ("Wall Insulation",         "Insulation | Glasswool Batts, Wall"),
+    ("Ceiling Insulation",      "Insulation | Glasswool Batts, Ceiling"),
+    ("Roof Insulation",         "Insulation | Glasswool Batts, Roof"),
+
+    # External cladding (FC sheet)
+    ("External Wall Lining \u2014 FC Sheet",        "External Lining | FC Sheet, 1200 x 2400mm"),
+    ("External Wall Lining \u2014 FC Sheet Screws", "Fixing | FC Sheet Screw (External)"),
+    ("External Wall Lining",    "External Lining | FC Sheet, 1200 x 2400mm"),
+    ("FC Weatherboard",         "External Cladding | FC Weatherboard"),
+
+    # Internal linings
+    ("Internal Wall Lining \u2014 FC Sheet",        "Internal Lining | FC Sheet, 1200 x 2400mm"),
+    ("Internal Wall Lining \u2014 FC Sheet Screws", "Fixing | FC Sheet Screw (Internal)"),
+    ("Internal Wall Lining \u2014 FC Sheet Joiner", "Internal Lining Accessory | PVC H Joiner"),
+    ("Internal Wall Lining",    "Internal Lining | FC Sheet, 1200 x 2400mm"),
+    ("Wet Area Wall Lining",    "Internal Lining | Waterproof Board / FC, Wet Area"),
+    ("Ceiling FC Sheet",        "Ceiling Lining | FC Sheet, 1200 x 2400mm"),
+    ("Ceiling FC Sheet Screws", "Fixing | FC Sheet Screw (Ceiling)"),
+
+    # Floor
+    ("Floor Panel \u2014 Standard Load Floor Panel",    "Floor Panel | 1.8kPa Standard Load"),
+    ("Floor Panel \u2014 High-Load Floor Panel",        "Floor Panel | 4kPa High Load"),
+    ("Floor Panel",             "Floor Panel | LGS FrameCAD"),
+    ("Floor Joist LGS \u2014 1.8kPa Zone",             "Floor Joist | LGS C150, 1.8kPa Zone"),
+    ("Floor Joist LGS \u2014 4kPa Zone",               "Floor Joist | LGS C150, 4kPa Zone"),
+    ("Floor Joist LGS",         "Floor Joist | LGS C150"),
+    ("Floor Bearer (pair) \u2014 1.8kPa Zone",         "Floor Bearer | 1.8kPa Zone, pair"),
+    ("Floor Bearer (pair) \u2014 4kPa Zone",           "Floor Bearer | 4kPa Zone, pair"),
+    ("Floor Bearer",            "Floor Bearer | LGS"),
+    ("Floor Sheet (FC / plywood)",  "FC Sheet Floor | 18mm thk, 1200 x 2400 Sheet"),
+    ("Floor Sheet Fixing Screws",   "Fixing | FC Floor Sheet Screw"),
+
+    # Fixings
+    ("Framing Screw 12G-14\u00d720 HEX Head",    "Fixing | 12G-14x20mm HEX Head, DP"),
+    ("Framing Screw 10G-24\u00d740 Countersunk",  "Fixing | 10G-24x40mm Countersunk, DP"),
+    ("Framing Screw 10G-14\u00d716 Wafer Head",   "Fixing | 10G-14x16mm Wafer Head, DP"),
+    ("Sleeve Anchor M12\u00d775 \u2014 Pad Footings",  "Fixing | M12 x 75mm Sleeve Anchor (Pad Footings)"),
+    ("Sleeve Anchor M12\u00d775 \u2014 Strip",         "Fixing | M12 x 75mm Sleeve Anchor (Strip Footing)"),
+    ("Sleeve Anchor M12\u00d775",   "Fixing | M12 x 75mm Sleeve Anchor"),
+    ("Hold-Down Washer \u2014 Cyclonic",    "Accessories | Hold Down Washer, Cyclonic"),
+    ("Triple Grip Connector",   "Accessories | Triple Grip Connector (Pryda)"),
+    ("Fix Plate / Gusset Plate", "Accessories | Fix Plate Connector, G350"),
+    ("Diagonal Strap Tensioner", "Accessories | Strap Brace Tensioner"),
+    ("Cable Grommet",           "Accessories | Grommet 35mm Dia"),
+    ("PH Post Holder",          "PH Bracket | Post Holder (PHA/PHB/PHD)"),
+    ("Stainless Steel Screw",   "Fixing | Stainless Steel Screw (Cladding)"),
+
+    # Openings — doors
+    ("Door Leaf",               "Door | Leaf"),
+    ("Door Frame Set",          "Door | Frame Set"),
+    ("Door Hinge",              "Door | Hinge (pair)"),
+    ("Door Lockset",            "Door | Lockset"),
+    ("Door Stop",               "Door | Stop"),
+    ("Door Closer",             "Door | Closer, Hydraulic"),
+
+    # Openings — windows
+    ("Louvre Blade",            "Window | Louvre Blade"),
+    ("Fly Screen",              "Window | Fly Screen"),
+    ("Window Head Flashing",    "Flashing | Window Head"),
+    ("Window Sill Flashing",    "Flashing | Window Sill"),
+
+    # Services (partial — room template)
+    ("WC Pan",                  "Hydraulics | WC Pan (close-coupled)"),
+    ("WC Cistern",              "Hydraulics | WC Cistern"),
+    ("Hand Basin",              "Hydraulics | Hand Basin"),
+    ("Tapware",                 "Hydraulics | Tapware"),
+    ("Floor Waste",             "Hydraulics | Floor Waste"),
+    ("Builder's Works \u2014 Plumbing", "Hydraulics | Builder's Works (Plumbing)"),
+    ("Wet Area Waterproofing",  "Hydraulics | Wet Area Waterproofing Membrane"),
+    ("Towel Rail",              "FFE | Towel Rail"),
+    ("Toilet Roll Holder",      "FFE | Toilet Roll Holder"),
+    ("Soap Dispenser",          "FFE | Soap Dispenser"),
+    ("Mirror",                  "FFE | Mirror"),
+
+    # Stairs
+    ("Stair Tread",             "Stair | Tread"),
+    ("Stair Riser",             "Stair | Riser"),
+    ("Stair Stringer",          "Stair | Stringer"),
+    ("Handrail",                "Balustrade | Handrail"),
+    ("Balustrade Post",         "Balustrade | Post"),
+    ("Balustrade Panel",        "Balustrade | Panel"),
+    ("Stair Nosing",            "Stair | Nosing"),
+    ("Balustrade",              "Balustrade | Assembly"),
+    ("Stair",                   "Stair | Component"),
+
+    # Timber / WPC (50106)
+    ("Skirting Board",          "Timber Skirting | 25 x 75 x 2400mm Timber"),
+    ("Cornice",                 "Timber Cornice | 25 x 25 x 2400mm Timber"),
+    ("Architrave",              "Timber Architrave | 12 x 75 x 2400mm Timber"),
+    ("Timber Decking",          "Timber Decking | 25 x 100 x 3000mm Timber"),
+
+    # Footings
+    ("Strip Footing \u2014 External Perimeter",  "Substructure | Strip Footing, External Perimeter"),
+    ("Strip Footing \u2014 Internal Bearing",     "Substructure | Strip Footing, Internal Bearing"),
+    ("Strip Footing Internal",  "Substructure | Strip Footing, Internal Bearing"),
+    ("Strip Footing \u2014 Concrete Volume",     "Substructure | Strip Footing Concrete Volume"),
+    ("Strip Footing \u2014 Formwork",            "Substructure | Strip Footing Formwork"),
+    ("Pad Footing (concrete)",  "Substructure | Pad Footing, Concrete"),
+    ("Pad Footing Concrete",    "Substructure | Pad Footing Concrete Volume"),
+    ("Slab on Ground",          "Substructure | Slab on Ground, Concrete"),
+    ("Slab Concrete Volume",    "Substructure | Slab Concrete Volume"),
+    ("Slab Edge Formwork",      "Substructure | Slab Edge Formwork"),
+    ("Slab Mesh",               "Substructure | Slab Mesh (SL72)"),
+    ("Vapour Barrier",          "Substructure | Vapour Barrier, 200 µm"),
+    ("Bar Chair",               "Substructure | Bar Chair / Mesh Spacer"),
+    ("Bulk Earthworks",         "Substructure | Bulk Earthworks / Level (provisional)"),
+
+    # External
+    ("Verandah Decking",        "External Works | Verandah Decking"),
+    ("Verandah Frame",          "External Works | Verandah Frame"),
+    ("External Steps",          "External Works | External Steps"),
+
+    # Wall frame sub-items (from IFC member classification)
+    ("Wall Frame \u2014 all wall members", "FrameCAD Wall Frame | LGS C89, all wall members"),
+    ("Wall Frame \u2014 lintel",           "FrameCAD Lintel | LGS, lintel members"),
+    ("Wall Frame \u2014 diagonal strap",   "FrameCAD Wall Strap | Diagonal strap brace"),
+    ("Wall Frame",                         "FrameCAD Wall Frame | LGS C89"),
+    ("Structural Steel Post",              "Steel Post | 75 x 4mm SHS, Q345, HDG600"),
+    ("BOM LGS Total Check",                "QA Check | BOM LGS Total (internal)"),
+
+    # Roof accessories not yet covered
+    ("Sisalation / Sarking",    "Insulation | Sisalation / Sarking"),
+    ("Roof Tek Screws",         "Fixing | Roof Tek Screw, Hex Head, DP"),
+    ("Ridge Capping",           "Ridge Cap | Galvanised, lm"),
+    ("Ridge End Cap",           "Ridge End Cap | Galvanised"),
+    ("Fascia Board",            "Fascia Board | Galvanised, lm"),
+    ("Fascia Clips",            "Fascia | Clips"),
+    ("Birdproof Foam Strip",    "Accessories | Birdproof Foam Strip"),
+    ("PVC Downpipe",            "SL-14 | PVC Downpipe, 68mm"),
+    ("Downpipe Elbow",          "SL-14 | PVC Downpipe Elbow, 90\u00b0"),
+    ("Downpipe Clip",           "SL-14 | PVC Downpipe Clip"),
+    ("Downpipe Saddle",         "SL-14 | PVC Downpipe Saddle"),
+
+    # External cladding
+    ("External Corner Flashing",  "External Cladding | Corner Flashing, Galvanised"),
+    ("External Corner Trim",      "External Cladding | Corner Trim / Angle Bead"),
+    ("H-Joiner",                  "External Cladding | H-Joiner Strip"),
+    ("Building Wrap",             "Accessories | Building Wrap / Sarking"),
+
+    # Openings — door entries with block name
+    ("Door \u2014 DOOR_90",      "Door | 920mm Wide (DOOR_90)"),
+    ("Door \u2014 DOOR_82",      "Door | 820mm Wide (DOOR_82)"),
+    ("Door \u2014 DOOR_72",      "Door | 720mm Wide (DOOR_72)"),
+    ("Door \u2014 DOOR_60",      "Door | 600mm Wide (DOOR_60)"),
+    ("Door \u2014 DOOR_100",     "Door | 1000mm Wide (DOOR_100)"),
+
+    # Window entries with block name
+    ("Window \u2014 WINDOW_LOUVRE_1100",    "Window | Louvre, 1100mm Wide"),
+    ("Window \u2014 WINDOW_LOUVRE_800",     "Window | Louvre, 800mm Wide"),
+    ("Window \u2014 WINDOW_LOUVRE_1800",    "Window | Louvre, 1800mm Wide"),
+    ("Window \u2014 WINDOW_LOUVRE",         "Window | Louvre"),
+    ("Louvre Window Frame",                 "Window | Louvre Frame"),
+    ("Louvre Blade \u2014 WINDOW_LOUVRE_1100",  "Window | Louvre Blade, 1100mm Wide"),
+    ("Louvre Blade \u2014 WINDOW_LOUVRE_800",   "Window | Louvre Blade, 800mm Wide"),
+    ("Louvre Blade \u2014 WINDOW_LOUVRE_1800",  "Window | Louvre Blade, 1800mm Wide"),
+    ("Fly Screen \u2014 WINDOW_LOUVRE_1100",    "Window | Fly Screen, 1100mm Wide"),
+    ("Fly Screen \u2014 WINDOW_LOUVRE_800",     "Window | Fly Screen, 800mm Wide"),
+    ("Fly Screen \u2014 WINDOW_LOUVRE_1800",    "Window | Fly Screen, 1800mm Wide"),
+
+    # Finishes (50106 WPC / paint)
+    ("Floor Finish \u2014 Tiles",   "Floor Finish | Ceramic Tiles"),
+    ("Floor Finish \u2014 Vinyl",   "Floor Finish | Vinyl Plank"),
+    ("Floor Finish",                "Floor Finish | (type by room)"),
+    ("Paint \u2014 External",       "Paint | External, two coats"),
+    ("Paint \u2014 Internal",       "Paint | Internal, two coats"),
+    ("Paint",                       "Paint | Wall / Ceiling"),
+
+    # Services
+    ("Smoke Detector",          "Electrical | Smoke Detector"),
+    ("Power Point",             "Electrical | Power Point / GPO"),
+    ("Light Fitting",           "Electrical | Light Fitting"),
+    ("Exhaust Fan",             "Electrical | Exhaust Fan"),
+    ("Safety Switch",           "Electrical | Safety Switch / RCD"),
+    ("Meter Box",               "Electrical | Meter Box / DB"),
+    ("Consumer Mains",          "Electrical | Consumer Mains Cable"),
+    ("Hot Water",               "Hydraulics | Hot Water System"),
+    ("Kitchen Sink",            "Hydraulics | Kitchen Sink"),
+    ("Shower",                  "Hydraulics | Shower Assembly"),
+    ("Toilet",                  "Hydraulics | WC Pan"),
+
+    # Structural fixings remainder
+    ("Structural Fixings Remainder",    "Fixing | Structural Fixings Remainder (PLACEHOLDER)"),
+
+    # Remaining edge cases
+    ("Site Preparation",        "Substructure | Site Preparation (Provisional)"),
+    ("Flyscreen",               "Window | Fly Screen"),
+    ("Ceiling Lining \u2014 FC Sheet",  "Ceiling Lining | FC Sheet, 1200 x 2400mm"),
+    ("Cold Room / Refrigeration", "Services | Cold Room / Refrigeration (PLACEHOLDER)"),
+    ("Builder's Works \u2014 Electrical", "Services | Builder's Works, Electrical"),
+    ("Builder's Works \u2014 Services",   "Services | Builder's Works, Services"),
+    ("Air Conditioning",        "Services | Air Conditioning / Mechanical (PLACEHOLDER)"),
+    ("Main Electrical Switchboard", "Electrical | Main Switchboard / Distribution Board"),
+    ("Main Water Meter",        "Hydraulics | Main Water Meter / Stopcock"),
+    ("Insulation Batts \u2014 Roof",     "Insulation | Glasswool Batts, Roof / Ceiling"),
+    ("Insulation Batts \u2014 External", "Insulation | Glasswool Batts, External Wall"),
+    ("Insulation Batts",        "Insulation | Glasswool Batts"),
+    ("Access Ramp \u2014 Surface",       "Access Ramp | Surface, Concrete / Non-slip"),
+    ("Access Ramp \u2014 Edge",          "Access Ramp | Edge Kerb / Guard"),
+    ("Access Ramp",             "Access Ramp | (type by design)"),
+]
+
+
+def _normalize_display_name(item_name: str) -> str:
+    """
+    Apply 'Category | Specification' naming convention to item display name.
+    Uses longest-prefix match from _NAME_NORMALIZE.
+    Returns original item_name if no match found.
+    """
+    best_match_len = 0
+    best_display   = item_name
+
+    for fragment, display in _NAME_NORMALIZE:
+        if fragment in item_name and len(fragment) > best_match_len:
+            best_match_len = len(fragment)
+            best_display   = display
+
+    return best_display
+
 
 def _map_section(package: str) -> str:
     return _SECTION_MAP.get(package, _DEFAULT_SECTION)
+
+
+def _map_package_code(package: str) -> str:
+    return _PACKAGE_CODE_MAP.get(package, _DEFAULT_PACKAGE_CODE)
 
 
 def _lookup_stock_code(item_library: dict, keywords: list[str]) -> str:
@@ -98,16 +450,18 @@ def map_to_boq(
         item_library:  Loaded item library (stock codes only — no quantities used)
 
     Returns:
-        List of final BOQ item dicts with section, item_no, stock_code.
+        List of final BOQ item dicts, sorted by final BOQ package order (50106–50129).
     """
     boq_items: list[dict] = []
     item_counter: dict[str, int] = {}   # section → count
 
     for row in quantity_rows:
-        package  = row.get("package", "")
-        section  = _map_section(package)
+        package      = row.get("package", "")
+        section      = _map_section(package)
+        package_code = _map_package_code(package)
+        section_final = _PACKAGE_LABEL_MAP.get(package_code, f"{package_code} - Unknown")
 
-        # Section item counter
+        # Section item counter (use package_code for stable ordering)
         item_counter[section] = item_counter.get(section, 0) + 1
         item_no = f"{section.split(' - ')[0]}{item_counter[section]:02d}"
 
@@ -115,16 +469,23 @@ def map_to_boq(
         name_keywords = row.get("item_name", "").lower().split()[:3]
         stock_code = row.get("item_code") or _lookup_stock_code(item_library, name_keywords)
 
+        # Display name: normalized for export; original preserved in item_name
+        item_name    = row.get("item_name", "")
+        display_name = _normalize_display_name(item_name)
+
         boq_item: dict = {
-            "item_no":         item_no,
-            "boq_section":     section,
-            "package":         package,
-            "item_name":       row.get("item_name", ""),
-            "item_code":       stock_code,
-            "unit":            row.get("unit", "nr"),
-            "quantity":        row.get("quantity", 0),
-            "rate_pgk":        None,
-            "amount_pgk":      None,
+            "item_no":            item_no,
+            "boq_section":        section,
+            "boq_section_final":  section_final,    # NEW: final BOQ section label
+            "package_code":       package_code,     # NEW: numeric package code
+            "package":            package,
+            "item_name":          item_name,         # preserved (original, tests use this)
+            "item_display_name":  display_name,      # NEW: normalized for export
+            "item_code":          stock_code,
+            "unit":               row.get("unit", "nr"),
+            "quantity":           row.get("quantity", 0),
+            "rate_pgk":           None,
+            "amount_pgk":         None,
 
             # Traceability
             "quantity_status":  row.get("quantity_status", "placeholder"),
@@ -142,8 +503,11 @@ def map_to_boq(
 
         boq_items.append(boq_item)
 
+    # Sort by final BOQ package order
+    boq_items.sort(key=_pkg_sort_key)
+
     log.info(
-        "BOQ mapper: %d rows → %d sections",
+        "BOQ mapper: %d rows \u2192 %d sections",
         len(boq_items),
         len(set(i["boq_section"] for i in boq_items)),
     )
