@@ -1,0 +1,173 @@
+package_code,boq_section,item_name,item_display_name,unit,quantity,confidence,manual_review,source_evidence,notes
+50106,F - Finishes,Skirting Board,Timber Skirting | 25 x 75 x 2400mm Timber,lm,97.2,MEDIUM,,ext_walls: 38.40 m [dxf_geometry]; int_walls: 29.40 m [dxf_geometry],Skirting = external wall interior face + both faces of internal partitions. 
+50106,F - Finishes,Floor Finish — Dry Area (vinyl plank / screed),Floor Finish | (type by room),m2,60.3,MEDIUM,,"config room_schedule: Dispensary, Waiting / Reception, Consultation Room, Staff Room, Storage = 60.3",Dry floor finish area from room schedule (5 rooms). Verandah (21.6 m²) excluded 
+50106,F - Finishes,Floor Finish — Wet Area (ceramic tile),Floor Finish | (type by room),m2,4.5,MEDIUM,,config room_schedule: Toilet = 4.50 m²,Wet floor finish (ceramic tile / non-slip) for wet areas: Toilet (4.50 m²). Veri
+50106,F - Finishes,Paint — External,"Paint | External, two coats",m2,92.16,MEDIUM,,dxf_geometry: ext_wall_lm=38.40 × h=2.4,Gross area; no deduction for openings.
+50106,F - Finishes,Paint — Internal,"Paint | Internal, two coats",m2,205.92,MEDIUM,,ceiling_area=64.80 m²; int_wall_lm=29.40 m × 2 faces [dxf_geometry],Both faces of internal partitions included. 
+50107,A - Structural Frame,Roof Panel Frame (purlin / roof panel 89S41),"FrameCAD Roof Panel | LGS C89, 0.75BMT, G550, Z275",lm,481.74,HIGH,,framecad_bom: Tab Roof Panels,
+50107,A - Structural Frame,Roof Truss Frame (truss chord + web 89S41),"FrameCAD Roof Truss | LGS C89, 0.75BMT, G550, Z275",lm,1634.29,HIGH,,framecad_bom: Tab Roof Trusses,QA NOTE: FrameCAD BOM 'Roof Trusses' tab total includes all roof structural memb
+50107,A - Structural Frame,Wall Frame — all wall members 89S41,"FrameCAD Wall Frame | LGS C89, all wall members",lm,2250.69,HIGH,,framecad_bom: Tab Wall Panels,
+50107,A - Structural Frame,Wall Frame — lintel 150×32×0.95,"FrameCAD Lintel | LGS, lintel members",lm,3.57,HIGH,,framecad_bom: Lintel entries,
+50107,A - Structural Frame,Wall Frame — diagonal strap 32×0.95,FrameCAD Wall Strap | Diagonal strap brace,lm,49.73,HIGH,,framecad_bom: Strap entries,
+50107,A - Structural Frame,Verandah Frame — 89S41,External Works | Verandah Frame,lm,69.91,HIGH,,ifc_model: V1/verandah members,
+50107,A - Structural Frame,Structural Steel Post (75×75×4 SHS),"Steel Post | 75 x 4mm SHS, Q345, HDG600",lm,96.69,HIGH,,ifc_model: SHS steel,
+50107,A - Structural Frame,Roof Battens (FRAMECAD BATTEN — all zones),"Roof Batten | 41mm Top Hat, G550, Z275",lm,1385.3,HIGH,,framecad_bom: FrameCAD BATTEN entries,BOM total 266 pieces (1385.3 lm) — all batten zones. Grade split: ≥35mm (roof to
+50107,A - Structural Frame,Ceiling/Wall Batten G22 × 4800mm,Ceiling Batten | G22,nr,176,LOW,,framecad_bom: BATTEN 22 176 4800,Ceiling/wall batten (grade 22mm <35mm threshold). 4800mm stock length. Total: 84
+50107,A - Structural Frame,Ceiling/Wall Batten G22 × 6100mm,Ceiling Batten | G22,nr,5,LOW,,framecad_bom: BATTEN 22 5 6100,Ceiling/wall batten (grade 22mm <35mm threshold). 6100mm stock length. Total: 30
+50107,A - Structural Frame,Roof Top-Hat Batten G40 × 6000mm,"Roof Batten | 41mm Top Hat, G550, Z275",nr,85,MEDIUM,,framecad_bom: BATTEN 40 85 6000,Roof top-hat batten (grade 40mm ≥35mm threshold). 6000mm stock length. Total: 51
+50107,G - Floor System,Floor Panel — Standard Load Floor Panel — General Areas (1.8kPa),Floor Panel | 1.8kPa Standard Load,nr,21,LOW,YES,project_config: main_floor_area=64.80m² × fraction(0.7) = 45.36m²; joist_spacing=450mm; bearer_spaci,"MANUAL REVIEW REQUIRED. General pharmacy areas (waiting, consultation, staff, st"
+50107,G - Floor System,Floor Joist LGS — 1.8kPa Zone,"Floor Joist | LGS C150, 1.8kPa Zone",lm,100.8,LOW,YES,project_config: main_floor_area=64.80m² × fraction(0.7) = 45.36m²; joist_spacing=450mm; bearer_spaci,"MANUAL REVIEW REQUIRED. General pharmacy areas (waiting, consultation, staff, st"
+50107,G - Floor System,Floor Bearer (pair) — 1.8kPa Zone,"Floor Bearer | 1.8kPa Zone, pair",nr,3,LOW,YES,project_config: main_floor_area=64.80m² × fraction(0.7) = 45.36m²; joist_spacing=450mm; bearer_spaci,"MANUAL REVIEW REQUIRED. General pharmacy areas (waiting, consultation, staff, st"
+50107,G - Floor System,Floor Panel — High-Load Floor Panel — Dispensary (4kPa),Floor Panel | 4kPa High Load,nr,9,LOW,YES,project_config: main_floor_area=64.80m² × fraction(0.3) = 19.44m²; joist_spacing=450mm; bearer_spaci,MANUAL REVIEW REQUIRED. Dispensary area with heavy shelving/equipment. 30% area 
+50107,G - Floor System,Floor Joist LGS — 4kPa Zone,"Floor Joist | LGS C150, 4kPa Zone",lm,43.2,LOW,YES,project_config: main_floor_area=64.80m² × fraction(0.3) = 19.44m²; joist_spacing=450mm; bearer_spaci,MANUAL REVIEW REQUIRED. Dispensary area with heavy shelving/equipment. 30% area 
+50107,G - Floor System,Floor Bearer (pair) — 4kPa Zone,"Floor Bearer | 4kPa Zone, pair",nr,2,LOW,YES,project_config: main_floor_area=64.80m² × fraction(0.3) = 19.44m²; joist_spacing=450mm; bearer_spaci,MANUAL REVIEW REQUIRED. Dispensary area with heavy shelving/equipment. 30% area 
+50107,G - Floor System,Floor Sheet (FC / plywood),"FC Sheet Floor | 18mm thk, 1200 x 2400 Sheet",sheets,24,LOW,YES,project_config+dxf_geometry: floor_area=64.80 m²,MANUAL REVIEW REQUIRED. Sheet size assumed same as ceiling FC sheet (1.2×2.4). A
+50107,G - Floor System,Floor Sheet Fixing Screws,Fixing | FC Floor Sheet Screw,boxes,2,LOW,,project_config+dxf_geometry: sheet_count=24,16 fixings per sheet; 200 per box.
+50107,H - Substructure,Strip Footing — External Perimeter,"Substructure | Strip Footing, External Perimeter",lm,38.4,MEDIUM,,derived_steel_floor: perimeter=38.4 m,Strip footing assumed for steel floor frame bearing lines. Assumed 500 mm deep ×
+50107,H - Substructure,Strip Footing — Concrete Volume,Substructure | Strip Footing Concrete Volume,m3,7.68,LOW,YES,derived_steel_floor: 38.4 × 0.5 × 0.4,MANUAL REVIEW REQUIRED. Strip footing assumed for steel floor frame bearing line
+50107,H - Substructure,Strip Footing — Formwork,Substructure | Strip Footing Formwork,lm,38.4,MEDIUM,,derived_steel_floor: perimeter=38.4 m,
+50107,H - Substructure,Bulk Earthworks / Level (provisional),Substructure | Bulk Earthworks / Level (provisional),m3,0,LOW,YES,no site survey in sources,MANUAL REVIEW REQUIRED. Excavation volume cannot be derived from architectural d
+50107,H - Substructure,Strip Footing — Internal Bearing Lines,"Substructure | Strip Footing, Internal Bearing",lm,29.4,MEDIUM,,dxf_geometry: int_wall_lm=29.4 m,Internal bearing lines assumed at each internal wall run. Total: 29.4 lm. Verify
+50107,H - Substructure,Strip Footing Internal — Concrete Volume,"Substructure | Strip Footing, Internal Bearing",m3,5.88,LOW,YES,derived: 29.4 × 0.5 × 0.4,MANUAL REVIEW REQUIRED. Assumed 500 mm deep × 400 mm wide. Verify.
+50107,H - Substructure,Pad Footing (concrete),"Substructure | Pad Footing, Concrete",nr,15,MEDIUM,,dxf_geometry: count=15,
+50107,H - Substructure,Pad Footing Concrete (m3),Substructure | Pad Footing Concrete Volume,m3,5.145,LOW,YES,derived: 15 pads × 0.343 m³,MANUAL REVIEW REQUIRED. Assumes 700×700×700 mm pads. Verify from structural engi
+50111,A - Structural Frame,Framing Screw 12G-14×20 HEX Head (LGS stud-to-track),"Fixing | 12G-14x20mm HEX Head, DP",boxes,19,MEDIUM,YES,"framecad_bom: wall=2300.4lm, roof_panel=481.7lm, batten=1385.3lm; dxf: pad_count=15, strip_perim=0.0",MANUAL REVIEW REQUIRED. Stud-to-track connections: 2300.4lm × 4.0 per m = ~9202 
+50111,A - Structural Frame,Framing Screw 10G-24×40 Countersunk (roof panel),"Fixing | 10G-24x40mm Countersunk, DP",boxes,3,MEDIUM,YES,"framecad_bom: wall=2300.4lm, roof_panel=481.7lm, batten=1385.3lm; dxf: pad_count=15, strip_perim=0.0",MANUAL REVIEW REQUIRED. Purlin-to-rafter / roof panel connections: 481.7lm × 3.0
+50111,A - Structural Frame,Framing Screw 10G-14×16 Wafer Head (batten-to-purlin),"Fixing | 10G-14x16mm Wafer Head, DP",boxes,7,LOW,YES,"framecad_bom: wall=2300.4lm, roof_panel=481.7lm, batten=1385.3lm; dxf: pad_count=15, strip_perim=0.0",MANUAL REVIEW REQUIRED. Batten-to-purlin connections: 1385.3lm total batten × 2.
+50111,A - Structural Frame,Sleeve Anchor M12×75 — Pad Footings,Fixing | M12 x 75mm Sleeve Anchor (Pad Footings),nr,60,MEDIUM,YES,dxf_geometry: pad_count=15 (DXF STRUCTURE layer),MANUAL REVIEW REQUIRED. 15 pad footings × 4 M12×75 anchors each (4-bolt base pla
+50111,A - Structural Frame,PH Post Holder Bracket (PHA/PHB/PHD),PH Bracket | Post Holder (PHA/PHB/PHD),nr,28,LOW,YES,ifc_model: steel_shs_lm=96.69 / avg_height(3.5m),MANUAL REVIEW REQUIRED. Post holder brackets at column bases. Count estimated fr
+50111,A - Structural Frame,Triple Grip Connector (roof-to-wall uplift),Accessories | Triple Grip Connector (Pryda),nr,36,LOW,YES,dxf_geometry: eaves_length=42.4m,MANUAL REVIEW REQUIRED. Roof-to-wall-plate cyclonic uplift connections at 1.2m c
+50111,A - Structural Frame,Hold-Down Washer — Cyclonic (post base),"Accessories | Hold Down Washer, Cyclonic",nr,60,LOW,YES,dxf_geometry: pad_count=15,MANUAL REVIEW REQUIRED. Hold-down washers at post base connections. 15 pads × 4 
+50111,A - Structural Frame,Fix Plate / Gusset Plate (strap bracing connection),"Accessories | Fix Plate Connector, G350",nr,18,LOW,YES,framecad_bom: wall_strap_lm=49.73lm,MANUAL REVIEW REQUIRED. Fix plates at strap bracing termination points: 49.7lm ×
+50111,A - Structural Frame,Diagonal Strap Tensioner / Anchor (bracing strap end),Accessories | Strap Brace Tensioner,nr,34,LOW,YES,framecad_bom: wall_strap_lm=49.73lm,MANUAL REVIEW REQUIRED. Strap termination anchors: 49.7lm ÷ 3m avg run = 17 runs
+50111,A - Structural Frame,Cable Grommet (LGS service penetration),Accessories | Grommet 35mm Dia,nr,45,LOW,YES,dxf_geometry: int_wall_lm=29.4m,MANUAL REVIEW REQUIRED. Cable/conduit grommets at LGS stud penetrations. 29.4m i
+50111,A - Structural Frame,Structural Fixings Remainder — Hex Bolts / Angles / Misc (PLACEHOLDER),Fixing | Structural Fixings Remainder (PLACEHOLDER),item,0,LOW,YES,no fixing schedule in source documents,MANUAL REVIEW REQUIRED. PLACEHOLDER for connection schedule items not derivable 
+50112,B - Roof,Sisalation / Sarking,Insulation | Sisalation / Sarking,rolls,2,HIGH,,dxf_geometry: roof_area=106.60 m²,
+50112,B - Roof,Roof Tek Screws,"Fixing | Roof Tek Screw, Hex Head, DP",boxes,11.0,MEDIUM,,dxf_geometry: roof_area=106.60 m²,1 box per 10 m² (approx 250 screws/box at 25 screws/m²)
+50112,B - Roof,Roof Cladding Sheet (corrugated / CGI),Roof Cladding | Custom Orb Corrugated CGI Sheet,sheets,49,MEDIUM,YES,"dxf_geometry: roof_area=106.60 m², eaves_lm=42.40 m",MANUAL REVIEW REQUIRED. run=2.51m (area/eaves) + 150mm lap → select 3.0m stock V
+50112,B - Roof,Ridge Capping,"Ridge Cap | Galvanised, lm",lm,10.6,MEDIUM,,dxf_geometry: ridge_length=10.60 lm,
+50112,B - Roof,Ridge Cap Fixing Screws,Fixing | Ridge Cap Hex Head Screw,nr,36.0,MEDIUM,,dxf_geometry: ridge_length=10.60 lm,1 screw per 300 mm
+50112,B - Roof,Ridge End Cap,Ridge End Cap | Galvanised,nr,2.0,MEDIUM,,dxf_geometry: ridge_length=10.60 lm,2 end caps per ridge run (one each end)
+50112,B - Roof,Fascia Board,"Fascia Board | Galvanised, lm",lm,42.4,MEDIUM,,dxf_geometry: eaves_length=42.40 lm,
+50112,B - Roof,Fascia Clips,Fascia | Clips,nr,71.0,MEDIUM,,dxf_geometry: eaves_length=42.40 lm,1 clip per 600 mm
+50112,B - Roof,Birdproof Foam Strip,Accessories | Birdproof Foam Strip,lm,42.4,MEDIUM,,dxf_geometry: eaves_length=42.40 lm,runs full eaves length
+50112,B - Roof,Eaves Gutter,SL-14 | PVC Box Gutter,lm,42.4,MEDIUM,,dxf_geometry: eaves_length=42.40 lm,
+50112,B - Roof,Gutter Joiner,SL-14 | PVC Gutter Joiner,nr,3.0,MEDIUM,,dxf_geometry: eaves_length=42.40 lm,PVC box gutter 6 m stock: joiners = total_lengths − estimated_run_count (≈eaves/
+50112,B - Roof,Gutter Stop End,SL-14 | PVC Gutter Stop End,nr,6.0,MEDIUM,,dxf_geometry: eaves_length=42.40 lm,2 per run; add 2 per extra run > 20 m
+50112,B - Roof,Barge Capping,"Barge Cap | Galvanised, lm",lm,8.5,LOW,YES,dxf_geometry: barge_length=8.50 lm,MANUAL REVIEW REQUIRED.
+50112,B - Roof,Barge End Cap,Barge End Cap | Galvanised,nr,2.0,LOW,YES,dxf_geometry: barge_length=8.50 lm,MANUAL REVIEW REQUIRED. 2 end caps per barge run (ridge peak and eaves)
+50112,B - Roof,PVC Downpipe,"SL-14 | PVC Downpipe, 68mm",nr,6.0,MEDIUM,,dxf_geometry: downpipe_count=6,
+50112,B - Roof,Gutter Drop Outlet,SL-14 | PVC Gutter Drop Outlet,nr,6.0,MEDIUM,,dxf_geometry: downpipe_count=6,
+50112,B - Roof,Downpipe Elbow (90°),"SL-14 | PVC Downpipe Elbow, 90°",nr,12.0,MEDIUM,,dxf_geometry: downpipe_count=6,top + bottom elbow per downpipe
+50112,B - Roof,Downpipe Clip / Saddle,SL-14 | PVC Downpipe Clip,nr,18.0,MEDIUM,,dxf_geometry: downpipe_count=6,approx 3 clips per 3 m drop
+50113,K - External Works,External Wall Cladding — FC Weatherboard (supply & fix),External Cladding | FC Weatherboard,m2,87.14,HIGH,,"dxf_geometry: ext_wall_perimeter=38.40 m, h=2.4 m",Gross 92.16 m² − openings 5.02 m² = 87.14 m²
+50113,K - External Works,FC Weatherboard — Board Count,External Cladding | FC Weatherboard,nr,126,MEDIUM,YES,"dxf_geometry: ext_lm=38.40 m, wall_h=2.4 m","MANUAL REVIEW REQUIRED. Weatherboard: 200mm exposure, 4200mm stock length. Count"
+50113,K - External Works,FC Weatherboard H-Joiner Extrusion,External Cladding | FC Weatherboard,nr,72,MEDIUM,,dxf_geometry: floor_area=86.4m² + ext_perim=38.4m → L=12.0m W=7.2m,"H-joiners per façade face (joiners at butt-joins only, not corners). Verify coun"
+50113,K - External Works,External Corner Flashing (FC cladding),"External Cladding | Corner Flashing, Galvanised",nr,4,MEDIUM,,"dxf_geometry: ext_wall_perimeter=38.4m, floor_area=86.4m² → L=12.0m W=7.2m",Corner count from building geometry (L=12.0m × W=7.2m rectangular = 4 corners). 
+50113,K - External Works,External Corner Trim / Angle Bead,External Cladding | Corner Trim / Angle Bead,lm,9.6,MEDIUM,,derived: 4 corners × 2.4 m,"One trim per corner, full wall height. Verify profile and spec."
+50113,K - External Works,FC Weatherboard Stud Fixing Clip,External Cladding | FC Weatherboard,nr,768,MEDIUM,,"dxf_geometry: ext_lm=38.40 m, stud_spacing=600mm",Stud clips at 600mm centres. Verify clip type from manufacturer spec.
+50113,K - External Works,Stainless Steel Screw — Cladding Fix,Fixing | Stainless Steel Screw (Cladding),nr,1536,LOW,,derived from clip count: 768,2 × stainless screws per fixing clip. Verify size and type from spec.
+50113,K - External Works,Building Wrap / Sarking — External Wall,Accessories | Building Wrap / Sarking,m2,96.77,MEDIUM,,dxf_geometry: ext_lm=38.40 m × wall_h=2.4 m,Includes 5% for laps. Gross area — no deduction for openings in sarking schedule
+50113,K - External Works,Verandah Decking / Slab,External Works | Verandah Decking,m2,21.6,HIGH,,dxf_geometry: verandah_area=21.60 m²,
+50113,K - External Works,Site Preparation (Provisional),Substructure | Site Preparation (Provisional),item,0,LOW,YES,no site survey in sources,MANUAL REVIEW REQUIRED. Site preparation scope cannot be derived from drawings. 
+50114,D - Openings,Door — DOOR_90 (920mm),Door | 920mm Wide (DOOR_90),nr,1,HIGH,,dxf_blocks: mark=DOOR_90 count=1,swing=hinged
+50114,D - Openings,Door — DOOR_82 (820mm),Door | 820mm Wide (DOOR_82),nr,4,HIGH,,dxf_blocks: mark=DOOR_82 count=4,swing=hinged
+50114,D - Openings,Door — DOOR_72 (720mm),Door | 720mm Wide (DOOR_72),nr,1,HIGH,,dxf_blocks: mark=DOOR_72 count=1,swing=hinged
+50114,D - Openings,Door Head Flashing,"Flashing | Door Head, Galvanised",lm,5.52,MEDIUM,,"dxf_blocks: door widths DOOR_90=0.92m×1, DOOR_82=0.82m×4, DOOR_72=0.72m×1",Head flashing extends 50 mm beyond door frame each side.
+50114,D - Openings,Door Sill Flashing,"Flashing | Door Sill, Galvanised",lm,5.52,MEDIUM,,dxf_blocks: 6 doors,Sill flashing for all doors. Remove from internal doors not requiring sill.
+50114,D - Openings,Door Leaf,Door | Leaf,nr,1.0,HIGH,,dxf_blocks: DOOR_90 count=1,opening_mark=DOOR_90
+50114,D - Openings,Door Frame Set,Door | Frame Set,nr,1.0,HIGH,,dxf_blocks: DOOR_90 count=1,opening_mark=DOOR_90
+50114,D - Openings,Door Hinge (pair),Door | Hinge (pair),nr,3.0,MEDIUM,,dxf_blocks: DOOR_90 count=1,opening_mark=DOOR_90  3 pairs per door (standard)
+50114,D - Openings,Door Lockset,Door | Lockset,nr,1.0,HIGH,,dxf_blocks: DOOR_90 count=1,opening_mark=DOOR_90
+50114,D - Openings,Door Stop,Door | Stop,nr,1.0,HIGH,,dxf_blocks: DOOR_90 count=1,opening_mark=DOOR_90
+50114,D - Openings,Door Leaf,Door | Leaf,nr,4.0,HIGH,,dxf_blocks: DOOR_82 count=4,opening_mark=DOOR_82
+50114,D - Openings,Door Frame Set,Door | Frame Set,nr,4.0,HIGH,,dxf_blocks: DOOR_82 count=4,opening_mark=DOOR_82
+50114,D - Openings,Door Hinge (pair),Door | Hinge (pair),nr,12.0,MEDIUM,,dxf_blocks: DOOR_82 count=4,opening_mark=DOOR_82  3 pairs per door (standard)
+50114,D - Openings,Door Lockset,Door | Lockset,nr,4.0,HIGH,,dxf_blocks: DOOR_82 count=4,opening_mark=DOOR_82
+50114,D - Openings,Door Stop,Door | Stop,nr,4.0,HIGH,,dxf_blocks: DOOR_82 count=4,opening_mark=DOOR_82
+50114,D - Openings,Door Leaf,Door | Leaf,nr,1.0,HIGH,,dxf_blocks: DOOR_72 count=1,opening_mark=DOOR_72
+50114,D - Openings,Door Frame Set,Door | Frame Set,nr,1.0,HIGH,,dxf_blocks: DOOR_72 count=1,opening_mark=DOOR_72
+50114,D - Openings,Door Hinge (pair),Door | Hinge (pair),nr,3.0,MEDIUM,,dxf_blocks: DOOR_72 count=1,opening_mark=DOOR_72  3 pairs per door (standard)
+50114,D - Openings,Door Lockset,Door | Lockset,nr,1.0,HIGH,,dxf_blocks: DOOR_72 count=1,opening_mark=DOOR_72
+50114,D - Openings,Door Stop,Door | Stop,nr,1.0,HIGH,,dxf_blocks: DOOR_72 count=1,opening_mark=DOOR_72
+50114,D - Openings,Window — WINDOW_LOUVRE_1100,"Window | Louvre, 1100mm Wide",nr,8,MEDIUM,,dxf_blocks: mark=WINDOW_LOUVRE_1100 count=8,type=louvre
+50114,D - Openings,Window — WINDOW_LOUVRE_800,"Window | Louvre, 800mm Wide",nr,2,MEDIUM,,dxf_blocks: mark=WINDOW_LOUVRE_800 count=2,type=louvre
+50114,D - Openings,Window — WINDOW_LOUVRE_1800,"Window | Louvre, 1800mm Wide",nr,1,MEDIUM,,dxf_blocks: mark=WINDOW_LOUVRE_1800 count=1,type=louvre
+50114,D - Openings,Window Head Flashing — WINDOW_LOUVRE_1100,"Flashing | Window Head, Galvanised",lm,9.44,MEDIUM,,dxf_blocks: block_name: WINDOW_LOUVRE_1100 count=8,Head flashing extends 50 mm beyond frame each side.
+50114,D - Openings,Window Sill Flashing — WINDOW_LOUVRE_1100,"Flashing | Window Sill, Galvanised",lm,9.44,MEDIUM,,dxf_blocks: block_name: WINDOW_LOUVRE_1100 count=8,Sill flashing same lm as head flashing. Remove if window sits on masonry sill.
+50114,D - Openings,Louvre Blade — WINDOW_LOUVRE_1100,"Window | Louvre Blade, 1100mm Wide",nr,64,LOW,YES,dxf_blocks: config_default=750mm count=8,MANUAL REVIEW REQUIRED. Frame height 750 mm (config_default=750mm). 8 blades per
+50114,D - Openings,Window Head Flashing — WINDOW_LOUVRE_800,"Flashing | Window Head, Galvanised",lm,1.8,MEDIUM,,dxf_blocks: block_name: WINDOW_LOUVRE_800 count=2,Head flashing extends 50 mm beyond frame each side.
+50114,D - Openings,Window Sill Flashing — WINDOW_LOUVRE_800,"Flashing | Window Sill, Galvanised",lm,1.8,MEDIUM,,dxf_blocks: block_name: WINDOW_LOUVRE_800 count=2,Sill flashing same lm as head flashing. Remove if window sits on masonry sill.
+50114,D - Openings,Louvre Blade — WINDOW_LOUVRE_800,"Window | Louvre Blade, 800mm Wide",nr,16,LOW,YES,dxf_blocks: config_default=750mm count=2,MANUAL REVIEW REQUIRED. Frame height 750 mm (config_default=750mm). 8 blades per
+50114,D - Openings,Window Head Flashing — WINDOW_LOUVRE_1800,"Flashing | Window Head, Galvanised",lm,1.95,MEDIUM,,dxf_blocks: block_name: WINDOW_LOUVRE_1800 count=1,Head flashing extends 50 mm beyond frame each side.
+50114,D - Openings,Window Sill Flashing — WINDOW_LOUVRE_1800,"Flashing | Window Sill, Galvanised",lm,1.95,MEDIUM,,dxf_blocks: block_name: WINDOW_LOUVRE_1800 count=1,Sill flashing same lm as head flashing. Remove if window sits on masonry sill.
+50114,D - Openings,Louvre Blade — WINDOW_LOUVRE_1800,"Window | Louvre Blade, 1800mm Wide",nr,8,LOW,YES,dxf_blocks: config_default=750mm count=1,MANUAL REVIEW REQUIRED. Frame height 750 mm (config_default=750mm). 8 blades per
+50114,D - Openings,Louvre Window Frame,Window | Louvre Frame,nr,8.0,MEDIUM,,dxf_blocks: WINDOW_LOUVRE_1100 count=8,opening_mark=WINDOW_LOUVRE_1100
+50114,D - Openings,Louvre Blade Set,Window | Louvre Blade,nr,8.0,MEDIUM,,dxf_blocks: WINDOW_LOUVRE_1100 count=8,opening_mark=WINDOW_LOUVRE_1100
+50114,D - Openings,Flyscreen,Window | Fly Screen,nr,8.0,MEDIUM,,dxf_blocks: WINDOW_LOUVRE_1100 count=8,opening_mark=WINDOW_LOUVRE_1100
+50114,D - Openings,Louvre Window Frame,Window | Louvre Frame,nr,2.0,MEDIUM,,dxf_blocks: WINDOW_LOUVRE_800 count=2,opening_mark=WINDOW_LOUVRE_800
+50114,D - Openings,Louvre Blade Set,Window | Louvre Blade,nr,2.0,MEDIUM,,dxf_blocks: WINDOW_LOUVRE_800 count=2,opening_mark=WINDOW_LOUVRE_800
+50114,D - Openings,Flyscreen,Window | Fly Screen,nr,2.0,MEDIUM,,dxf_blocks: WINDOW_LOUVRE_800 count=2,opening_mark=WINDOW_LOUVRE_800
+50114,D - Openings,Louvre Window Frame,Window | Louvre Frame,nr,1.0,MEDIUM,,dxf_blocks: WINDOW_LOUVRE_1800 count=1,opening_mark=WINDOW_LOUVRE_1800
+50114,D - Openings,Louvre Blade Set,Window | Louvre Blade,nr,1.0,MEDIUM,,dxf_blocks: WINDOW_LOUVRE_1800 count=1,opening_mark=WINDOW_LOUVRE_1800
+50114,D - Openings,Flyscreen,Window | Fly Screen,nr,1.0,MEDIUM,,dxf_blocks: WINDOW_LOUVRE_1800 count=1,opening_mark=WINDOW_LOUVRE_1800
+50114,D - Openings,Fly Screen — WINDOW_LOUVRE_1100,"Window | Fly Screen, 1100mm Wide",m2,6.48,LOW,YES,dxf_blocks: mark=WINDOW_LOUVRE_1100 w=1.08m (block_name) h=0.750m (config_default=750mm) qty=8,MANUAL REVIEW REQUIRED. Fly screen for louvre window WINDOW_LOUVRE_1100 (8 nr). 
+50114,D - Openings,Fly Screen — WINDOW_LOUVRE_800,"Window | Fly Screen, 800mm Wide",m2,1.2,LOW,YES,dxf_blocks: mark=WINDOW_LOUVRE_800 w=0.80m (block_name) h=0.750m (config_default=750mm) qty=2,MANUAL REVIEW REQUIRED. Fly screen for louvre window WINDOW_LOUVRE_800 (2 nr). A
+50114,D - Openings,Fly Screen — WINDOW_LOUVRE_1800,"Window | Fly Screen, 1800mm Wide",m2,1.39,LOW,YES,dxf_blocks: mark=WINDOW_LOUVRE_1800 w=1.85m (block_name) h=0.750m (config_default=750mm) qty=1,MANUAL REVIEW REQUIRED. Fly screen for louvre window WINDOW_LOUVRE_1800 (1 nr). 
+50114,D - Openings,Door Closer — Hydraulic (main entrance),"Door | Closer, Hydraulic",nr,1,MEDIUM,YES,dxf_blocks: DOOR_90 (width≥850mm or DOOR_90),MANUAL REVIEW REQUIRED. Door closer inferred for pharmacy entrance doors. Marks:
+50114,F - Finishes,Architrave — Door,Timber Architrave | 12 x 75 x 2400mm Timber,lm,36.0,MEDIUM,,derived from door_count=6,
+50114,F - Finishes,Architrave — Window,Timber Architrave | 12 x 75 x 2400mm Timber,lm,52.8,MEDIUM,,derived from window_count=11,
+50115,E - Linings & Ceilings,"External Wall Lining — FC Sheet (6mm, 1200×2700)","External Lining | FC Sheet, 1200 x 2400mm",sheets,30,HIGH,,dxf_geometry: ext_wall_lm=38.40 m × h=2.4 m → area=92.16 m²,
+50115,E - Linings & Ceilings,External Wall Lining — FC Sheet Screws,Fixing | FC Sheet Screw (External),boxes,12,LOW,,derived from ext_wall_area=92.16 m²,
+50115,E - Linings & Ceilings,"Internal Wall Lining — FC Sheet (6mm, 1200×2700)","Internal Lining | FC Sheet, 1200 x 2400mm",sheets,46,HIGH,,dxf_geometry: int_wall_lm=29.40 m × h=2.4 m × 2 faces = 141.12 m²,Measured from DXF WALLS layer: 8 internal wall runs.
+50115,E - Linings & Ceilings,Internal Wall Lining — FC Sheet Screws,Fixing | FC Sheet Screw (Internal),boxes,18,LOW,,derived from int_wall_area_both=141.12 m²,Measured from DXF WALLS layer: 8 internal wall runs.
+50115,E - Linings & Ceilings,Internal Wall Lining — FC Sheet Joiner Strip,Internal Lining Accessory | PVC H Joiner,lm,117.6,LOW,,dxf_geometry: int_wall_lm=29.40 m × 2 faces = 58.8 lm,1 vertical joiner strip per 1.2 m sheet-width run × 2.4 m height.
+50115,E - Linings & Ceilings,Wet Area Wall Lining — Waterproof Board / FC,"Internal Lining | Waterproof Board / FC, Wet Area",sheets,7,LOW,YES,rooms=['Toilet']: total_wet_wall_area≈20.40 m²,MANUAL REVIEW REQUIRED. Wet area lining derived from room perimeter estimate. Ve
+50115,E - Linings & Ceilings,"Ceiling Lining — FC Sheet (6mm, 1200×2400)","Ceiling Lining | FC Sheet, 1200 x 2400mm",sheets,24,MEDIUM,,derived: ceiling_area=64.80 m²,
+50115,E - Linings & Ceilings,Ceiling Batten (LGS / timber),Ceiling Batten | G22,lm,162.0,MEDIUM,,derived: ceiling_area=64.80 m²,
+50115,E - Linings & Ceilings,Ceiling FC Sheet Screws,Fixing | FC Sheet Screw (Ceiling),boxes,7,LOW,,derived from ceiling_area=64.80 m²,
+50115,E - Linings & Ceilings,"Verandah Soffit Lining — FC Sheet (6mm, 1200×2400)","Verandah Soffit Lining — FC Sheet (6mm, 1200×2400)",sheets,8,HIGH,,dxf_geometry: verandah_area=21.60 m² (soffit = verandah deck area),Verandah soffit lining: 21.60 m² from DXF verandah polygon. Soffit area treated 
+50115,E - Linings & Ceilings,Verandah Soffit Batten (LGS / timber),Verandah Soffit Batten (LGS / timber),lm,54.0,MEDIUM,,dxf_geometry: verandah_soffit_area=21.60 m²,Verandah soffit batten: 21.60 m² at 400 mm spacing = 54.0 lm.
+50115,E - Linings & Ceilings,Cornice / Ceiling Trim,Timber Cornice | 25 x 25 x 2400mm Timber,lm,38.4,MEDIUM,,dxf_geometry: ext_wall_perimeter=38.40 m,Assumes cornice on external walls only. Add int_wall_lm if cornice on internal w
+50117,I - Services,Hand Basin (dispensary),Hydraulics | Hand Basin,nr,1,LOW,YES,room_schedule: Dispensary (type=pharmacy),MANUAL REVIEW REQUIRED. Inferred from room type 'pharmacy'.
+50117,I - Services,Tapware (basin),Hydraulics | Tapware,set,1,LOW,YES,room_schedule: Dispensary (type=pharmacy),MANUAL REVIEW REQUIRED. Inferred from room type 'pharmacy'.
+50117,I - Services,Cold Room / Refrigeration Allowance,Services | Cold Room / Refrigeration (PLACEHOLDER),item,1,LOW,YES,room_schedule: Dispensary (type=pharmacy),MANUAL REVIEW REQUIRED. Inferred from room type 'pharmacy'.
+50117,I - Services,Builder's Works — Electrical (pharmacy),"Services | Builder's Works, Electrical",item,1,LOW,YES,room_schedule: Dispensary (type=pharmacy),MANUAL REVIEW REQUIRED. Inferred from room type 'pharmacy'.
+50117,I - Services,Builder's Works — Services (unclassified room),"Services | Builder's Works, Services",item,1,LOW,YES,room_schedule: Waiting / Reception (type=waiting),MANUAL REVIEW REQUIRED. Inferred from room type 'waiting'.
+50117,I - Services,Hand Basin (consulting room),Hydraulics | Hand Basin,nr,1,LOW,YES,room_schedule: Consultation Room (type=consulting),MANUAL REVIEW REQUIRED. Inferred from room type 'consulting'.
+50117,I - Services,Tapware (basin),Hydraulics | Tapware,set,1,LOW,YES,room_schedule: Consultation Room (type=consulting),MANUAL REVIEW REQUIRED. Inferred from room type 'consulting'.
+50117,I - Services,Builder's Works — Plumbing (consulting),Hydraulics | Builder's Works (Plumbing),item,1,LOW,YES,room_schedule: Consultation Room (type=consulting),MANUAL REVIEW REQUIRED. Inferred from room type 'consulting'.
+50117,I - Services,Builder's Works — Electrical (office),"Services | Builder's Works, Electrical",item,1,LOW,YES,room_schedule: Staff Room (type=office),MANUAL REVIEW REQUIRED. Inferred from room type 'office'.
+50117,I - Services,WC Pan (close-coupled),Hydraulics | WC Pan (close-coupled),nr,1,MEDIUM,YES,room_schedule: Toilet (type=toilet),MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'.
+50117,I - Services,WC Cistern,Hydraulics | WC Cistern,nr,1,MEDIUM,YES,room_schedule: Toilet (type=toilet),MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'.
+50117,I - Services,Hand Basin,Hydraulics | Hand Basin,nr,1,MEDIUM,YES,room_schedule: Toilet (type=toilet),MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'.
+50117,I - Services,Tapware (basin),Hydraulics | Tapware,set,1,MEDIUM,YES,room_schedule: Toilet (type=toilet),MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'.
+50117,I - Services,Mirror / Medicine Cabinet,FFE | Mirror,nr,1,LOW,YES,room_schedule: Toilet (type=toilet),MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'.
+50117,I - Services,Toilet Roll Holder,FFE | Toilet Roll Holder,nr,1,LOW,YES,room_schedule: Toilet (type=toilet),MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'.
+50117,I - Services,Hand Towel Rail / Dryer,FFE | Towel Rail,nr,1,LOW,YES,room_schedule: Toilet (type=toilet),MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'.
+50117,I - Services,Floor Waste,Hydraulics | Floor Waste,nr,1,MEDIUM,YES,room_schedule: Toilet (type=toilet),MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'.
+50117,I - Services,Builder's Works — Plumbing (toilet),Hydraulics | Builder's Works (Plumbing),item,1,MEDIUM,YES,room_schedule: Toilet (type=toilet),MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'.
+50117,I - Services,Wet Area Wall Tiling — Toilet,Hydraulics | WC Pan,m2,15.3,LOW,YES,"room: Toilet (area=4.50 m², wet_area=True)",MANUAL REVIEW REQUIRED. Inferred: perimeter (8.5 m) × 1800 mm splash-zone height
+50117,I - Services,Wet Area Waterproofing — Membrane,Hydraulics | Wet Area Waterproofing Membrane,m2,5.78,MEDIUM,YES,room: Toilet (area=4.50 m²),MANUAL REVIEW REQUIRED. Waterproofing: floor area + 150 mm upstand on walls for 
+50117,I - Services,Builder's Works — Services (unclassified room),"Services | Builder's Works, Services",item,1,LOW,YES,room_schedule: Storage (type=store),MANUAL REVIEW REQUIRED. Inferred from room type 'store'.
+50117,I - Services,Air Conditioning / Mechanical Ventilation — PLACEHOLDER,Services | Air Conditioning / Mechanical (PLACEHOLDER),item,0,LOW,YES,building_type=pharmacy: commercial building requires mechanical services,MANUAL REVIEW REQUIRED. PLACEHOLDER. Commercial building in tropical climate lik
+50117,I - Services,Exhaust Fan — Wet Area (toilet / laundry),Electrical | Exhaust Fan,item,0,LOW,YES,building_type=pharmacy: wet area ventilation required by BCA F4.6,MANUAL REVIEW REQUIRED. PLACEHOLDER. BCA F4.6 requires mechanical exhaust in roo
+50117,I - Services,Main Electrical Switchboard / Distribution Board,Electrical | Main Switchboard / Distribution Board,item,1,LOW,YES,floor_area=86.40 m² (building-wide),MANUAL REVIEW REQUIRED. 1 per building; adjust for sub-boards
+50117,I - Services,Main Water Meter / Stopcock,Hydraulics | Main Water Meter / Stopcock,item,1,LOW,YES,floor_area=86.40 m² (building-wide),MANUAL REVIEW REQUIRED. Whole-building service allowance.
+50117,I - Services,Hot Water System (central),Hydraulics | Hot Water System,item,1,LOW,YES,floor_area=86.40 m² (building-wide),MANUAL REVIEW REQUIRED. only if not allocated to individual rooms
+50117,I - Services,Smoke Detectors (provisional),Electrical | Smoke Detector,nr,3,LOW,YES,floor_area=86.40 m² (building-wide),MANUAL REVIEW REQUIRED. 1 per 40 m² floor area (indicative)
+50118,C - Insulation,Insulation Batts — Roof / Ceiling,"Insulation | Glasswool Batts, Roof / Ceiling",m2,106.6,HIGH,,dxf_geometry: roof_area=106.60 m²,
+50118,C - Insulation,Insulation Batts — External Wall,"Insulation | Glasswool Batts, External Wall",m2,92.16,MEDIUM,,dxf_geometry: ext_wall_lm=38.40 × h=2.4,Gross wall area; deduct large openings if required.
+50124,J - Stairs,Stair Stringer (Prefabricated Set) — 3 RISER,Stair | Stringer,nr,1,LOW,YES,project_config: STR-1,MANUAL REVIEW REQUIRED. Entry stair — riser count estimated from raised floor he
+50124,J - Stairs,Stair Tread,Stair | Tread,nr,3,LOW,YES,project_config: risers_per_flight=3,MANUAL REVIEW REQUIRED.
+50124,J - Stairs,Stair Newel Post,Stair | Component,nr,2,MEDIUM,,project_config: STR-1,1 newel post at top and bottom of each flight.
+50124,J - Stairs,Stair Balustrade — Top Rail,Balustrade | Assembly,lm,0.75,LOW,YES,project_config: STR-1,MANUAL REVIEW REQUIRED. Verify length from architectural drawings.
+50124,J - Stairs,Stair Balustrade Post,Balustrade | Post,nr,1,LOW,YES,project_config: balustrade_lm=0.75 m,MANUAL REVIEW REQUIRED. 1 post per 1.2 m spacing. Verify from balustrade schedul
+50124,J - Stairs,Stair Balustrade Infill (glass / mesh / picket),Balustrade | Assembly,m2,0.75,LOW,YES,project_config: balustrade_lm=0.75 m,MANUAL REVIEW REQUIRED. Infill height assumed 1.0 m. Adjust for guard height req
+50124,J - Stairs,Stair Handrail,Balustrade | Handrail,lm,0.75,LOW,YES,project_config: STR-1,MANUAL REVIEW REQUIRED. Verify handrail length. Continuous rail both sides of fl
+50124,J - Stairs,Access Ramp — Surface (concrete / non-slip),"Access Ramp | Surface, Concrete / Non-slip",m2,8.82,LOW,YES,derived from project_config: stair: 3 risers × 175 mm = 525 mm,"MANUAL REVIEW REQUIRED. Access ramp: 1:14 gradient, stair: 3 risers × 175 mm = 5"
+50124,J - Stairs,Access Ramp — Handrail (both sides),Access Ramp | (type by design),lm,14.7,LOW,YES,derived from ramp run: 7.35 m (stair: 3 risers × 175 mm = 525 mm),MANUAL REVIEW REQUIRED. Continuous handrails both sides of ramp. Verify height a
+50124,J - Stairs,Access Ramp — Edge Kerb / Guard,Access Ramp | Edge Kerb / Guard,lm,14.7,LOW,YES,derived from ramp run: 7.35 m (stair: 3 risers × 175 mm = 525 mm),MANUAL REVIEW REQUIRED. Kerb guard (min 75 mm high) both sides. Verify from arch
+50124,K - External Works,Verandah Balustrade,Balustrade | Assembly,lm,20.4,HIGH,,dxf_geometry: verandah_perimeter=20.40 m,
+50124,K - External Works,Verandah Handrail,Balustrade | Handrail,lm,20.4,MEDIUM,,dxf_geometry: verandah_perimeter=20.40 m,Reduce if one side abuts building wall.
+50124,K - External Works,Balustrade Post,Balustrade | Post,nr,17,LOW,,derived from verandah_perimeter=20.40 m,

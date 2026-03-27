@@ -108,13 +108,19 @@ def apply_assembly_rule(
 
 
 def _roof_sheet_count(
-    roof_area_m2: float,
-    eaves_lm:     float,
-    cover_w_m:    float = 0.762,
-    waste:        float = 1.05,
+    roof_area_m2:  float,
+    eaves_lm:      float,
+    cover_w_m:     float = 0.762,
+    waste:         float = 1.05,
+    rafter_run_m:  float | None = None,
 ) -> tuple[int, str, str]:
     """
     Compute corrugated sheet count using run-based stock-length selection.
+
+    rafter_run_m: actual horizontal eave-to-ridge distance (hip W/2).
+                  When provided, used for stock-length selection instead of area/eaves.
+                  Gives a more accurate stock length for hip roofs where area/eaves
+                  underestimates the true rafter run.
 
     Returns (sheet_count, sheet_length_str, derivation_note)
     """
@@ -122,7 +128,15 @@ def _roof_sheet_count(
     stock_lengths = [3.0, 3.6, 4.2, 4.5, 5.4, 6.0, 7.2]
     top_lap_m = 0.15  # 150 mm top lap
 
-    if eaves_lm > 0:
+    if rafter_run_m and rafter_run_m > 0:
+        # Use the actual horizontal rafter run (derived from roof plan geometry)
+        min_len   = rafter_run_m + top_lap_m
+        sheet_len = next((l for l in stock_lengths if l >= min_len), stock_lengths[-1])
+        note      = (
+            f"rafter_run={rafter_run_m:.2f}m (hip W/2, derived from roof plan) "
+            f"+ {top_lap_m*1000:.0f}mm lap → select {sheet_len}m stock"
+        )
+    elif eaves_lm > 0:
         run_m     = roof_area_m2 / eaves_lm
         min_len   = run_m + top_lap_m
         sheet_len = next((l for l in stock_lengths if l >= min_len), stock_lengths[-1])
@@ -147,6 +161,7 @@ def apply_all_roof_assemblies(
     evidence_prefix: str = "dxf_geometry",
     roof_confidence: str = "HIGH",
     apron_lm:        float = 0.0,
+    rafter_run_m:    float | None = None,
 ) -> list[dict]:
     """Apply all roof assembly rules and return combined row list."""
     rows = []
@@ -157,7 +172,9 @@ def apply_all_roof_assemblies(
             roof_confidence,
         )
         # Sheet count — computed from stock-length selection, NOT from assembly rule
-        sheet_count, sheet_len_str, sheet_note = _roof_sheet_count(roof_area_m2, eaves_lm)
+        sheet_count, sheet_len_str, sheet_note = _roof_sheet_count(
+            roof_area_m2, eaves_lm, rafter_run_m=rafter_run_m
+        )
         rows.append({
             "item_name":       "Roof Cladding Sheet (corrugated / CGI)",
             "item_code":       "",
@@ -166,7 +183,10 @@ def apply_all_roof_assemblies(
             "package":         "roof_cladding",
             "quantity_status": "calculated",
             "quantity_basis":  f"area×waste / (cover_w×sheet_len) = {roof_area_m2:.1f}×1.05/(0.762×{sheet_len_str})",
-            "source_evidence": f"{evidence_prefix}: roof_area={roof_area_m2:.2f} m², eaves_lm={eaves_lm:.2f} m",
+            "source_evidence": (
+                f"{evidence_prefix}: roof_area={roof_area_m2:.2f} m², eaves_lm={eaves_lm:.2f} m"
+                + (f", rafter_run={rafter_run_m:.2f} m" if rafter_run_m else "")
+            ),
             "derivation_rule": f"ceil(area × 1.05 / (0.762 × {sheet_len_str}))",
             "confidence":      "MEDIUM",
             "manual_review":   True,

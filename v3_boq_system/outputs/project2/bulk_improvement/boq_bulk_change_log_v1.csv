@@ -1,0 +1,6 @@
+item_name,old_quantity,new_quantity,old_unit,new_unit,old_package_code,new_package_code,change_type
+Floor Finish — Tiles / screed,86.4,REMOVED,m2,,50106,,removed
+"External Wall Lining — FC Sheet (6mm, 1200×2700)",30,30,sheets,sheets,50113,50115,package_moved
+External Wall Lining — FC Sheet Screws,12,12,boxes,boxes,50113,50115,package_moved
+Floor Finish — Dry Area (vinyl plank / screed),NEW,60.3,,m2,,50106,added
+Floor Finish — Wet Area (ceramic tile),NEW,4.5,,m2,,50106,added

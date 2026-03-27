@@ -1,0 +1,6 @@
+item_name,unit,quantity_v1,quantity_v2,change,package,confidence,change_reason
+Skirting Board,lm,97.2,88.3,-8.9,finishes_trim,MEDIUM,opening deduction applied
+"External Wall Lining — FC Sheet (6mm, 1200×2700)",sheets,30,27,-3.0,wall_lining_external,MEDIUM,opening deduction applied
+External Wall Lining — FC Sheet Screws,boxes,12,11,-1.0,wall_lining_external,LOW,opening deduction applied
+"Internal Wall Lining — FC Sheet (6mm, 1200×2700)",sheets,46,41,-5.0,wall_lining_internal,HIGH,opening deduction applied
+Internal Wall Lining — FC Sheet Screws,boxes,18,16,-2.0,wall_lining_internal,LOW,opening deduction applied

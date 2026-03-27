@@ -1,0 +1,761 @@
+{
+  "project_type": "pharmacy",
+  "total_items": 169,
+  "package_completeness": {
+    "structural_frame": {
+      "present": true,
+      "item_count": 7,
+      "measured": 7,
+      "calculated": 0,
+      "inferred": 0,
+      "placeholder": 0,
+      "manual_review": 0,
+      "status": "OK"
+    },
+    "roof_cladding": {
+      "present": true,
+      "item_count": 3,
+      "measured": 0,
+      "calculated": 3,
+      "inferred": 0,
+      "placeholder": 0,
+      "manual_review": 1,
+      "status": "OK"
+    },
+    "openings_doors": {
+      "present": true,
+      "item_count": 5,
+      "measured": 3,
+      "calculated": 2,
+      "inferred": 0,
+      "placeholder": 0,
+      "manual_review": 0,
+      "status": "OK"
+    },
+    "openings_windows": {
+      "present": true,
+      "item_count": 12,
+      "measured": 3,
+      "calculated": 9,
+      "inferred": 0,
+      "placeholder": 0,
+      "manual_review": 3,
+      "status": "OK"
+    },
+    "wall_lining_external": {
+      "present": true,
+      "item_count": 2,
+      "measured": 0,
+      "calculated": 2,
+      "inferred": 0,
+      "placeholder": 0,
+      "manual_review": 0,
+      "status": "OK"
+    },
+    "wall_lining_internal": {
+      "present": true,
+      "item_count": 3,
+      "measured": 0,
+      "calculated": 3,
+      "inferred": 0,
+      "placeholder": 0,
+      "manual_review": 0,
+      "status": "OK"
+    },
+    "ceiling_lining": {
+      "present": true,
+      "item_count": 5,
+      "measured": 0,
+      "calculated": 5,
+      "inferred": 0,
+      "placeholder": 0,
+      "manual_review": 0,
+      "status": "OK"
+    },
+    "finishes": {
+      "present": true,
+      "item_count": 4,
+      "measured": 0,
+      "calculated": 4,
+      "inferred": 0,
+      "placeholder": 0,
+      "manual_review": 0,
+      "status": "OK"
+    },
+    "floor_system": {
+      "present": true,
+      "item_count": 7,
+      "measured": 0,
+      "calculated": 2,
+      "inferred": 5,
+      "placeholder": 0,
+      "manual_review": 4,
+      "status": "UNCONFIRMED"
+    },
+    "footings": {
+      "present": true,
+      "item_count": 8,
+      "measured": 1,
+      "calculated": 6,
+      "inferred": 0,
+      "placeholder": 1,
+      "manual_review": 4,
+      "status": "OK"
+    },
+    "services": {
+      "present": true,
+      "item_count": 27,
+      "measured": 0,
+      "calculated": 0,
+      "inferred": 25,
+      "placeholder": 2,
+      "manual_review": 27,
+      "status": "OK"
+    },
+    "insulation": {
+      "present": true,
+      "item_count": 2,
+      "measured": 0,
+      "calculated": 2,
+      "inferred": 0,
+      "placeholder": 0,
+      "manual_review": 0,
+      "status": "OK"
+    }
+  },
+  "provenance_summary": {
+    "total": 169,
+    "measured": 20,
+    "calculated": 104,
+    "inferred": 40,
+    "placeholder": 5,
+    "pct_measured": 11.8,
+    "pct_calculated": 61.5,
+    "pct_inferred": 23.7,
+    "pct_placeholder": 3.0,
+    "manual_review_count": 66
+  },
+  "benchmark_comparison": {},
+  "traceability_check": {
+    "items_missing_evidence": 0,
+    "items_missing_rule": 0,
+    "items_missing_basis": 0,
+    "traceability_score": 100.0,
+    "status": "OK"
+  },
+  "manual_review_items": [
+    {
+      "item_no": "G01",
+      "section": "G - Floor System",
+      "item_name": "Floor Cassette Panel \u2014 3000mm \u00d7 2394mm",
+      "quantity": 9,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Panel count derived from floor area / per-panel area (7.182m\u00b2). Panel width=3000mm (from E1/E2 edge beam length, HIGH confidence). Panel depth=2394mm (from J1/S1/S2 span length, HIGH confidence). Count=9 is MEDIUM confidence \u2014 verify from FrameCAD floor panel layout."
+    },
+    {
+      "item_no": "G02",
+      "section": "G - Floor System",
+      "item_name": "Floor Joist (J1) \u2014 150S41-095-500 \u00d7 2394mm",
+      "quantity": 63,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Profile: 150S41-095-500, length: 2394mm. 7 joists per panel (HIGH confidence \u2014 DWG Onpage FLayout schedule). Total 63 nr = 7 \u00d7 9 panels. Total lm: 150.82 lm (63 \u00d7 2.394m)."
+    },
+    {
+      "item_no": "G04",
+      "section": "G - Floor System",
+      "item_name": "Floor Edge Beam (E1+E2) \u2014 150P41-115-500 \u00d7 3000mm",
+      "quantity": 18,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Profile: 150P41-115-500, length: 3000mm. 2 edge beams per panel (E1\u00d71 + E2\u00d71). Total 18 nr. Total lm: 54.00 lm."
+    },
+    {
+      "item_no": "G05",
+      "section": "G - Floor System",
+      "item_name": "Floor Stringer (S1+S2) \u2014 150S41-115-500 \u00d7 2394mm",
+      "quantity": 18,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Profile: 150S41-115-500, length: 2394mm. 2 stringers per panel (S1\u00d71 + S2\u00d71). Total 18 nr. Total lm: 43.09 lm."
+    },
+    {
+      "item_no": "H02",
+      "section": "H - Substructure",
+      "item_name": "Strip Footing \u2014 Concrete Volume",
+      "quantity": 7.68,
+      "unit": "m3",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Strip footing assumed for steel floor frame bearing lines. Assumed 500 mm deep \u00d7 400 mm wide. Verify type and dimensions from structural drawings."
+    },
+    {
+      "item_no": "H04",
+      "section": "H - Substructure",
+      "item_name": "Bulk Earthworks / Level (provisional)",
+      "quantity": 0,
+      "unit": "m3",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Excavation volume cannot be derived from architectural documents."
+    },
+    {
+      "item_no": "H06",
+      "section": "H - Substructure",
+      "item_name": "Strip Footing Internal \u2014 Concrete Volume",
+      "quantity": 5.88,
+      "unit": "m3",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Assumed 500 mm deep \u00d7 400 mm wide. Verify."
+    },
+    {
+      "item_no": "H08",
+      "section": "H - Substructure",
+      "item_name": "Pad Footing Concrete (m3)",
+      "quantity": 5.145,
+      "unit": "m3",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Assumes 700\u00d7700\u00d7700 mm pads. Verify from structural engineer."
+    },
+    {
+      "item_no": "A12",
+      "section": "A - Structural Frame",
+      "item_name": "Framing Screw 12G-14\u00d720 HEX Head (LGS stud-to-track)",
+      "quantity": 19,
+      "unit": "boxes",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Stud-to-track connections: 2300.4lm \u00d7 4.0 per m = ~9202 screws, 19 boxes (500/box). Density: 2 screws per stud end (top+bottom). Verify with FrameCAD connection schedule."
+    },
+    {
+      "item_no": "A13",
+      "section": "A - Structural Frame",
+      "item_name": "Framing Screw 10G-24\u00d740 Countersunk (roof panel)",
+      "quantity": 3,
+      "unit": "boxes",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Purlin-to-rafter / roof panel connections: 481.7lm \u00d7 3.0 per m = ~1445 screws, 3 boxes. Verify with FrameCAD connection report."
+    },
+    {
+      "item_no": "A14",
+      "section": "A - Structural Frame",
+      "item_name": "Framing Screw 10G-14\u00d716 Wafer Head (batten-to-purlin)",
+      "quantity": 7,
+      "unit": "boxes",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Batten-to-purlin connections: 1385.3lm total batten \u00d7 2.5 per m = ~3463. Includes roof, wall, and ceiling batten zones from FrameCAD BOM. Verify zone scope before ordering."
+    },
+    {
+      "item_no": "A15",
+      "section": "A - Structural Frame",
+      "item_name": "Sleeve Anchor M12\u00d775 \u2014 Pad Footings",
+      "quantity": 60,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. 15 pad footings \u00d7 4 M12\u00d775 anchors each (4-bolt base plate). Verify anchor embedment depth and edge distance from structural engineer."
+    },
+    {
+      "item_no": "A16",
+      "section": "A - Structural Frame",
+      "item_name": "PH Post Holder Bracket (PHA/PHB/PHD)",
+      "quantity": 28,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Post holder brackets at column bases. Count estimated from IFC steel post lm. Verify bracket type (PHA/PHB/PHD) against post size and load from structural drawings."
+    },
+    {
+      "item_no": "A17",
+      "section": "A - Structural Frame",
+      "item_name": "Triple Grip Connector (roof-to-wall uplift)",
+      "quantity": 36,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Roof-to-wall-plate cyclonic uplift connections at 1.2m centres along 42.4m eave line = 36 nr. Verify spacing and type from structural engineer (cyclone region requirement)."
+    },
+    {
+      "item_no": "A18",
+      "section": "A - Structural Frame",
+      "item_name": "Hold-Down Washer \u2014 Cyclonic (post base)",
+      "quantity": 60,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Hold-down washers at post base connections. 15 pads \u00d7 4 = 60 nr. Verify washer specification (size, grade) from structural drawings."
+    },
+    {
+      "item_no": "A19",
+      "section": "A - Structural Frame",
+      "item_name": "Fix Plate / Gusset Plate (strap bracing connection)",
+      "quantity": 18,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Fix plates at strap bracing termination points: 49.7lm \u00d7 0.35 = 18 nr. Verify against FrameCAD connection schedule."
+    },
+    {
+      "item_no": "A20",
+      "section": "A - Structural Frame",
+      "item_name": "Diagonal Strap Tensioner / Anchor (bracing strap end)",
+      "quantity": 34,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Strap termination anchors: 49.7lm \u00f7 3m avg run = 17 runs \u00d7 2 ends. Verify strap count and anchor type from FrameCAD connection schedule."
+    },
+    {
+      "item_no": "A21",
+      "section": "A - Structural Frame",
+      "item_name": "Cable Grommet (LGS service penetration)",
+      "quantity": 45,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Cable/conduit grommets at LGS stud penetrations. 29.4m internal wall \u00d7 1.5 per m = 45 nr. Quantity depends on electrical/hydraulic layout. Verify from services drawings."
+    },
+    {
+      "item_no": "A22",
+      "section": "A - Structural Frame",
+      "item_name": "Structural Fixings Remainder \u2014 Hex Bolts / Angles / Misc (PLACEHOLDER)",
+      "quantity": 0,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. PLACEHOLDER for connection schedule items not derivable from member lm alone. Typical items: M10/M12/M16 hex bolts (hold-down posts), angle brackets (knee bracing, ridge connections), spring washers, nyloc nuts. Obtain FrameCAD connection report for full schedule. Reference BOQ includes 256+ individual fixing line items \u2014 this row represents residual scope."
+    },
+    {
+      "item_no": "B03",
+      "section": "B - Roof",
+      "item_name": "Roof Cladding Sheet (corrugated / CGI)",
+      "quantity": 33,
+      "unit": "sheets",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. rafter_run=4.10m (hip W/2, derived from roof plan) + 150mm lap \u2192 select 4.5m stock Verify sheet length and profile from spec."
+    },
+    {
+      "item_no": "K05",
+      "section": "K - External Works",
+      "item_name": "FC Weatherboard \u2014 Board Count",
+      "quantity": 126,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Weatherboard: 200mm exposure, 4200mm stock length. Count includes 5% waste.  Verify board profile and lap from spec."
+    },
+    {
+      "item_no": "K13",
+      "section": "K - External Works",
+      "item_name": "Site Preparation (Provisional)",
+      "quantity": 0,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Site preparation scope cannot be derived from drawings. Confirm with engineer."
+    },
+    {
+      "item_no": "D26",
+      "section": "D - Openings",
+      "item_name": "Louvre Blade \u2014 WINDOW_LOUVRE_1100",
+      "quantity": 64,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Frame height 750 mm (config_default=750mm). 8 blades per frame at 100 mm pitch. Verify blade count and size from window schedule."
+    },
+    {
+      "item_no": "D29",
+      "section": "D - Openings",
+      "item_name": "Louvre Blade \u2014 WINDOW_LOUVRE_800",
+      "quantity": 16,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Frame height 750 mm (config_default=750mm). 8 blades per frame at 100 mm pitch. Verify blade count and size from window schedule."
+    },
+    {
+      "item_no": "D32",
+      "section": "D - Openings",
+      "item_name": "Louvre Blade \u2014 WINDOW_LOUVRE_1800",
+      "quantity": 8,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Frame height 750 mm (config_default=750mm). 8 blades per frame at 100 mm pitch. Verify blade count and size from window schedule."
+    },
+    {
+      "item_no": "D42",
+      "section": "D - Openings",
+      "item_name": "Fly Screen \u2014 WINDOW_LOUVRE_1100",
+      "quantity": 6.48,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Fly screen for louvre window WINDOW_LOUVRE_1100 (8 nr). Area: 1.08m \u00d7 0.750m = 0.810 m\u00b2 each. Tropical building \u2014 all louvre openings require insect screening. Verify frame height from window schedule."
+    },
+    {
+      "item_no": "D43",
+      "section": "D - Openings",
+      "item_name": "Fly Screen \u2014 WINDOW_LOUVRE_800",
+      "quantity": 1.2,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Fly screen for louvre window WINDOW_LOUVRE_800 (2 nr). Area: 0.80m \u00d7 0.750m = 0.599 m\u00b2 each. Tropical building \u2014 all louvre openings require insect screening. Verify frame height from window schedule."
+    },
+    {
+      "item_no": "D44",
+      "section": "D - Openings",
+      "item_name": "Fly Screen \u2014 WINDOW_LOUVRE_1800",
+      "quantity": 1.39,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Fly screen for louvre window WINDOW_LOUVRE_1800 (1 nr). Area: 1.85m \u00d7 0.750m = 1.385 m\u00b2 each. Tropical building \u2014 all louvre openings require insect screening. Verify frame height from window schedule."
+    },
+    {
+      "item_no": "D45",
+      "section": "D - Openings",
+      "item_name": "Door Closer \u2014 Hydraulic (main entrance)",
+      "quantity": 1,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Door closer inferred for pharmacy entrance doors. Marks: DOOR_90 (1 nr). Verify which doors require closers from door schedule and architect. Commercial pharmacy may require controlled entry."
+    },
+    {
+      "item_no": "E06",
+      "section": "E - Linings & Ceilings",
+      "item_name": "Wet Area Wall Lining \u2014 Waterproof Board / FC",
+      "quantity": 7,
+      "unit": "sheets",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Wet area lining derived from room perimeter estimate. Verify room dimensions."
+    },
+    {
+      "item_no": "I01",
+      "section": "I - Services",
+      "item_name": "Hand Basin (dispensary)",
+      "quantity": 1,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'pharmacy'."
+    },
+    {
+      "item_no": "I02",
+      "section": "I - Services",
+      "item_name": "Tapware (basin)",
+      "quantity": 1,
+      "unit": "set",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'pharmacy'."
+    },
+    {
+      "item_no": "I03",
+      "section": "I - Services",
+      "item_name": "Cold Room / Refrigeration Allowance",
+      "quantity": 1,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'pharmacy'."
+    },
+    {
+      "item_no": "I04",
+      "section": "I - Services",
+      "item_name": "Builder's Works \u2014 Electrical (pharmacy)",
+      "quantity": 1,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'pharmacy'."
+    },
+    {
+      "item_no": "I05",
+      "section": "I - Services",
+      "item_name": "Builder's Works \u2014 Services (unclassified room)",
+      "quantity": 1,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'waiting'."
+    },
+    {
+      "item_no": "I06",
+      "section": "I - Services",
+      "item_name": "Hand Basin (consulting room)",
+      "quantity": 1,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'consulting'."
+    },
+    {
+      "item_no": "I07",
+      "section": "I - Services",
+      "item_name": "Tapware (basin)",
+      "quantity": 1,
+      "unit": "set",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'consulting'."
+    },
+    {
+      "item_no": "I08",
+      "section": "I - Services",
+      "item_name": "Builder's Works \u2014 Plumbing (consulting)",
+      "quantity": 1,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'consulting'."
+    },
+    {
+      "item_no": "I09",
+      "section": "I - Services",
+      "item_name": "Builder's Works \u2014 Electrical (office)",
+      "quantity": 1,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'office'."
+    },
+    {
+      "item_no": "I10",
+      "section": "I - Services",
+      "item_name": "WC Pan (close-coupled)",
+      "quantity": 1,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
+    },
+    {
+      "item_no": "I11",
+      "section": "I - Services",
+      "item_name": "WC Cistern",
+      "quantity": 1,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
+    },
+    {
+      "item_no": "I12",
+      "section": "I - Services",
+      "item_name": "Hand Basin",
+      "quantity": 1,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
+    },
+    {
+      "item_no": "I13",
+      "section": "I - Services",
+      "item_name": "Tapware (basin)",
+      "quantity": 1,
+      "unit": "set",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
+    },
+    {
+      "item_no": "I14",
+      "section": "I - Services",
+      "item_name": "Mirror / Medicine Cabinet",
+      "quantity": 1,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
+    },
+    {
+      "item_no": "I15",
+      "section": "I - Services",
+      "item_name": "Toilet Roll Holder",
+      "quantity": 1,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
+    },
+    {
+      "item_no": "I16",
+      "section": "I - Services",
+      "item_name": "Hand Towel Rail / Dryer",
+      "quantity": 1,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
+    },
+    {
+      "item_no": "I17",
+      "section": "I - Services",
+      "item_name": "Floor Waste",
+      "quantity": 1,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
+    },
+    {
+      "item_no": "I18",
+      "section": "I - Services",
+      "item_name": "Builder's Works \u2014 Plumbing (toilet)",
+      "quantity": 1,
+      "unit": "item",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
+    },
+    {
+      "item_no": "I19",
+      "section": "I - Services",
+      "item_name": "Wet Area Wall Tiling \u2014 Toilet",
+      "quantity": 15.3,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred: perimeter (8.5 m) \u00d7 1800 mm splash-zone height. No finish schedule in source documents. Verify tile type, height, and area from architectural drawings. Deduct openings."
+    },
+    {
+      "item_no": "I20",
+      "section": "I - Services",
+      "item_name": "Wet Area Waterproofing \u2014 Membrane",
+      "quantity": 5.78,
+      "unit": "m2",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Waterproofing: floor area + 150 mm upstand on walls for Toilet. Verify room dimensions and upstand height from architectural drawings."
+    },
+    {
+      "item_no": "I21",
+      "section": "I - Services",
+      "item_name": "Builder's Works \u2014 Services (unclassified room)",
+      "quantity": 1,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'store'."
+    },
+    {
+      "item_no": "I22",
+      "section": "I - Services",
+      "item_name": "Air Conditioning / Mechanical Ventilation \u2014 PLACEHOLDER",
+      "quantity": 0,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. PLACEHOLDER. Commercial building in tropical climate likely requires split-system or cassette AC units. No mechanical schedule or equipment schedule in source documents. Obtain from mechanical engineer or building services consultant. Include: outdoor units, indoor units, refrigerant pipework, electrical supply, condensate drainage, ceiling penetrations."
+    },
+    {
+      "item_no": "I23",
+      "section": "I - Services",
+      "item_name": "Exhaust Fan \u2014 Wet Area (toilet / laundry)",
+      "quantity": 0,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. PLACEHOLDER. BCA F4.6 requires mechanical exhaust in rooms without openable windows. Confirm exhaust fan type, ducting, and external discharge location from architectural drawings."
+    },
+    {
+      "item_no": "I24",
+      "section": "I - Services",
+      "item_name": "Main Electrical Switchboard / Distribution Board",
+      "quantity": 1,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. 1 per building; adjust for sub-boards"
+    },
+    {
+      "item_no": "I25",
+      "section": "I - Services",
+      "item_name": "Main Water Meter / Stopcock",
+      "quantity": 1,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Whole-building service allowance."
+    },
+    {
+      "item_no": "I26",
+      "section": "I - Services",
+      "item_name": "Hot Water System (central)",
+      "quantity": 1,
+      "unit": "item",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. only if not allocated to individual rooms"
+    },
+    {
+      "item_no": "I27",
+      "section": "I - Services",
+      "item_name": "Smoke Detectors (provisional)",
+      "quantity": 3,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. 1 per 40 m\u00b2 floor area (indicative)"
+    },
+    {
+      "item_no": "J01",
+      "section": "J - Stairs",
+      "item_name": "Stair Stringer (Prefabricated Set) \u2014 3 RISER",
+      "quantity": 1,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Entry stair \u2014 riser count estimated from raised floor height (~525mm). Verify from architectural drawings."
+    },
+    {
+      "item_no": "J02",
+      "section": "J - Stairs",
+      "item_name": "Stair Tread",
+      "quantity": 3,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED."
+    },
+    {
+      "item_no": "J04",
+      "section": "J - Stairs",
+      "item_name": "Stair Balustrade \u2014 Top Rail",
+      "quantity": 0.75,
+      "unit": "lm",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Verify length from architectural drawings."
+    },
+    {
+      "item_no": "J05",
+      "section": "J - Stairs",
+      "item_name": "Stair Balustrade Post",
+      "quantity": 1,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. 1 post per 1.2 m spacing. Verify from balustrade schedule."
+    },
+    {
+      "item_no": "J06",
+      "section": "J - Stairs",
+      "item_name": "Stair Balustrade Infill (glass / mesh / picket)",
+      "quantity": 0.75,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Infill height assumed 1.0 m. Adjust for guard height requirement (\u22651.0 m at >1.0 m fall)."
+    },
+    {
+      "item_no": "J07",
+      "section": "J - Stairs",
+      "item_name": "Stair Handrail",
+      "quantity": 0.75,
+      "unit": "lm",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Verify handrail length. Continuous rail both sides of flight where required by code."
+    },
+    {
+      "item_no": "J08",
+      "section": "J - Stairs",
+      "item_name": "Access Ramp \u2014 Surface (concrete / non-slip)",
+      "quantity": 8.82,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Access ramp: 1:14 gradient, stair: 3 risers \u00d7 175 mm = 525 mm \u2192 7.35 m run \u00d7 1.2 m wide = 8.82 m\u00b2. Verify need and exact dimensions from architectural drawings and BCA D3.3."
+    },
+    {
+      "item_no": "J09",
+      "section": "J - Stairs",
+      "item_name": "Access Ramp \u2014 Handrail (both sides)",
+      "quantity": 14.7,
+      "unit": "lm",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Continuous handrails both sides of ramp. Verify height and spec from architectural drawings."
+    },
+    {
+      "item_no": "J10",
+      "section": "J - Stairs",
+      "item_name": "Access Ramp \u2014 Edge Kerb / Guard",
+      "quantity": 14.7,
+      "unit": "lm",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Kerb guard (min 75 mm high) both sides. Verify from architectural drawings."
+    }
+  ],
+  "gap_analysis": [
+    {
+      "severity": "MEDIUM",
+      "package": "floor_system",
+      "issue": "Floor system package present but all items are inferred \u2014 no measured schedule",
+      "action": "Obtain floor panel/joist schedule from FrameCAD or structural engineer"
+    }
+  ],
+  "confidence_summary": {
+    "HIGH": 31,
+    "MEDIUM": 80,
+    "LOW": 58,
+    "pct_high": 18.3,
+    "pct_medium": 47.3,
+    "pct_low": 34.3
+  },
+  "warnings": [
+    "Template contamination check: PASSED \u2014 no BOQ template quantities detected."
+  ]
+}

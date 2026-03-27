@@ -148,20 +148,30 @@ def build_element_model(
         ))
 
     # ── Geometry: ceiling ────────────────────────────────────────────────────
-    raw_ceil_area = _val(geom, "ceiling_area_m2") or raw_dxf.get("floor_hatch_area_m2", 0.0)
+    # Priority 1: dedicated CEILING layer hatch from DXF (architect's reflected ceiling plan)
+    # Priority 2: legacy floor_hatch_area_m2 key (older extractor output)
+    # Priority 3: derived = floor - verandah (last resort, MEDIUM)
+    # Do NOT override DXF CEILING HATCH with derived area — not all floor area has ceiling lining.
+    raw_ceil_area = (
+        raw_dxf.get("ceiling_area_m2", 0.0)
+        or _val(geom, "ceiling_area_m2")
+        or raw_dxf.get("floor_hatch_area_m2", 0.0)
+    )
     derived_ceil  = round(floor_area - ver_area, 2) if floor_area > 0 else 0.0
-    if raw_ceil_area > 0 and raw_ceil_area >= derived_ceil * 0.9:
+    if raw_ceil_area > 0:
         ceil_area, ceil_src, ceil_conf = raw_ceil_area, "dxf_geometry", "HIGH"
+        if derived_ceil > 0 and abs(raw_ceil_area - derived_ceil) > 1.0:
+            model.extraction_notes.append(
+                f"Ceiling area from DXF CEILING layer = {raw_ceil_area:.2f} m² "
+                f"(< floor−verandah {derived_ceil:.2f} m²). "
+                f"Trusting DXF hatch — partial ceiling lining is expected."
+            )
     elif derived_ceil > 0:
         ceil_area  = derived_ceil
         ceil_src   = "derived"
         ceil_conf  = "MEDIUM"
-        model.warnings.append(
-            f"Ceiling area from DXF ({raw_ceil_area:.2f} m²) appears partial; "
-            f"using floor−verandah = {derived_ceil:.2f} m²"
-        )
     else:
-        ceil_area, ceil_src, ceil_conf = raw_ceil_area, "dxf_geometry", "MEDIUM"
+        ceil_area, ceil_src, ceil_conf = 0.0, "none", "LOW"
 
     if ceil_area > 0:
         model.ceilings.append(CeilingElement(
@@ -176,17 +186,46 @@ def build_element_model(
     roof_perim = _val(geom, "roof_perimeter_m") or raw_dxf.get("roof_perimeter_m", 0.0)
     if roof_area > 0:
         roof_src, roof_conf = _src(geom, "roof_area_m2")
-        # Derive ridge / barge from perimeter (conservative estimates)
-        ridge_est  = round(roof_perim * 0.25, 1)  # ~25% of perimeter is ridge
-        barge_est  = round(roof_perim * 0.2,  1)  # ~20% gable ends
+        roof_type_val = proj_cfg.get("roof_type", cfg.get("roof", {}).get("roof_type", "hip"))
+
+        # Derive roof plan long/short dimensions from area + perimeter (rectangular plan).
+        # L × W = roof_area,  2(L+W) = roof_perim  →  quadratic: L² − (perim/2)·L + area = 0
+        half_perim = roof_perim / 2.0   # = L + W
+        disc       = half_perim ** 2 - 4.0 * roof_area
+        if disc >= 0 and half_perim > 0:
+            roof_long  = round((half_perim + math.sqrt(disc)) / 2.0, 2)  # longer dim (L)
+            roof_short = round((half_perim - math.sqrt(disc)) / 2.0, 2)  # shorter dim (W)
+        else:
+            roof_long  = roof_short = 0.0  # near-square or bad data — fall through to fractions
+
+        if roof_type_val == "hip" and roof_long > 0:
+            # Hip roof: ridge spans between the two hip points = L − W
+            # No barge boards on a hip roof (all ends are hipped, not gabled)
+            ridge_est = max(0.0, round(roof_long - roof_short, 1))
+            barge_est = 0.0
+            model.extraction_notes.append(
+                f"Roof plan derived: L={roof_long:.1f}m W={roof_short:.1f}m "
+                f"(area={roof_area:.1f} m², perim={roof_perim:.1f} m). "
+                f"Hip ridge={ridge_est:.1f}m (L−W). Barge=0 (hip ends, no gable)."
+            )
+        elif roof_type_val in ("gable", "shed") and roof_long > 0:
+            # Gable/shed: ridge runs the full length; no hip ends
+            # Barge requires sloped rafter length (needs pitch) — leave 0 until pitch known
+            ridge_est = roof_long
+            barge_est = 0.0
+        else:
+            # Unknown type or degenerate geometry — keep conservative fraction estimates
+            ridge_est = round(roof_perim * 0.25, 1)
+            barge_est = round(roof_perim * 0.20, 1)
+
         model.roofs.append(RoofElement(
             element_id="roof_main",
             area_m2=roof_area,
             perimeter_m=roof_perim,
-            eaves_length_m=roof_perim,         # full perimeter = all-sides eaves (hip)
+            eaves_length_m=roof_perim,  # full perimeter = all-sides eaves (hip or all-sides)
             ridge_length_m=ridge_est,
             barge_length_m=barge_est,
-            roof_type=proj_cfg.get("roof_type", cfg.get("roof", {}).get("roof_type", "hip")),
+            roof_type=roof_type_val,
             source=roof_src,
             source_reference=raw_dxf.get("source_file", ""),
             confidence=roof_conf,
@@ -327,6 +366,52 @@ def build_element_model(
             source="ifc_model",
             source_reference="IfcMember floor_joist classification",
             confidence="HIGH",
+        ))
+
+    elif raw_framecad.get("dwg_floor_panel_count"):
+        # Case 2.5: DWG floor cassette schedule (FrameCAD Onpage FLayout)
+        # Panel dimensions and member specs are HIGH confidence (directly read from DWG).
+        # Panel count is MEDIUM confidence (derived from floor area / panel area).
+        dwg_pc    = raw_framecad["dwg_floor_panel_count"]
+        dwg_pw    = raw_framecad.get("panel_width_mm", 0)
+        dwg_pd    = raw_framecad.get("panel_depth_mm", 0)
+        dwg_j_nr  = raw_framecad.get("joist_total_nr", 0)
+        dwg_j_lm  = raw_framecad.get("joist_lm_total", 0.0)
+        dwg_j_len = raw_framecad.get("joist_length_mm", 0)
+        dwg_j_prf = raw_framecad.get("joist_profile", "")
+        dwg_eb_nr = raw_framecad.get("edge_beam_total_nr", 0)
+        dwg_st_nr = raw_framecad.get("stringer_total_nr", 0)
+        dwg_conf  = raw_framecad.get("dwg_floor_panel_count_confidence", "MEDIUM")
+        dwg_note  = raw_framecad.get("dwg_floor_panel_count_note", "")
+        schedule  = raw_framecad.get("dwg_floor_member_schedule", [])
+
+        model.floor_systems.append(FloorSystemElement(
+            element_id="floor_cassette_dwg",
+            assembly_type="floor_panel",
+            panel_width_mm=dwg_pw,
+            panel_length_mm=dwg_pd,
+            panel_count=dwg_pc,
+            joist_length_mm=dwg_j_len,
+            joist_count=dwg_j_nr,
+            total_joist_lm=round(dwg_j_lm, 2),
+            floor_area_m2=round(dwg_pw * dwg_pd * dwg_pc / 1_000_000, 2) if (dwg_pw and dwg_pd and dwg_pc) else 0.0,
+            load_class=fc_load_class,
+            source="framecad_dwg",
+            source_reference=(
+                f"DWG Layouts:Onpage FLayout — {dwg_pc} panels × "
+                f"{dwg_pw}mm×{dwg_pd}mm; J1×{dwg_j_nr//dwg_pc if dwg_pc else '?'} "
+                f"E1+E2×{dwg_eb_nr//dwg_pc if dwg_pc else '?'} "
+                f"S1+S2×{dwg_st_nr//dwg_pc if dwg_pc else '?'}"
+            ),
+            confidence=dwg_conf,
+            notes=(
+                f"Profile: {dwg_j_prf}. "
+                f"Panel count confidence: {dwg_conf}. "
+                f"{dwg_note} "
+                f"Edge beams (E1+E2): {dwg_eb_nr} nr total. "
+                f"Stringers (S1+S2): {dwg_st_nr} nr total. "
+                f"Raw schedule: {len(schedule)} member rows from DWG."
+            ).strip(),
         ))
 
     elif fc_floor_type == "steel":

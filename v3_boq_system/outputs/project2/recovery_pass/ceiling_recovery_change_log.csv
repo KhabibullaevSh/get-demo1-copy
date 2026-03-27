@@ -1,0 +1,4 @@
+item_no,description,unit,qty_before,qty_after,delta,pct_change,conf_before,conf_after,source_before,source_after,change_category,change_reason
+E07,"Ceiling Lining — FC Sheet (6mm, 1200×2400)",sheets,24,18,-6,n/a,MEDIUM,HIGH,derived,dxf_geometry,A,"Ceiling area source upgraded from derived floor-verandah (64.8 m², MEDIUM) to DXF CEILING layer hatch (49.0 m², HIGH)"
+E08,Ceiling Batten (LGS / timber),lm,162.0,122.5,-39.5,-24.4%,MEDIUM,MEDIUM,derived,dxf_geometry,A,"Ceiling area source upgraded from derived floor-verandah (64.8 m², MEDIUM) to DXF CEILING layer hatch (49.0 m², HIGH)"
+E09,Ceiling FC Sheet Screws,boxes,7,5,-2,n/a,LOW,LOW,derived,dxf_geometry,A,"Ceiling area source upgraded from derived floor-verandah (64.8 m², MEDIUM) to DXF CEILING layer hatch (49.0 m², HIGH)"

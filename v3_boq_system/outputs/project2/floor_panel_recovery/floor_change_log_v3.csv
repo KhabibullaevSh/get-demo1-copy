@@ -1,0 +1,12 @@
+change_type,item_name,old_value,new_value,unit,basis
+REMOVED,Floor Panel — Standard Load Floor Panel — General Areas (1.8kPa),21,-,nr,Replaced by DWG-derived member rows
+REMOVED,Floor Joist LGS — 1.8kPa Zone,100.8,-,lm,Replaced by DWG-derived member rows
+REMOVED,Floor Bearer (pair) — 1.8kPa Zone,3,-,nr,Replaced by DWG-derived member rows
+REMOVED,Floor Panel — High-Load Floor Panel — Dispensary (4kPa),9,-,nr,Replaced by DWG-derived member rows
+REMOVED,Floor Joist LGS — 4kPa Zone,43.2,-,lm,Replaced by DWG-derived member rows
+REMOVED,Floor Bearer (pair) — 4kPa Zone,2,-,nr,Replaced by DWG-derived member rows
+ADDED,Floor Cassette Panel — 3000mm × 2394mm,-,9,nr,framecad_dwg: DWG Layouts:Onpage FLayout — 9 panels × 3000mm×2394mm; J1×7 E1+E2×
+ADDED,Floor Joist (J1) — 150S41-095-500 × 2394mm,-,63,nr,framecad_dwg: DWG Layouts:Onpage FLayout — 9 panels × 3000mm×2394mm; J1×7 E1+E2×
+ADDED,Floor Joist (J1) — 150S41-095-500 (total lm),-,150.82,lm,framecad_dwg: DWG Layouts:Onpage FLayout — 9 panels × 3000mm×2394mm; J1×7 E1+E2×
+ADDED,Floor Edge Beam (E1+E2) — 150P41-115-500 × 3000mm,-,18,nr,framecad_dwg: DWG Layouts:Onpage FLayout — 9 panels × 3000mm×2394mm; J1×7 E1+E2×
+ADDED,Floor Stringer (S1+S2) — 150S41-115-500 × 2394mm,-,18,nr,framecad_dwg: DWG Layouts:Onpage FLayout — 9 panels × 3000mm×2394mm; J1×7 E1+E2×

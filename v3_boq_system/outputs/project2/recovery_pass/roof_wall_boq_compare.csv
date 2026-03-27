@@ -1,0 +1,170 @@
+item_no,section,description,unit,quantity,confidence,quantity_status,manual_review,source_evidence
+F01,F - Finishes,Timber Skirting | 25 x 75 x 2400mm Timber,lm,88.3,MEDIUM,calculated,False,ext_walls: 38.40 m [dxf_geometry]; int_walls: 29.40 m [dxf_geometry]
+F04,F - Finishes,Floor Finish | (type by room),m2,60.3,MEDIUM,calculated,False,"config room_schedule: Dispensary, Waiting / Reception, Consultation Room, Staff "
+F05,F - Finishes,Floor Finish | (type by room),m2,4.5,MEDIUM,calculated,False,config room_schedule: Toilet = 4.50 m²
+F06,F - Finishes,"Paint | External, two coats",m2,92.16,MEDIUM,calculated,False,dxf_geometry: ext_wall_lm=38.40 × h=2.4
+F07,F - Finishes,"Paint | Internal, two coats",m2,190.12,MEDIUM,calculated,False,ceiling_area=49.00 m²; int_wall_lm=29.40 m × 2 faces [dxf_geometry]
+A01,A - Structural Frame,"FrameCAD Roof Panel | LGS C89, 0.75BMT, G550, Z275",lm,481.74,HIGH,measured,False,framecad_bom: Tab Roof Panels
+A02,A - Structural Frame,"FrameCAD Roof Truss | LGS C89, 0.75BMT, G550, Z275",lm,1634.29,HIGH,measured,False,framecad_bom: Tab Roof Trusses
+A03,A - Structural Frame,"FrameCAD Wall Frame | LGS C89, all wall members",lm,2250.69,HIGH,measured,False,framecad_bom: Tab Wall Panels
+A04,A - Structural Frame,"FrameCAD Lintel | LGS, lintel members",lm,3.57,HIGH,measured,False,framecad_bom: Lintel entries
+A05,A - Structural Frame,FrameCAD Wall Strap | Diagonal strap brace,lm,49.73,HIGH,measured,False,framecad_bom: Strap entries
+A06,A - Structural Frame,External Works | Verandah Frame,lm,69.91,HIGH,measured,False,ifc_model: V1/verandah members
+A07,A - Structural Frame,"Steel Post | 75 x 4mm SHS, Q345, HDG600",lm,96.69,HIGH,measured,False,ifc_model: SHS steel
+A08,A - Structural Frame,"Roof Batten | 41mm Top Hat, G550, Z275",lm,1385.3,HIGH,measured,False,framecad_bom: FrameCAD BATTEN entries
+A09,A - Structural Frame,Ceiling Batten | G22,nr,176,LOW,measured,False,framecad_bom: BATTEN 22 176 4800
+A10,A - Structural Frame,Ceiling Batten | G22,nr,5,LOW,measured,False,framecad_bom: BATTEN 22 5 6100
+A11,A - Structural Frame,"Roof Batten | 41mm Top Hat, G550, Z275",nr,85,MEDIUM,measured,False,framecad_bom: BATTEN 40 85 6000
+G01,G - Floor System,Floor Cassette Panel — 3000mm × 2394mm,nr,9,MEDIUM,inferred,True,framecad_dwg: DWG Layouts:Onpage FLayout — 9 panels × 3000mm×2394mm; J1×7 E1+E2×
+G02,G - Floor System,Floor Joist (J1) — 150S41-095-500 × 2394mm,nr,63,MEDIUM,inferred,True,framecad_dwg: DWG Layouts:Onpage FLayout — 9 panels × 3000mm×2394mm; J1×7 E1+E2×
+G03,G - Floor System,Floor Joist (J1) — 150S41-095-500 (total lm),lm,150.82,MEDIUM,inferred,False,framecad_dwg: DWG Layouts:Onpage FLayout — 9 panels × 3000mm×2394mm; J1×7 E1+E2×
+G04,G - Floor System,Floor Edge Beam (E1+E2) — 150P41-115-500 × 3000mm,nr,18,MEDIUM,inferred,True,framecad_dwg: DWG Layouts:Onpage FLayout — 9 panels × 3000mm×2394mm; J1×7 E1+E2×
+G05,G - Floor System,Floor Stringer (S1+S2) — 150S41-115-500 × 2394mm,nr,18,MEDIUM,inferred,True,framecad_dwg: DWG Layouts:Onpage FLayout — 9 panels × 3000mm×2394mm; J1×7 E1+E2×
+G06,G - Floor System,"FC Sheet Floor | 18mm thk, 1200 x 2400 Sheet",sheets,24,MEDIUM,calculated,False,framecad_dwg+dxf_geometry: floor_area=64.80 m²
+G07,G - Floor System,Fixing | FC Floor Sheet Screw,boxes,2,LOW,calculated,False,framecad_dwg+dxf_geometry: sheet_count=24
+H01,H - Substructure,"Substructure | Strip Footing, External Perimeter",lm,38.4,MEDIUM,calculated,False,derived_steel_floor: perimeter=38.4 m
+H02,H - Substructure,Substructure | Strip Footing Concrete Volume,m3,7.68,LOW,calculated,True,derived_steel_floor: 38.4 × 0.5 × 0.4
+H03,H - Substructure,Substructure | Strip Footing Formwork,lm,38.4,MEDIUM,calculated,False,derived_steel_floor: perimeter=38.4 m
+H04,H - Substructure,Substructure | Bulk Earthworks / Level (provisional),m3,0,LOW,placeholder,True,no site survey in sources
+H05,H - Substructure,"Substructure | Strip Footing, Internal Bearing",lm,29.4,MEDIUM,calculated,False,dxf_geometry: int_wall_lm=29.4 m
+H06,H - Substructure,"Substructure | Strip Footing, Internal Bearing",m3,5.88,LOW,calculated,True,derived: 29.4 × 0.5 × 0.4
+H07,H - Substructure,"Substructure | Pad Footing, Concrete",nr,15,MEDIUM,measured,False,dxf_geometry: count=15
+H08,H - Substructure,Substructure | Pad Footing Concrete Volume,m3,5.145,LOW,calculated,True,derived: 15 pads × 0.343 m³
+A12,A - Structural Frame,"Fixing | 12G-14x20mm HEX Head, DP",boxes,19,MEDIUM,calculated,True,"framecad_bom: wall=2300.4lm, roof_panel=481.7lm, batten=1385.3lm; dxf: pad_count"
+A13,A - Structural Frame,"Fixing | 10G-24x40mm Countersunk, DP",boxes,3,MEDIUM,calculated,True,"framecad_bom: wall=2300.4lm, roof_panel=481.7lm, batten=1385.3lm; dxf: pad_count"
+A14,A - Structural Frame,"Fixing | 10G-14x16mm Wafer Head, DP",boxes,7,LOW,calculated,True,"framecad_bom: wall=2300.4lm, roof_panel=481.7lm, batten=1385.3lm; dxf: pad_count"
+A15,A - Structural Frame,Fixing | M12 x 75mm Sleeve Anchor (Pad Footings),nr,60,MEDIUM,calculated,True,dxf_geometry: pad_count=15 (DXF STRUCTURE layer)
+A16,A - Structural Frame,PH Bracket | Post Holder (PHA/PHB/PHD),nr,28,LOW,calculated,True,ifc_model: steel_shs_lm=96.69 / avg_height(3.5m)
+A17,A - Structural Frame,Accessories | Triple Grip Connector (Pryda),nr,36,LOW,calculated,True,dxf_geometry: eaves_length=42.4m
+A18,A - Structural Frame,"Accessories | Hold Down Washer, Cyclonic",nr,60,LOW,calculated,True,dxf_geometry: pad_count=15
+A19,A - Structural Frame,"Accessories | Fix Plate Connector, G350",nr,18,LOW,calculated,True,framecad_bom: wall_strap_lm=49.73lm
+A20,A - Structural Frame,Accessories | Strap Brace Tensioner,nr,34,LOW,calculated,True,framecad_bom: wall_strap_lm=49.73lm
+A21,A - Structural Frame,Accessories | Grommet 35mm Dia,nr,45,LOW,inferred,True,dxf_geometry: int_wall_lm=29.4m
+A22,A - Structural Frame,Fixing | Structural Fixings Remainder (PLACEHOLDER),item,0,LOW,placeholder,True,no fixing schedule in source documents
+B01,B - Roof,Insulation | Sisalation / Sarking,rolls,2,HIGH,calculated,False,dxf_geometry: roof_area=106.60 m²
+B02,B - Roof,"Fixing | Roof Tek Screw, Hex Head, DP",boxes,11.0,MEDIUM,calculated,False,dxf_geometry: roof_area=106.60 m²
+B03,B - Roof,Roof Cladding | Custom Orb Corrugated CGI Sheet,sheets,33,MEDIUM,calculated,True,"dxf_geometry: roof_area=106.60 m², eaves_lm=42.40 m, rafter_run=4.10 m"
+B04,B - Roof,"Ridge Cap | Galvanised, lm",lm,4.8,MEDIUM,calculated,False,dxf_geometry: ridge_length=4.80 lm
+B05,B - Roof,Fixing | Ridge Cap Hex Head Screw,nr,16.0,MEDIUM,calculated,False,dxf_geometry: ridge_length=4.80 lm
+B06,B - Roof,Ridge End Cap | Galvanised,nr,2.0,MEDIUM,calculated,False,dxf_geometry: ridge_length=4.80 lm
+B07,B - Roof,"Fascia Board | Galvanised, lm",lm,42.4,MEDIUM,calculated,False,dxf_geometry: eaves_length=42.40 lm
+B08,B - Roof,Fascia | Clips,nr,71.0,MEDIUM,calculated,False,dxf_geometry: eaves_length=42.40 lm
+B09,B - Roof,Accessories | Birdproof Foam Strip,lm,42.4,MEDIUM,calculated,False,dxf_geometry: eaves_length=42.40 lm
+B10,B - Roof,SL-14 | PVC Box Gutter,lm,42.4,MEDIUM,calculated,False,dxf_geometry: eaves_length=42.40 lm
+B11,B - Roof,SL-14 | PVC Gutter Joiner,nr,3.0,MEDIUM,calculated,False,dxf_geometry: eaves_length=42.40 lm
+B12,B - Roof,SL-14 | PVC Gutter Stop End,nr,6.0,MEDIUM,calculated,False,dxf_geometry: eaves_length=42.40 lm
+B13,B - Roof,"SL-14 | PVC Downpipe, 68mm",nr,6.0,MEDIUM,calculated,False,dxf_geometry: downpipe_count=6
+B14,B - Roof,SL-14 | PVC Gutter Drop Outlet,nr,6.0,MEDIUM,calculated,False,dxf_geometry: downpipe_count=6
+B15,B - Roof,"SL-14 | PVC Downpipe Elbow, 90°",nr,12.0,MEDIUM,calculated,False,dxf_geometry: downpipe_count=6
+B16,B - Roof,SL-14 | PVC Downpipe Clip,nr,18.0,MEDIUM,calculated,False,dxf_geometry: downpipe_count=6
+K04,K - External Works,External Cladding | FC Weatherboard,m2,87.14,HIGH,calculated,False,"dxf_geometry: ext_wall_perimeter=38.40 m, h=2.4 m"
+K05,K - External Works,External Cladding | FC Weatherboard,nr,126,MEDIUM,calculated,True,"dxf_geometry: ext_lm=38.40 m, wall_h=2.4 m"
+K06,K - External Works,External Cladding | FC Weatherboard,nr,72,MEDIUM,calculated,False,dxf_geometry: floor_area=86.4m² + ext_perim=38.4m → L=12.0m W=7.2m
+K07,K - External Works,"External Cladding | Corner Flashing, Galvanised",nr,4,MEDIUM,inferred,False,"dxf_geometry: ext_wall_perimeter=38.4m, floor_area=86.4m² → L=12.0m W=7.2m"
+K08,K - External Works,External Cladding | Corner Trim / Angle Bead,lm,9.6,MEDIUM,calculated,False,derived: 4 corners × 2.4 m
+K09,K - External Works,External Cladding | FC Weatherboard,nr,768,MEDIUM,calculated,False,"dxf_geometry: ext_lm=38.40 m, stud_spacing=600mm"
+K10,K - External Works,Fixing | Stainless Steel Screw (Cladding),nr,1536,LOW,calculated,False,derived from clip count: 768
+K11,K - External Works,Accessories | Building Wrap / Sarking,m2,96.77,MEDIUM,calculated,False,dxf_geometry: ext_lm=38.40 m × wall_h=2.4 m
+K12,K - External Works,External Works | Verandah Decking,m2,21.6,HIGH,measured,False,dxf_geometry: verandah_area=21.60 m²
+K13,K - External Works,Substructure | Site Preparation (Provisional),item,0,LOW,placeholder,True,no site survey in sources
+D01,D - Openings,Door | 920mm Wide (DOOR_90),nr,1,HIGH,measured,False,dxf_blocks: mark=DOOR_90 count=1
+D02,D - Openings,Door | 820mm Wide (DOOR_82),nr,4,HIGH,measured,False,dxf_blocks: mark=DOOR_82 count=4
+D03,D - Openings,Door | 720mm Wide (DOOR_72),nr,1,HIGH,measured,False,dxf_blocks: mark=DOOR_72 count=1
+D04,D - Openings,"Flashing | Door Head, Galvanised",lm,5.52,MEDIUM,calculated,False,"dxf_blocks: door widths DOOR_90=0.92m×1, DOOR_82=0.82m×4, DOOR_72=0.72m×1"
+D05,D - Openings,"Flashing | Door Sill, Galvanised",lm,5.52,MEDIUM,calculated,False,dxf_blocks: 6 doors
+D06,D - Openings,Door | Leaf,nr,1.0,HIGH,calculated,False,dxf_blocks: DOOR_90 count=1
+D07,D - Openings,Door | Frame Set,nr,1.0,HIGH,calculated,False,dxf_blocks: DOOR_90 count=1
+D08,D - Openings,Door | Hinge (pair),nr,3.0,MEDIUM,calculated,False,dxf_blocks: DOOR_90 count=1
+D09,D - Openings,Door | Lockset,nr,1.0,HIGH,calculated,False,dxf_blocks: DOOR_90 count=1
+D10,D - Openings,Door | Stop,nr,1.0,HIGH,calculated,False,dxf_blocks: DOOR_90 count=1
+D11,D - Openings,Door | Leaf,nr,4.0,HIGH,calculated,False,dxf_blocks: DOOR_82 count=4
+D12,D - Openings,Door | Frame Set,nr,4.0,HIGH,calculated,False,dxf_blocks: DOOR_82 count=4
+D13,D - Openings,Door | Hinge (pair),nr,12.0,MEDIUM,calculated,False,dxf_blocks: DOOR_82 count=4
+D14,D - Openings,Door | Lockset,nr,4.0,HIGH,calculated,False,dxf_blocks: DOOR_82 count=4
+D15,D - Openings,Door | Stop,nr,4.0,HIGH,calculated,False,dxf_blocks: DOOR_82 count=4
+D16,D - Openings,Door | Leaf,nr,1.0,HIGH,calculated,False,dxf_blocks: DOOR_72 count=1
+D17,D - Openings,Door | Frame Set,nr,1.0,HIGH,calculated,False,dxf_blocks: DOOR_72 count=1
+D18,D - Openings,Door | Hinge (pair),nr,3.0,MEDIUM,calculated,False,dxf_blocks: DOOR_72 count=1
+D19,D - Openings,Door | Lockset,nr,1.0,HIGH,calculated,False,dxf_blocks: DOOR_72 count=1
+D20,D - Openings,Door | Stop,nr,1.0,HIGH,calculated,False,dxf_blocks: DOOR_72 count=1
+D21,D - Openings,"Window | Louvre, 1100mm Wide",nr,8,MEDIUM,measured,False,dxf_blocks: mark=WINDOW_LOUVRE_1100 count=8
+D22,D - Openings,"Window | Louvre, 800mm Wide",nr,2,MEDIUM,measured,False,dxf_blocks: mark=WINDOW_LOUVRE_800 count=2
+D23,D - Openings,"Window | Louvre, 1800mm Wide",nr,1,MEDIUM,measured,False,dxf_blocks: mark=WINDOW_LOUVRE_1800 count=1
+D24,D - Openings,"Flashing | Window Head, Galvanised",lm,9.44,MEDIUM,calculated,False,dxf_blocks: block_name: WINDOW_LOUVRE_1100 count=8
+D25,D - Openings,"Flashing | Window Sill, Galvanised",lm,9.44,MEDIUM,calculated,False,dxf_blocks: block_name: WINDOW_LOUVRE_1100 count=8
+D26,D - Openings,"Window | Louvre Blade, 1100mm Wide",nr,64,LOW,calculated,True,dxf_blocks: config_default=750mm count=8
+D27,D - Openings,"Flashing | Window Head, Galvanised",lm,1.8,MEDIUM,calculated,False,dxf_blocks: block_name: WINDOW_LOUVRE_800 count=2
+D28,D - Openings,"Flashing | Window Sill, Galvanised",lm,1.8,MEDIUM,calculated,False,dxf_blocks: block_name: WINDOW_LOUVRE_800 count=2
+D29,D - Openings,"Window | Louvre Blade, 800mm Wide",nr,16,LOW,calculated,True,dxf_blocks: config_default=750mm count=2
+D30,D - Openings,"Flashing | Window Head, Galvanised",lm,1.95,MEDIUM,calculated,False,dxf_blocks: block_name: WINDOW_LOUVRE_1800 count=1
+D31,D - Openings,"Flashing | Window Sill, Galvanised",lm,1.95,MEDIUM,calculated,False,dxf_blocks: block_name: WINDOW_LOUVRE_1800 count=1
+D32,D - Openings,"Window | Louvre Blade, 1800mm Wide",nr,8,LOW,calculated,True,dxf_blocks: config_default=750mm count=1
+D33,D - Openings,Window | Louvre Frame,nr,8.0,MEDIUM,calculated,False,dxf_blocks: WINDOW_LOUVRE_1100 count=8
+D34,D - Openings,Window | Louvre Blade,nr,8.0,MEDIUM,calculated,False,dxf_blocks: WINDOW_LOUVRE_1100 count=8
+D35,D - Openings,Window | Fly Screen,nr,8.0,MEDIUM,calculated,False,dxf_blocks: WINDOW_LOUVRE_1100 count=8
+D36,D - Openings,Window | Louvre Frame,nr,2.0,MEDIUM,calculated,False,dxf_blocks: WINDOW_LOUVRE_800 count=2
+D37,D - Openings,Window | Louvre Blade,nr,2.0,MEDIUM,calculated,False,dxf_blocks: WINDOW_LOUVRE_800 count=2
+D38,D - Openings,Window | Fly Screen,nr,2.0,MEDIUM,calculated,False,dxf_blocks: WINDOW_LOUVRE_800 count=2
+D39,D - Openings,Window | Louvre Frame,nr,1.0,MEDIUM,calculated,False,dxf_blocks: WINDOW_LOUVRE_1800 count=1
+D40,D - Openings,Window | Louvre Blade,nr,1.0,MEDIUM,calculated,False,dxf_blocks: WINDOW_LOUVRE_1800 count=1
+D41,D - Openings,Window | Fly Screen,nr,1.0,MEDIUM,calculated,False,dxf_blocks: WINDOW_LOUVRE_1800 count=1
+D42,D - Openings,"Window | Fly Screen, 1100mm Wide",m2,6.48,LOW,calculated,True,dxf_blocks: mark=WINDOW_LOUVRE_1100 w=1.08m (block_name) h=0.750m (config_defaul
+D43,D - Openings,"Window | Fly Screen, 800mm Wide",m2,1.2,LOW,calculated,True,dxf_blocks: mark=WINDOW_LOUVRE_800 w=0.80m (block_name) h=0.750m (config_default
+D44,D - Openings,"Window | Fly Screen, 1800mm Wide",m2,1.39,LOW,calculated,True,dxf_blocks: mark=WINDOW_LOUVRE_1800 w=1.85m (block_name) h=0.750m (config_defaul
+D45,D - Openings,"Door | Closer, Hydraulic",nr,1,MEDIUM,inferred,True,dxf_blocks: DOOR_90 (width≥850mm or DOOR_90)
+F02,F - Finishes,Timber Architrave | 12 x 75 x 2400mm Timber,lm,36.0,MEDIUM,calculated,False,derived from door_count=6
+F03,F - Finishes,Timber Architrave | 12 x 75 x 2400mm Timber,lm,52.8,MEDIUM,calculated,False,derived from window_count=11
+E01,E - Linings & Ceilings,"External Lining | FC Sheet, 1200 x 2400mm",sheets,27,MEDIUM,calculated,False,dxf_geometry: ext_wall_lm=38.40 m × h=2.4 m → gross=92.16 m² − openings=10.941 m
+E02,E - Linings & Ceilings,Fixing | FC Sheet Screw (External),boxes,11,LOW,calculated,False,derived from ext_wall_area_net=81.22 m²
+E03,E - Linings & Ceilings,"Internal Lining | FC Sheet, 1200 x 2400mm",sheets,41,HIGH,calculated,False,dxf_geometry: int_wall_lm=29.40 m × h=2.4 m × 2 faces = 141.12 m² − int_doors=16
+E04,E - Linings & Ceilings,Fixing | FC Sheet Screw (Internal),boxes,16,LOW,calculated,False,derived from int_wall_area_both_net=124.80 m²
+E05,E - Linings & Ceilings,Internal Lining Accessory | PVC H Joiner,lm,117.6,LOW,calculated,False,dxf_geometry: int_wall_lm=29.40 m × 2 faces = 58.8 lm
+E06,E - Linings & Ceilings,"Internal Lining | Waterproof Board / FC, Wet Area",sheets,7,LOW,inferred,True,rooms=['Toilet']: total_wet_wall_area≈20.40 m²
+E07,E - Linings & Ceilings,"Ceiling Lining | FC Sheet, 1200 x 2400mm",sheets,18,HIGH,calculated,False,dxf_geometry: ceiling_area=49.00 m²
+E08,E - Linings & Ceilings,Ceiling Batten | G22,lm,122.5,MEDIUM,calculated,False,dxf_geometry: ceiling_area=49.00 m²
+E09,E - Linings & Ceilings,Fixing | FC Sheet Screw (Ceiling),boxes,5,LOW,calculated,False,derived from ceiling_area=49.00 m²
+E10,E - Linings & Ceilings,"Verandah Soffit Lining — FC Sheet (6mm, 1200×2400)",sheets,8,HIGH,calculated,False,dxf_geometry: verandah_area=21.60 m² (soffit = verandah deck area)
+E11,E - Linings & Ceilings,Verandah Soffit Batten (LGS / timber),lm,54.0,MEDIUM,calculated,False,dxf_geometry: verandah_soffit_area=21.60 m²
+E12,E - Linings & Ceilings,Timber Cornice | 25 x 25 x 2400mm Timber,lm,38.4,MEDIUM,calculated,False,dxf_geometry: ext_wall_perimeter=38.40 m
+I01,I - Services,Hydraulics | Hand Basin,nr,1,LOW,inferred,True,room_schedule: Dispensary (type=pharmacy)
+I02,I - Services,Hydraulics | Tapware,set,1,LOW,inferred,True,room_schedule: Dispensary (type=pharmacy)
+I03,I - Services,Services | Cold Room / Refrigeration (PLACEHOLDER),item,1,LOW,inferred,True,room_schedule: Dispensary (type=pharmacy)
+I04,I - Services,"Services | Builder's Works, Electrical",item,1,LOW,inferred,True,room_schedule: Dispensary (type=pharmacy)
+I05,I - Services,"Services | Builder's Works, Services",item,1,LOW,inferred,True,room_schedule: Waiting / Reception (type=waiting)
+I06,I - Services,Hydraulics | Hand Basin,nr,1,LOW,inferred,True,room_schedule: Consultation Room (type=consulting)
+I07,I - Services,Hydraulics | Tapware,set,1,LOW,inferred,True,room_schedule: Consultation Room (type=consulting)
+I08,I - Services,Hydraulics | Builder's Works (Plumbing),item,1,LOW,inferred,True,room_schedule: Consultation Room (type=consulting)
+I09,I - Services,"Services | Builder's Works, Electrical",item,1,LOW,inferred,True,room_schedule: Staff Room (type=office)
+I10,I - Services,Hydraulics | WC Pan (close-coupled),nr,1,MEDIUM,inferred,True,room_schedule: Toilet (type=toilet)
+I11,I - Services,Hydraulics | WC Cistern,nr,1,MEDIUM,inferred,True,room_schedule: Toilet (type=toilet)
+I12,I - Services,Hydraulics | Hand Basin,nr,1,MEDIUM,inferred,True,room_schedule: Toilet (type=toilet)
+I13,I - Services,Hydraulics | Tapware,set,1,MEDIUM,inferred,True,room_schedule: Toilet (type=toilet)
+I14,I - Services,FFE | Mirror,nr,1,LOW,inferred,True,room_schedule: Toilet (type=toilet)
+I15,I - Services,FFE | Toilet Roll Holder,nr,1,LOW,inferred,True,room_schedule: Toilet (type=toilet)
+I16,I - Services,FFE | Towel Rail,nr,1,LOW,inferred,True,room_schedule: Toilet (type=toilet)
+I17,I - Services,Hydraulics | Floor Waste,nr,1,MEDIUM,inferred,True,room_schedule: Toilet (type=toilet)
+I18,I - Services,Hydraulics | Builder's Works (Plumbing),item,1,MEDIUM,inferred,True,room_schedule: Toilet (type=toilet)
+I19,I - Services,Hydraulics | WC Pan,m2,15.3,LOW,inferred,True,"room: Toilet (area=4.50 m², wet_area=True)"
+I20,I - Services,Hydraulics | Wet Area Waterproofing Membrane,m2,5.78,MEDIUM,inferred,True,room: Toilet (area=4.50 m²)
+I21,I - Services,"Services | Builder's Works, Services",item,1,LOW,inferred,True,room_schedule: Storage (type=store)
+I22,I - Services,Services | Air Conditioning / Mechanical (PLACEHOLDER),item,0,LOW,placeholder,True,building_type=pharmacy: commercial building requires mechanical services
+I23,I - Services,Electrical | Exhaust Fan,item,0,LOW,placeholder,True,building_type=pharmacy: wet area ventilation required by BCA F4.6
+I24,I - Services,Electrical | Main Switchboard / Distribution Board,item,1,LOW,inferred,True,floor_area=86.40 m² (building-wide)
+I25,I - Services,Hydraulics | Main Water Meter / Stopcock,item,1,LOW,inferred,True,floor_area=86.40 m² (building-wide)
+I26,I - Services,Hydraulics | Hot Water System,item,1,LOW,inferred,True,floor_area=86.40 m² (building-wide)
+I27,I - Services,Electrical | Smoke Detector,nr,3,LOW,inferred,True,floor_area=86.40 m² (building-wide)
+C01,C - Insulation,"Insulation | Glasswool Batts, Roof / Ceiling",m2,106.6,HIGH,calculated,False,dxf_geometry: roof_area=106.60 m²
+C02,C - Insulation,"Insulation | Glasswool Batts, External Wall",m2,92.16,MEDIUM,calculated,False,dxf_geometry: ext_wall_lm=38.40 × h=2.4
+J01,J - Stairs,Stair | Stringer,nr,1,LOW,inferred,True,project_config: STR-1
+J02,J - Stairs,Stair | Tread,nr,3,LOW,inferred,True,project_config: risers_per_flight=3
+J03,J - Stairs,Stair | Component,nr,2,MEDIUM,calculated,False,project_config: STR-1
+J04,J - Stairs,Balustrade | Assembly,lm,0.75,LOW,calculated,True,project_config: STR-1
+J05,J - Stairs,Balustrade | Post,nr,1,LOW,calculated,True,project_config: balustrade_lm=0.75 m
+J06,J - Stairs,Balustrade | Assembly,m2,0.75,LOW,inferred,True,project_config: balustrade_lm=0.75 m
+J07,J - Stairs,Balustrade | Handrail,lm,0.75,LOW,calculated,True,project_config: STR-1
+J08,J - Stairs,"Access Ramp | Surface, Concrete / Non-slip",m2,8.82,LOW,inferred,True,derived from project_config: stair: 3 risers × 175 mm = 525 mm
+J09,J - Stairs,Access Ramp | (type by design),lm,14.7,LOW,inferred,True,derived from ramp run: 7.35 m (stair: 3 risers × 175 mm = 525 mm)
+J10,J - Stairs,Access Ramp | Edge Kerb / Guard,lm,14.7,LOW,inferred,True,derived from ramp run: 7.35 m (stair: 3 risers × 175 mm = 525 mm)
+K01,K - External Works,Balustrade | Assembly,lm,20.4,HIGH,measured,False,dxf_geometry: verandah_perimeter=20.40 m
+K02,K - External Works,Balustrade | Handrail,lm,20.4,MEDIUM,calculated,False,dxf_geometry: verandah_perimeter=20.40 m
+K03,K - External Works,Balustrade | Post,nr,17,LOW,calculated,False,derived from verandah_perimeter=20.40 m

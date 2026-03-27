@@ -1,0 +1,499 @@
+{
+  "project_name": "project 2",
+  "project_type": "pharmacy",
+  "floors": [
+    {
+      "element_id": "floor_gf",
+      "source": "dxf_geometry",
+      "source_reference": "C:\\Users\\User\\Desktop\\DDC\\n8n\\boq-system\\New folder\\get-demo1-copy-main\\get-demo1-copy-main\\boq-system\\input\\project 2\\ANGAU PHARMACY 01_arch.dxf",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "floor",
+      "area_m2": 86.4,
+      "perimeter_m": 38.4,
+      "level": "GF"
+    }
+  ],
+  "ceilings": [
+    {
+      "element_id": "ceiling_gf",
+      "source": "dxf_geometry",
+      "source_reference": "",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "ceiling",
+      "area_m2": 49.0,
+      "level": "GF"
+    }
+  ],
+  "roofs": [
+    {
+      "element_id": "roof_main",
+      "source": "dxf_geometry",
+      "source_reference": "C:\\Users\\User\\Desktop\\DDC\\n8n\\boq-system\\New folder\\get-demo1-copy-main\\get-demo1-copy-main\\boq-system\\input\\project 2\\ANGAU PHARMACY 01_arch.dxf",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "roof",
+      "area_m2": 106.6,
+      "perimeter_m": 42.4,
+      "eaves_length_m": 42.4,
+      "ridge_length_m": 4.8,
+      "valley_length_m": 0.0,
+      "barge_length_m": 0.0,
+      "apron_length_m": 0.0,
+      "roof_type": "hip",
+      "pitch_deg": 0.0
+    }
+  ],
+  "verandahs": [
+    {
+      "element_id": "verandah_main",
+      "source": "dxf_geometry",
+      "source_reference": "C:\\Users\\User\\Desktop\\DDC\\n8n\\boq-system\\New folder\\get-demo1-copy-main\\get-demo1-copy-main\\boq-system\\input\\project 2\\ANGAU PHARMACY 01_arch.dxf",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "verandah",
+      "area_m2": 21.6,
+      "perimeter_m": 20.4
+    }
+  ],
+  "walls": [
+    {
+      "element_id": "ext_wall",
+      "source": "dxf_geometry",
+      "source_reference": "C:\\Users\\User\\Desktop\\DDC\\n8n\\boq-system\\New folder\\get-demo1-copy-main\\get-demo1-copy-main\\boq-system\\input\\project 2\\ANGAU PHARMACY 01_arch.dxf",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "wall",
+      "wall_type": "external",
+      "length_m": 38.4,
+      "height_m": 2.4,
+      "faces": 1,
+      "area_m2": 92.16
+    },
+    {
+      "element_id": "int_wall",
+      "source": "dxf_geometry",
+      "source_reference": "DXF WALLS layer: 8 polylines",
+      "confidence": "HIGH",
+      "notes": "Measured from DXF WALLS layer: 8 internal wall runs.",
+      "category": "wall",
+      "wall_type": "internal",
+      "length_m": 29.4,
+      "height_m": 2.4,
+      "faces": 2,
+      "area_m2": 141.12
+    }
+  ],
+  "wall_faces": [],
+  "structural_frames": [
+    {
+      "element_id": "roof_panel",
+      "source": "framecad_bom",
+      "source_reference": "Tab Roof Panels",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "structural_frame",
+      "frame_type": "roof_panel",
+      "total_lm": 481.74,
+      "member_spec": "",
+      "member_entries": []
+    },
+    {
+      "element_id": "roof_truss",
+      "source": "framecad_bom",
+      "source_reference": "Tab Roof Trusses",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "structural_frame",
+      "frame_type": "roof_truss",
+      "total_lm": 1634.29,
+      "member_spec": "",
+      "member_entries": []
+    },
+    {
+      "element_id": "wall_frame",
+      "source": "framecad_bom",
+      "source_reference": "Tab Wall Panels",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "structural_frame",
+      "frame_type": "wall_frame",
+      "total_lm": 2250.69,
+      "member_spec": "",
+      "member_entries": []
+    },
+    {
+      "element_id": "lintel",
+      "source": "framecad_bom",
+      "source_reference": "Lintel entries",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "structural_frame",
+      "frame_type": "lintel",
+      "total_lm": 3.57,
+      "member_spec": "",
+      "member_entries": []
+    },
+    {
+      "element_id": "wall_strap",
+      "source": "framecad_bom",
+      "source_reference": "Strap entries",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "structural_frame",
+      "frame_type": "wall_strap",
+      "total_lm": 49.73,
+      "member_spec": "",
+      "member_entries": []
+    },
+    {
+      "element_id": "verandah_frame",
+      "source": "ifc_model",
+      "source_reference": "V1/verandah members",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "structural_frame",
+      "frame_type": "verandah_frame",
+      "total_lm": 69.91,
+      "member_spec": "",
+      "member_entries": []
+    },
+    {
+      "element_id": "steel_shs",
+      "source": "ifc_model",
+      "source_reference": "SHS steel",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "structural_frame",
+      "frame_type": "steel_shs",
+      "total_lm": 96.69,
+      "member_spec": "",
+      "member_entries": []
+    },
+    {
+      "element_id": "roof_batten",
+      "source": "framecad_bom",
+      "source_reference": "FrameCAD BATTEN entries",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "structural_frame",
+      "frame_type": "roof_batten",
+      "total_lm": 1385.3,
+      "member_spec": "",
+      "member_entries": [
+        {
+          "grade_mm": 22,
+          "qty": 176,
+          "length_mm": 4800,
+          "total_lm": 844.8,
+          "source_pdf": "Angau Pharmacy-Layouts.pdf"
+        },
+        {
+          "grade_mm": 22,
+          "qty": 5,
+          "length_mm": 6100,
+          "total_lm": 30.5,
+          "source_pdf": "Angau Pharmacy-Layouts.pdf"
+        },
+        {
+          "grade_mm": 40,
+          "qty": 85,
+          "length_mm": 6000,
+          "total_lm": 510.0,
+          "source_pdf": "Angau Pharmacy-Layouts.pdf"
+        }
+      ]
+    }
+  ],
+  "floor_systems": [
+    {
+      "element_id": "floor_cassette_dwg",
+      "source": "framecad_dwg",
+      "source_reference": "DWG Layouts:Onpage FLayout \u2014 9 panels \u00d7 3000mm\u00d72394mm; J1\u00d77 E1+E2\u00d72 S1+S2\u00d72",
+      "confidence": "MEDIUM",
+      "notes": "Profile: 150S41-095-500. Panel count confidence: MEDIUM. Derived: floor_area(64.8m\u00b2) / panel_area(7.1820m\u00b2) = 9.02 \u2192 9 panels. grid check: 3\u00d73 = 9 panels (\u22489.0m \u00d7 7.2m). Panel width=3000mm (from E1/E2 length, HIGH), panel depth=2394mm (from J1/S1/S2 length, HIGH). Panel count is geometry-derived, not directly counted from DWG \u2014 verify against FrameCAD floor panel layout drawing. Edge beams (E1+E2): 18 nr total. Stringers (S1+S2): 18 nr total. Raw schedule: 5 member rows from DWG.",
+      "category": "floor_panel",
+      "assembly_type": "floor_panel",
+      "panel_length_mm": 2394,
+      "panel_width_mm": 3000,
+      "load_class": "",
+      "panel_count": 9,
+      "bearer_length_mm": 0,
+      "bearer_count_pairs": 0,
+      "joist_length_mm": 2394,
+      "joist_count": 63,
+      "total_joist_lm": 150.82,
+      "floor_area_m2": 64.64
+    }
+  ],
+  "openings": [
+    {
+      "element_id": "door_door_90",
+      "source": "dxf_blocks",
+      "source_reference": "DXF INSERT block=DOOR_90 count=1",
+      "confidence": "HIGH",
+      "notes": "Width from DXF block LINE geometry: 0.920 m",
+      "category": "opening",
+      "opening_type": "door",
+      "mark": "DOOR_90",
+      "width_m": 0.92,
+      "height_m": 2.04,
+      "quantity": 1,
+      "location": "",
+      "swing_type": "hinged",
+      "material": "",
+      "frame_type": "",
+      "is_external": true,
+      "has_flyscreen": false
+    },
+    {
+      "element_id": "door_door_82",
+      "source": "dxf_blocks",
+      "source_reference": "DXF INSERT block=DOOR_82 count=4",
+      "confidence": "HIGH",
+      "notes": "Width from DXF block LINE geometry: 0.820 m",
+      "category": "opening",
+      "opening_type": "door",
+      "mark": "DOOR_82",
+      "width_m": 0.82,
+      "height_m": 2.04,
+      "quantity": 4,
+      "location": "",
+      "swing_type": "hinged",
+      "material": "",
+      "frame_type": "",
+      "is_external": true,
+      "has_flyscreen": false
+    },
+    {
+      "element_id": "door_door_72",
+      "source": "dxf_blocks",
+      "source_reference": "DXF INSERT block=DOOR_72 count=1",
+      "confidence": "HIGH",
+      "notes": "Width from DXF block LINE geometry: 0.720 m",
+      "category": "opening",
+      "opening_type": "door",
+      "mark": "DOOR_72",
+      "width_m": 0.72,
+      "height_m": 2.04,
+      "quantity": 1,
+      "location": "",
+      "swing_type": "hinged",
+      "material": "",
+      "frame_type": "",
+      "is_external": true,
+      "has_flyscreen": false
+    },
+    {
+      "element_id": "win_window_louvre_1100",
+      "source": "dxf_blocks",
+      "source_reference": "DXF INSERT block=WINDOW_LOUVRE count=8 width~1100mm",
+      "confidence": "MEDIUM",
+      "notes": "Width from DXF block LINE geometry \u00d7 xscale: 1.080 m; height not in DXF block \u2014 quantifier will use config default",
+      "category": "opening",
+      "opening_type": "window",
+      "mark": "WINDOW_LOUVRE_1100",
+      "width_m": 1.08,
+      "height_m": 0.0,
+      "quantity": 8,
+      "location": "",
+      "swing_type": "louvre",
+      "material": "",
+      "frame_type": "",
+      "is_external": true,
+      "has_flyscreen": true
+    },
+    {
+      "element_id": "win_window_louvre_800",
+      "source": "dxf_blocks",
+      "source_reference": "DXF INSERT block=WINDOW_LOUVRE count=2 width~800mm",
+      "confidence": "MEDIUM",
+      "notes": "Width from DXF block LINE geometry \u00d7 xscale: 0.799 m; height not in DXF block \u2014 quantifier will use config default",
+      "category": "opening",
+      "opening_type": "window",
+      "mark": "WINDOW_LOUVRE_800",
+      "width_m": 0.799,
+      "height_m": 0.0,
+      "quantity": 2,
+      "location": "",
+      "swing_type": "louvre",
+      "material": "",
+      "frame_type": "",
+      "is_external": true,
+      "has_flyscreen": true
+    },
+    {
+      "element_id": "win_window_louvre_1800",
+      "source": "dxf_blocks",
+      "source_reference": "DXF INSERT block=WINDOW_LOUVRE count=1 width~1800mm",
+      "confidence": "MEDIUM",
+      "notes": "Width from DXF block LINE geometry \u00d7 xscale: 1.847 m; height not in DXF block \u2014 quantifier will use config default",
+      "category": "opening",
+      "opening_type": "window",
+      "mark": "WINDOW_LOUVRE_1800",
+      "width_m": 1.847,
+      "height_m": 0.0,
+      "quantity": 1,
+      "location": "",
+      "swing_type": "louvre",
+      "material": "",
+      "frame_type": "",
+      "is_external": true,
+      "has_flyscreen": true
+    }
+  ],
+  "rooms": [
+    {
+      "element_id": "room_dispensary",
+      "source": "project_config",
+      "source_reference": "",
+      "confidence": "LOW",
+      "notes": "Configured estimate \u2014 verify room layout and areas from architectural drawings.",
+      "category": "room",
+      "room_name": "Dispensary",
+      "room_type": "pharmacy",
+      "area_m2": 24.0,
+      "perimeter_m": 0.0,
+      "level": "GF",
+      "is_wet_area": false,
+      "finish_type": ""
+    },
+    {
+      "element_id": "room_waiting___reception",
+      "source": "project_config",
+      "source_reference": "",
+      "confidence": "LOW",
+      "notes": "Configured estimate \u2014 verify room layout and areas from architectural drawings.",
+      "category": "room",
+      "room_name": "Waiting / Reception",
+      "room_type": "waiting",
+      "area_m2": 14.0,
+      "perimeter_m": 0.0,
+      "level": "GF",
+      "is_wet_area": false,
+      "finish_type": ""
+    },
+    {
+      "element_id": "room_consultation_room",
+      "source": "project_config",
+      "source_reference": "",
+      "confidence": "LOW",
+      "notes": "Configured estimate \u2014 verify room layout and areas from architectural drawings.",
+      "category": "room",
+      "room_name": "Consultation Room",
+      "room_type": "consulting",
+      "area_m2": 8.0,
+      "perimeter_m": 0.0,
+      "level": "GF",
+      "is_wet_area": false,
+      "finish_type": ""
+    },
+    {
+      "element_id": "room_staff_room",
+      "source": "project_config",
+      "source_reference": "",
+      "confidence": "LOW",
+      "notes": "Configured estimate \u2014 verify room layout and areas from architectural drawings.",
+      "category": "room",
+      "room_name": "Staff Room",
+      "room_type": "office",
+      "area_m2": 6.5,
+      "perimeter_m": 0.0,
+      "level": "GF",
+      "is_wet_area": false,
+      "finish_type": ""
+    },
+    {
+      "element_id": "room_toilet",
+      "source": "project_config",
+      "source_reference": "",
+      "confidence": "LOW",
+      "notes": "Configured estimate \u2014 verify room layout and areas from architectural drawings.",
+      "category": "room",
+      "room_name": "Toilet",
+      "room_type": "toilet",
+      "area_m2": 4.5,
+      "perimeter_m": 0.0,
+      "level": "GF",
+      "is_wet_area": true,
+      "finish_type": ""
+    },
+    {
+      "element_id": "room_storage",
+      "source": "project_config",
+      "source_reference": "",
+      "confidence": "LOW",
+      "notes": "Configured estimate \u2014 verify room layout and areas from architectural drawings.",
+      "category": "room",
+      "room_name": "Storage",
+      "room_type": "store",
+      "area_m2": 7.8,
+      "perimeter_m": 0.0,
+      "level": "GF",
+      "is_wet_area": false,
+      "finish_type": ""
+    }
+  ],
+  "footings": [
+    {
+      "element_id": "pad_posts",
+      "source": "dxf_geometry",
+      "source_reference": "DXF STRUCTURE layer: 15 circle entities",
+      "confidence": "MEDIUM",
+      "notes": "15 post/column positions detected in DXF STRUCTURE layer. Pad footings assumed beneath each post. Verify footing size and depth from structural drawings.",
+      "category": "footing",
+      "footing_type": "pad",
+      "count": 15,
+      "area_m2": 0.0,
+      "perimeter_m": 0.0,
+      "thickness_mm": 100,
+      "concrete_m3": 0.0,
+      "reinforcement": ""
+    }
+  ],
+  "stairs": [
+    {
+      "element_id": "STR-1",
+      "source": "project_config",
+      "source_reference": "",
+      "confidence": "LOW",
+      "notes": "Entry stair \u2014 riser count estimated from raised floor height (~525mm). Verify from architectural drawings.",
+      "category": "stair",
+      "stair_type": "prefab",
+      "flights": 1,
+      "risers_per_flight": 3,
+      "tread_depth_mm": 250,
+      "riser_height_mm": 175,
+      "width_m": 1.2,
+      "landing_area_m2": 0.0,
+      "balustrade_lm": 0.0,
+      "handrail_lm": 0.0
+    }
+  ],
+  "finish_zones": [
+    {
+      "element_id": "floor_finish",
+      "source": "dxf_geometry",
+      "source_reference": "",
+      "confidence": "HIGH",
+      "notes": "",
+      "category": "finish_zone",
+      "finish_type": "floor",
+      "material": "tiles",
+      "area_m2": 86.4,
+      "room_ref": ""
+    }
+  ],
+  "source_files": [
+    "C:\\Users\\User\\Desktop\\DDC\\n8n\\boq-system\\New folder\\get-demo1-copy-main\\get-demo1-copy-main\\boq-system\\input\\project 2\\ANGAU PHARMACY 01_arch.dxf",
+    "C:\\Users\\User\\Desktop\\DDC\\n8n\\boq-system\\New folder\\get-demo1-copy-main\\get-demo1-copy-main\\boq-system\\input\\project 2\\Angau Pharmacy.ifc",
+    "C:\\Users\\User\\Desktop\\DDC\\n8n\\boq-system\\New folder\\get-demo1-copy-main\\get-demo1-copy-main\\boq-system\\input\\project 2\\Angau Pharmacy Summary.pdf"
+  ],
+  "warnings": [],
+  "extraction_notes": [
+    "Ceiling area from DXF CEILING layer = 49.00 m\u00b2 (< floor\u2212verandah 64.80 m\u00b2). Trusting DXF hatch \u2014 partial ceiling lining is expected.",
+    "Roof plan derived: L=13.0m W=8.2m (area=106.6 m\u00b2, perim=42.4 m). Hip ridge=4.8m (L\u2212W). Barge=0 (hip ends, no gable).",
+    "Room schedule total check: config sum 64.8 m\u00b2 matches DXF interior floor area 64.8 m\u00b2. Individual room areas remain LOW confidence \u2014 breakdown is a config estimate, not derived from source geometry."
+  ]
+}
