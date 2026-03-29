@@ -8,3 +8,14 @@ input/pdfs/*.pdf
 input/bom/*.xlsx
 v2_ddc_pipeline/outputs/
 .claude/
+
+# Ignore temporary generated outputs
+v3_boq_system/outputs/**/temp/
+v3_boq_system/outputs/**/intermediate/
+v3_boq_system/outputs/**/*.log
+
+# Keep benchmark evidence
+!v3_boq_system/outputs/**/*.md
+!v3_boq_system/outputs/**/*.csv
+!v3_boq_system/outputs/**/*final*.xlsx
+!v3_boq_system/outputs/**/*compare*.xlsx
