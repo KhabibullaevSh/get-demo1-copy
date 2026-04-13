@@ -41,38 +41,32 @@ def _base_model() -> ProjectElementModel:
 
 class TestFinishesInternalPaintBothFaces:
 
-    def test_internal_paint_uses_both_wall_faces(self):
+    def test_internal_paint_uses_wall_geometry(self):
         """
-        Internal paint = ceiling_area + sum(int_wall.area_m2).
-        WallElement.area_m2 for internal = lm × h × 2 (faces=2).
-        int_wall_area = 29.4 × 2.4 × 2 = 141.12
-        paint_int = 64.8 + 141.12 = 205.92
+        PASS B: Internal paint = ceiling_area + (ext_wall_lm + int_wall_lm) × wall_height.
+        ceiling_area = 64.8 (from CeilingElement)
+        ext_lm = 38.4, int_lm = 29.4, wall_h = 2.4
+        int_wall_area_geom = (38.4 + 29.4) × 2.4 = 162.72
+        paint_int = 64.8 + 162.72 = 227.52
         """
         m = _base_model()
         rows = quantify_finishes(m, _CFG)
         paint = [r for r in rows if r["item_name"] == "Paint — Internal"]
         assert paint, "Expected Paint — Internal row"
-        # WallElement with wall_type=internal defaults faces=1 unless explicitly set
-        # From element_model: faces defaults to 1, area_m2 = length × height × faces
-        # We need internal walls to have faces=2 for both-face counting
-        # The test verifies the formula uses w.area_m2 (not re-computes lm×h)
-        assert "both_faces" in paint[0]["quantity_basis"] or "both_face" in paint[0]["quantity_basis"], \
-            "Basis should mention both_faces"
+        # PB formula: basis mentions ext_lm and int_lm
+        basis = paint[0]["quantity_basis"]
+        assert "ext_lm" in basis and "int_lm" in basis, \
+            f"Basis should mention ext_lm and int_lm; got: {basis}"
 
-    def test_internal_paint_greater_than_one_face_would_give(self):
-        """
-        Single-face would give: 64.8 + 29.4×2.4 = 64.8+70.56 = 135.36
-        Both-face (faces=2): WallElement area_m2 = 29.4×2.4×1 = 70.56 (faces default=1).
-        After fixing WallElement to faces=2 for internal, area = 141.12.
-        This test simply asserts the basis string mentions both_faces.
-        """
+    def test_internal_paint_basis_mentions_geometry(self):
+        """Basis string must document the wall geometry used."""
         m = _base_model()
         rows = quantify_finishes(m, _CFG)
         paint = [r for r in rows if r["item_name"] == "Paint — Internal"]
         assert paint
-        # The key requirement: basis string documents what was used
         basis = paint[0]["quantity_basis"]
-        assert "int_wall" in basis.lower() or "ceiling" in basis.lower()
+        assert "ceiling" in basis.lower() or "ceil" in basis.lower(), \
+            f"Basis should mention ceiling; got: {basis}"
 
 
 class TestFinishesArchitrave:
@@ -112,7 +106,8 @@ class TestServicesWetAreaWaterproofing:
     def test_wet_area_waterproofing_uses_room_area(self):
         """
         Waterproofing area = room_area + perimeter × 0.15 m upstand.
-        Toilet 4 m²: perim_est = 4×sqrt(4) = 8.0 m → wpf = 4.0 + 8.0×0.15 = 5.2 m²
+        Toilet 4 m²: PASS B perim_est = 2×(√4+1) = 2×3 = 6.0 m
+        wpf = 4.0 + 6.0×0.15 = 4.9 m²
         """
         m = _base_model()
         m.rooms.append(RoomElement(
@@ -126,9 +121,9 @@ class TestServicesWetAreaWaterproofing:
         rows = quantify_services(m, _CFG, templates)
         wfp = [r for r in rows if "Waterproofing" in r["item_name"]]
         assert wfp, "Expected Wet Area Waterproofing row"
-        # perim_est = 4×sqrt(4) = 8.0; wpf = 4.0 + 8.0×0.15 = 5.2
-        assert wfp[0]["quantity"] == pytest.approx(5.2, abs=0.1), (
-            f"Expected ~5.2 m² waterproofing, got {wfp[0]['quantity']}"
+        # PB: perim_est = 2×(√4+1) = 6.0; wpf = 4.0 + 6.0×0.15 = 4.9
+        assert wfp[0]["quantity"] == pytest.approx(4.9, abs=0.05), (
+            f"Expected ~4.9 m² waterproofing (PB formula), got {wfp[0]['quantity']}"
         )
 
     def test_waterproofing_confidence_medium_when_area_known(self):

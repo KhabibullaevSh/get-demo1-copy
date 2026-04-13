@@ -117,13 +117,14 @@ def quantify_services(
             # to MEDIUM unless room polygon is source-backed.
             if tmpl.get("wet_area") and room.area_m2 > 0:
                 perim_measured = room.perimeter_m > 0
-                perim_est = room.perimeter_m if perim_measured else round(4 * math.sqrt(room.area_m2), 1)
+                # PB: use 2×(√area+1) rectangle estimate instead of 4×√area
+                perim_est = room.perimeter_m if perim_measured else round(2 * (math.sqrt(room.area_m2) + 1), 1)
                 tile_h = 1.8   # standard splash-zone tile height (m)
                 tile_area = round(perim_est * tile_h, 2)
                 perim_basis = (
                     f"room.perimeter_m={perim_est:.1f}m (measured)"
                     if perim_measured
-                    else f"4×√{room.area_m2:.1f}={perim_est:.1f}m (heuristic — no room polygon)"
+                    else f"2×(√{room.area_m2:.1f}+1)={perim_est:.1f}m (rect-est — no room polygon)"
                 )
                 rows.append(_row(
                     "services",
@@ -152,7 +153,8 @@ def quantify_services(
                 tmpl_area = tmpl.get("waterproofing_m2_each", 0)
                 if room.area_m2 > 0:
                     perim_measured = room.perimeter_m > 0
-                    room_perim_est = room.perimeter_m if perim_measured else round(4 * math.sqrt(room.area_m2), 1)
+                    # PB: rectangle estimate 2×(√area+1)
+                    room_perim_est = room.perimeter_m if perim_measured else round(2 * (math.sqrt(room.area_m2) + 1), 1)
                     upstand_h = 0.15   # 150 mm upstand
                     wfp_area  = round(room.area_m2 + room_perim_est * upstand_h, 2)
                     basis     = (
@@ -408,32 +410,39 @@ def quantify_finishes(
             "notes": "Gross area; no deduction for openings.",
         })
 
-    # Internal paint: ceiling + int wall BOTH faces
-    # WallElement.area_m2 already includes faces=2 for internal partitions
+    # Internal paint: ceiling + wall area from geometry.
+    # PASS B: use (ext_wall_lm + int_wall_lm) × wall_height rather than
+    # relying on WallElement.area_m2 which is 0 when wall type is unresolved.
     int_walls      = [w for w in model.walls if w.wall_type == "internal"]
     ceil_area      = sum(c.area_m2 for c in model.ceilings)
-    int_wall_area  = round(sum(w.area_m2 for w in int_walls), 2)   # both faces
-    paint_int      = round(ceil_area + int_wall_area, 2)
+    int_lm         = sum(w.length_m for w in int_walls)
+    wall_h_cfg     = config.get("structural", {}).get("wall_height_m",
+                                ext_h if ext_lm > 0 else 2.4)
+    # (ext_wall_lm × h) = inner face of external walls;
+    # (int_wall_lm × h) = one face of internal partitions (opposite face is interior)
+    int_wall_area_geom = round((ext_lm + int_lm) * wall_h_cfg, 2)
+    paint_int          = round(ceil_area + int_wall_area_geom, 2)
     if paint_int > 0:
-        int_lm = sum(w.length_m for w in int_walls)
         rows.append({
             "item_name": "Paint — Internal",
             "item_code": "", "unit": "m2",
             "quantity": paint_int, "package": "finishes",
             "quantity_status": "calculated",
             "quantity_basis": (
-                f"ceiling_area({ceil_area:.2f}) + int_wall_both_faces({int_wall_area:.2f})"
+                f"ceiling_area({ceil_area:.2f}) + (ext_lm({ext_lm:.2f})+int_lm({int_lm:.2f}))×h({wall_h_cfg:.1f})"
             ),
             "source_evidence": (
                 f"ceiling_area={ceil_area:.2f} m²; "
-                f"int_wall_lm={int_lm:.2f} m × 2 faces [{(int_walls[0].source if int_walls else 'n/a')}]"
+                f"ext_wall_lm={ext_lm:.2f} m; int_wall_lm={int_lm:.2f} m; wall_h={wall_h_cfg:.1f} m"
             ),
-            "derivation_rule": "ceiling_area + sum(int_wall.area_m2)  [area_m2 = lm × h × 2 faces]",
-            "confidence": "LOW" if not int_walls or int_walls[0].confidence == "LOW" else "MEDIUM",
-            "manual_review": not int_walls or int_walls[0].confidence == "LOW",
+            "derivation_rule": "ceiling_area + (ext_wall_lm + int_wall_lm) × wall_height",
+            "confidence": "MEDIUM" if (ext_lm > 0 or int_lm > 0) else "LOW",
+            "manual_review": ext_lm == 0 and int_lm == 0,
             "notes": (
-                "Both faces of internal partitions included. "
-                + ("Internal wall lm estimated — verify from drawings." if int_walls and int_walls[0].confidence == "LOW" else "")
+                f"Wall paint: inner face of external walls ({ext_lm:.2f} m) + "
+                f"internal partitions ({int_lm:.2f} m) × {wall_h_cfg:.1f} m height = "
+                f"{int_wall_area_geom:.2f} m². "
+                "Ceiling ({:.2f} m²) added. Deduct openings from drawings.".format(ceil_area)
             ),
         })
 

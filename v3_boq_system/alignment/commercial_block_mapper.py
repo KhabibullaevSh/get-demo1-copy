@@ -143,6 +143,12 @@ _FAMILY_TO_BLOCK: dict[str, str] = {
     "wet_area_waterproofing":    "Wet Area Linings",   # P5
     "skirting":                  "Trims",
     "architrave":                "Trims",
+    "decking":                   "Decking",      # PA: WPC decking in 50106
+    # ── 50111 Structural Fixings ──────────────────────────────────────────────
+    "screw_fixing":              "Structural Fixings",
+    "bolt_fixing":               "Structural Fixings",
+    "grommet":                   "Structural Fixings",
+    "glue_special":              "Structural Fixings",
     # ── 50116 Painting ───────────────────────────────────────────────────────
     "paint":                     "Paint & Coatings",   # P3: own section 50116
     "painting":                  "Paint & Coatings",   # P3
@@ -164,6 +170,9 @@ _SECTION_FAMILY_OVERRIDES: dict[tuple[str, str], str] = {
     # ceiling_batten in 50115 → Ceiling Finishes (soffit/ceiling substrate)
     # (global _FAMILY_TO_BLOCK maps it to "Frame" for 50107)
     ("50115", "ceiling_batten"):       "Ceiling Finishes",
+    # 50106 WPC / external works — cornice/floor_finish route to non-default blocks
+    ("50106", "cornice"):          "Trims",       # PA: overrides global "Ceiling Finishes"
+    ("50106", "floor_finish"):     "Flooring",    # PA: overrides global "Floor Finishes"
     # sisalation section routing
     ("50112", "sisalation"):       "Roof Covering",
     ("50118", "sisalation"):       "Insulation",
@@ -173,7 +182,9 @@ _SECTION_FAMILY_OVERRIDES: dict[tuple[str, str], str] = {
 
 # Ordered blocks per TRADE section — first = displayed first
 SECTION_TRADE_BLOCKS: dict[str, list[str]] = {
+    "50106": ["Flooring", "Trims", "Decking"],                                    # PA
     "50107": ["Footings", "Substructure", "Floor System", "Frame"],  # P3: battens merged into Frame
+    "50111": ["Structural Fixings"],                                              # PA
     "50112": ["Roof Covering", "Eaves", "Roof Plumbing"],                        # P8
     "50113": ["Wall Cladding"],
     "50114": ["Doors", "Door Hardware", "Windows", "Window Accessories"],
@@ -379,7 +390,9 @@ SECTION_ROOM_BLOCK_ORDER: dict[str, list[str]] = {
 # ---------------------------------------------------------------------------
 
 SECTION_STRATEGY: dict[str, BlockStrategy] = {
+    "50106": BlockStrategy.TRADE,   # PA: WPC / external works
     "50107": BlockStrategy.TRADE,
+    "50111": BlockStrategy.TRADE,   # PA: structural fixings
     "50112": BlockStrategy.TRADE,
     "50113": BlockStrategy.TRADE,
     "50114": BlockStrategy.TRADE,

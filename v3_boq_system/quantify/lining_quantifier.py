@@ -303,9 +303,10 @@ def quantify_linings(
                         f"{sp.space_name}: perim={perim_m:.2f} m ({_psrc})"
                     )
                 else:
-                    perim_m = round(4 * math.sqrt(sp.area_m2), 1)
+                    # PB: rectangle estimate 2×(√area+1) is tighter than 4×√area
+                    perim_m = round(2 * (math.sqrt(sp.area_m2) + 1), 1)
                     _perim_parts.append(
-                        f"{sp.space_name}: perim≈{perim_m:.2f} m (4×√{sp.area_m2:.1f}, sqrt)"
+                        f"{sp.space_name}: perim≈{perim_m:.2f} m (2×(√{sp.area_m2:.1f}+1), rect-est)"
                     )
                 wet_area_total  += perim_m * wall_height
                 wet_floor_total += sp.area_m2
@@ -318,16 +319,16 @@ def quantify_linings(
         _wall_mr       = not _has_dxf_perim
 
     elif wet_rooms:
-        # Legacy fallback: RoomElement with 4×sqrt(area) estimate
+        # Legacy fallback: RoomElement — PB: use 2×(√area+1) rectangle estimate
         wet_area_total  = 0.0
         wet_floor_total = 0.0
         for room in wet_rooms:
             if room.area_m2 > 0:
-                wet_area_total  += round(4 * math.sqrt(room.area_m2), 1) * wall_height
+                wet_area_total  += round(2 * (math.sqrt(room.area_m2) + 1), 1) * wall_height
                 wet_floor_total += room.area_m2
         _wet_names    = [r.room_name for r in wet_rooms]
-        _perim_basis  = f"rooms={_wet_names}: 4×√area estimate"
-        _perim_rule   = "sum(4×sqrt(room_area)×h) → ceil(×waste/sheet_area)"
+        _perim_basis  = f"rooms={_wet_names}: 2×(√area+1) rect estimate"
+        _perim_rule   = "sum(2×(sqrt(room_area)+1)×h) → ceil(×waste/sheet_area)"
         _wall_conf    = "LOW"
         _wall_mr      = True
         _has_dxf_perim = False
@@ -395,13 +396,13 @@ def quantify_linings(
         ))
         # Waterproof membrane for wet area floor + 200mm wall upstand
         if wet_floor_total > 0:
-            # Use DXF perimeter for upstand when available; else sqrt estimate
+            # Use DXF perimeter for upstand when available; else rect estimate (PB)
             if wet_spaces and any(sp.perimeter_m > 0 for sp in wet_spaces):
                 _wpm_perim = sum(sp.perimeter_m if sp.perimeter_m > 0
-                                 else 4 * math.sqrt(sp.area_m2)
+                                 else 2 * (math.sqrt(sp.area_m2) + 1)
                                  for sp in wet_spaces if sp.area_m2 > 0)
             else:
-                _wpm_perim = 4 * math.sqrt(wet_floor_total)
+                _wpm_perim = 2 * (math.sqrt(wet_floor_total) + 1)
             wpm_area = round(wet_floor_total + _wpm_perim * 0.2, 2)
             rows.append(_row(
                 "wall_lining_wet", "Wet Area Waterproof Membrane (floor + upstand)",

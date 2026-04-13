@@ -284,6 +284,9 @@ _RULES: list[tuple[str, list[str], int]] = [
     ("decking",                 ["decking", "wpc", "timber decking"],        200),
 
     # ── Wall Lining / Internal Linings ───────────────────────────────────────
+    # Aggregate lining row: "FC Sheet — Total Supply (all lining zones combined)"
+    # Must beat internal_wall_lining rules so it doesn't fall through to unknown.
+    ("internal_wall_lining",    ["lining zones"],                            230),
     # Single-keyword rules (each keyword independently classifies)
     ("internal_wall_lining",    ["internal wall lining"],                    215),
     ("internal_wall_lining",    ["internal lining"],                         215),
