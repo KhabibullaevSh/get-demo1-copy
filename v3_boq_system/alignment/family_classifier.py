@@ -280,7 +280,22 @@ _RULES: list[tuple[str, list[str], int]] = [
     # ── Architrave / Trim ────────────────────────────────────────────────────
     ("architrave",              ["architrave"],                              200),
     ("skirting",                ["skirting"],                                200),
+    # Single-keyword cornice rules at priority 225 so "Cornice End Cap / Internal Mitre Set"
+    # is not hijacked by gutter_accessory ["end cap"] at priority 220.
+    ("cornice",                 ["cornice end cap"],                         230),
+    ("cornice",                 ["internal mitre"],                          225),
+    ("cornice",                 ["cornice"],                                 225),
+    ("cornice",                 ["ceiling trim"],                            215),
+    # Original AND-logic combined rule kept for backward compat:
     ("cornice",                 ["cornice", "quad cornice", "ceiling trim"], 200),
+    # Single-keyword decking rules — combined AND-rule requires all 3 fragments
+    # simultaneously which no real item name satisfies.
+    ("decking",                 ["verandah decking"],                        225),
+    ("decking",                 ["wpc decking"],                             220),
+    ("decking",                 ["decking"],                                 215),
+    ("decking",                 ["wpc board"],                               215),
+    ("decking",                 ["timber deck"],                             215),
+    # Original AND-logic combined rule kept for backward compat:
     ("decking",                 ["decking", "wpc", "timber decking"],        200),
 
     # ── Wall Lining / Internal Linings ───────────────────────────────────────
