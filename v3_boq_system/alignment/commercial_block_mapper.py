@@ -91,8 +91,8 @@ _FAMILY_TO_BLOCK: dict[str, str] = {
     "strap_brace":               "Frame",
     "hold_down":                 "Frame",
     "support_angle":             "Frame",
-    "roof_batten":               "Battens",        # P6: battens stay in 50107
-    "ceiling_batten":            "Battens",        # P6: battens stay in 50107
+    "roof_batten":               "Frame",           # P3: battens grouped under Frame
+    "ceiling_batten":            "Frame",           # P3: ceiling battens under Frame in 50107
     # ── 50112 Roof ───────────────────────────────────────────────────────────
     "roof_cladding":             "Roof Covering",
     "ridge_capping":             "Roof Covering",
@@ -161,6 +161,9 @@ _SECTION_FAMILY_OVERRIDES: dict[tuple[str, str], str] = {
     # external_wall_lining in 50115 → Wall Finishes (P4)
     # (global _FAMILY_TO_BLOCK maps it to "Wall Cladding" for 50113)
     ("50115", "external_wall_lining"): "Wall Finishes",
+    # ceiling_batten in 50115 → Ceiling Finishes (soffit/ceiling substrate)
+    # (global _FAMILY_TO_BLOCK maps it to "Frame" for 50107)
+    ("50115", "ceiling_batten"):       "Ceiling Finishes",
     # sisalation section routing
     ("50112", "sisalation"):       "Roof Covering",
     ("50118", "sisalation"):       "Insulation",
@@ -170,7 +173,7 @@ _SECTION_FAMILY_OVERRIDES: dict[tuple[str, str], str] = {
 
 # Ordered blocks per TRADE section — first = displayed first
 SECTION_TRADE_BLOCKS: dict[str, list[str]] = {
-    "50107": ["Footings", "Substructure", "Floor System", "Frame", "Battens"],  # P6
+    "50107": ["Footings", "Substructure", "Floor System", "Frame"],  # P3: battens merged into Frame
     "50112": ["Roof Covering", "Eaves", "Roof Plumbing"],                        # P8
     "50113": ["Wall Cladding"],
     "50114": ["Doors", "Door Hardware", "Windows", "Window Accessories"],

@@ -221,7 +221,7 @@ class TestEstimatorSectionRemaps:
     """
 
     def test_roof_batten_stays_in_50107(self):
-        # Remap reverted: battens remain in 50107 under the Battens commercial block
+        # Remap reverted: battens remain in 50107, grouped under Frame block
         items = [_item(name="Top-Hat Batten G35 5800mm", pkg="50107", sk=140)]
         result, log = apply_estimator_section_remaps(items)
         assert result[0]["commercial_package_code"] == "50107"

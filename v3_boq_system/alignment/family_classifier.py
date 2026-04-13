@@ -36,6 +36,13 @@ _RULES: list[tuple[str, list[str], int]] = [
     ("footing_reinforcement",   ["rebar"],                                  200),
     ("bar_chair",               ["bar chair", "reo spacer"],                250),
     ("termite_barrier",         ["termite"],                                200),
+    # Single-keyword rules so "Bulk Earthworks" and "Site Preparation" classify correctly
+    ("earthworks",              ["bulk earth"],                             215),
+    ("earthworks",              ["earthwork"],                              210),
+    ("earthworks",              ["excavat"],                                210),
+    ("site_prep",               ["site prep"],                              215),
+    ("site_prep",               ["site clear"],                             215),
+    # Original AND-logic combined rules (backward compat):
     ("earthworks",              ["earthwork", "excavat", "bulk earth"],     200),
     ("site_prep",               ["site prep", "site clear"],                200),
     ("pad_footing",             ["pad footing", "pad foot"],                250),
@@ -104,6 +111,13 @@ _RULES: list[tuple[str, list[str], int]] = [
                                   "support beam"],                           200),
     ("support_post",            ["sub-floor support", "support post",
                                   "adjustable post"],                        200),
+    # Single-keyword rules at priority 225 to beat floor_finish (215)
+    # so "Floor Sheet X" rows route to Floor System, not Floor Finishes
+    ("floor_substrate",         ["fc sheet floor"],                          225),
+    ("floor_substrate",         ["floor sheet"],                             225),
+    ("floor_substrate",         ["subfloor sheet"],                          220),
+    ("floor_substrate",         ["floor board"],                             220),
+    # Original AND-logic combined rule (backward compat):
     ("floor_substrate",         ["fc sheet floor", "floor sheet",
                                   "floor board", "subfloor sheet"],          220),
 
@@ -115,6 +129,7 @@ _RULES: list[tuple[str, list[str], int]] = [
     ("roof_batten",             ["roof top hat"],                            212),
     ("ceiling_batten",          ["ceiling/wall batten"],                     215),
     ("ceiling_batten",          ["ceiling batten"],                          215),
+    ("ceiling_batten",          ["soffit batten"],                           215),
     ("ceiling_batten",          ["lgs batten"],                              212),
     # Original combined rule kept for backward compatibility (AND logic):
     ("roof_batten",             ["roof batten", "top hat batten",
@@ -290,6 +305,11 @@ _RULES: list[tuple[str, list[str], int]] = [
                                   "internal fc sheet"],                       210),
     ("external_wall_lining",    ["external wall lining", "external lining",
                                   "external fc sheet"],                       210),
+    # Single-keyword rules so "Wet Area Wall Lining — FC Sheet Total Area" etc. resolve
+    ("wet_area_lining",         ["wet area wall lining"],                    225),
+    ("wet_area_lining",         ["wet area wall tiling"],                    225),
+    ("wet_area_lining",         ["wet area board"],                          220),
+    # Original AND-logic combined rule (backward compat):
     ("wet_area_lining",         ["wet area", "waterproof board",
                                   "wet area wall lining"],                    220),
     ("ceiling_lining",          ["ceiling lining", "fc ceiling",
@@ -315,8 +335,23 @@ _RULES: list[tuple[str, list[str], int]] = [
     ("floor_finish",            ["floor finish", "vinyl plank", "vinyl floor",
                                   "ceramic tile", "floor tile",
                                   "ceramic floor"],                           200),
+    # Single-keyword rules at priority 225–230 to beat floor_finish (215)
+    # so tile adhesive/grout rows route to Wet Area Linings, not Floor Finishes
+    ("floor_tile_adhesive",     ["floor tile adhesive"],                     230),
+    ("floor_tile_adhesive",     ["wet area tile adhesive"],                  230),
+    ("floor_tile_adhesive",     ["tile adhesive"],                           225),
+    ("floor_tile_grout",        ["floor tile grout"],                        230),
+    ("floor_tile_grout",        ["wet area wall tile grout"],                230),
+    ("floor_tile_grout",        ["wet area tile grout"],                     230),
+    ("floor_tile_grout",        ["tile grout"],                              225),
+    # Original AND-logic combined rules (backward compat):
     ("floor_tile_adhesive",     ["tile adhesive", "floor adhesive"],         220),
     ("floor_tile_grout",        ["tile grout", "floor grout"],               220),
+    # Single-keyword waterproofing rules at 215–225
+    ("wet_area_waterproofing",  ["waterproof membrane"],                     225),
+    ("wet_area_waterproofing",  ["waterproofing"],                           215),
+    ("wet_area_waterproofing",  ["wet area membrane"],                       215),
+    # Original AND-logic combined rule (backward compat):
     ("wet_area_waterproofing",  ["waterproof membrane", "waterproofing",
                                   "wet area membrane"],                       210),
     ("floor_trim",              ["floor trim", "floor angle"],               200),

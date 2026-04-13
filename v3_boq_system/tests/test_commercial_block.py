@@ -120,12 +120,17 @@ class TestTradeStyleBlocks:
     def test_dpm_maps_to_substructure(self):
         assert get_commercial_block("50107", "dpm", "DPM") == "Substructure"
 
-    def test_roof_batten_maps_to_battens_in_50107(self):
-        # Battens stay in 50107 (Structural) per BOQ_FOR_AI reference — not remapped to 50112
-        assert get_commercial_block("50107", "roof_batten", "Roof Batten") == "Battens"
+    def test_roof_batten_maps_to_frame_in_50107(self):
+        # Battens now grouped under Frame (no separate Battens block) — P3
+        assert get_commercial_block("50107", "roof_batten", "Roof Batten") == "Frame"
 
-    def test_ceiling_batten_maps_to_battens_in_50107(self):
-        assert get_commercial_block("50107", "ceiling_batten", "Ceiling Batten") == "Battens"
+    def test_ceiling_batten_maps_to_frame_in_50107(self):
+        # Ceiling battens (structural) also group under Frame in 50107 — P3
+        assert get_commercial_block("50107", "ceiling_batten", "Ceiling Batten") == "Frame"
+
+    def test_ceiling_batten_maps_to_ceiling_finishes_in_50115(self):
+        # Ceiling battens in 50115 (soffit substrate) → Ceiling Finishes — P3
+        assert get_commercial_block("50115", "ceiling_batten", "Ceiling Batten LGS") == "Ceiling Finishes"
 
     def test_roof_cladding_maps_to_roof_covering(self):
         assert get_commercial_block("50112", "roof_cladding", "Roof Cladding Sheet") == "Roof Covering"
@@ -159,6 +164,28 @@ class TestTradeStyleBlocks:
 
     def test_insulation_batts_maps_to_insulation(self):
         assert get_commercial_block("50118", "insulation_batts", "Insulation Batts") == "Insulation"
+
+    def test_floor_substrate_maps_to_floor_system(self):
+        # FC floor sheet items must land in Floor System, not ungrouped — P2
+        assert get_commercial_block("50107", "floor_substrate", "Floor Sheet (FC / plywood)") == "Floor System"
+
+    def test_wet_area_lining_maps_to_wet_area_linings(self):
+        assert get_commercial_block("50115", "wet_area_lining", "Wet Area Wall Lining") == "Wet Area Linings"
+
+    def test_floor_tile_adhesive_maps_to_wet_area_linings(self):
+        assert get_commercial_block("50115", "floor_tile_adhesive", "Wet Area Tile Adhesive") == "Wet Area Linings"
+
+    def test_floor_tile_grout_maps_to_wet_area_linings(self):
+        assert get_commercial_block("50115", "floor_tile_grout", "Wet Area Wall Tile Grout") == "Wet Area Linings"
+
+    def test_wet_area_waterproofing_maps_to_wet_area_linings(self):
+        assert get_commercial_block("50115", "wet_area_waterproofing", "Wet Area Waterproof Membrane") == "Wet Area Linings"
+
+    def test_earthworks_maps_to_substructure(self):
+        assert get_commercial_block("50107", "earthworks", "Bulk Earthworks") == "Substructure"
+
+    def test_site_prep_maps_to_substructure(self):
+        assert get_commercial_block("50107", "site_prep", "Site Preparation (Provisional)") == "Substructure"
 
     def test_unknown_family_returns_none(self):
         assert get_commercial_block("50107", "unknown", "Some Item") is None

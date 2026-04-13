@@ -321,3 +321,70 @@ class TestCommercialSectionLabels:
         label = result[0]["commercial_section_label"]
         assert "50129" in label
         assert "FFE" in label or "Furniture" in label
+
+
+# ── Classifier regression tests ───────────────────────────────────────────────
+
+class TestFamilyClassifierRegression:
+    """Regression tests for family_classifier single-keyword rules added in P2–P5."""
+
+    def test_floor_sheet_classifies_as_floor_substrate(self):
+        """'Floor Sheet' keyword must classify as floor_substrate (not unknown)."""
+        from v3_boq_system.alignment.family_classifier import classify
+        assert classify("Floor Sheet (FC / plywood)") == "floor_substrate"
+
+    def test_floor_sheet_supply_area_classifies_as_floor_substrate(self):
+        from v3_boq_system.alignment.family_classifier import classify
+        assert classify("Floor Sheet — Total Supply Area (1200x2400mm)") == "floor_substrate"
+
+    def test_floor_sheet_screws_classifies_as_floor_substrate(self):
+        from v3_boq_system.alignment.family_classifier import classify
+        assert classify("Floor Sheet Fixing Screws") == "floor_substrate"
+
+    def test_floor_sheet_adhesive_classifies_as_floor_substrate(self):
+        from v3_boq_system.alignment.family_classifier import classify
+        assert classify("Floor Sheet Adhesive (construction adhesive, 300mL tube)") == "floor_substrate"
+
+    def test_wet_area_wall_lining_total_area_classifies_correctly(self):
+        """'Wet Area Wall Lining' rows without 'Waterproof Board' must still classify."""
+        from v3_boq_system.alignment.family_classifier import classify
+        assert classify("Wet Area Wall Lining — FC Sheet Total Area (1200x2700mm)") == "wet_area_lining"
+
+    def test_wet_area_tile_adhesive_classifies_as_floor_tile_adhesive(self):
+        from v3_boq_system.alignment.family_classifier import classify
+        assert classify("Wet Area Tile Adhesive (20kg bag)") == "floor_tile_adhesive"
+
+    def test_wet_area_wall_tile_grout_classifies_as_floor_tile_grout(self):
+        from v3_boq_system.alignment.family_classifier import classify
+        assert classify("Wet Area Wall Tile Grout (3kg bag)") == "floor_tile_grout"
+
+    def test_wet_area_waterproof_membrane_classifies_correctly(self):
+        from v3_boq_system.alignment.family_classifier import classify
+        assert classify("Wet Area Waterproof Membrane (floor + upstand)") == "wet_area_waterproofing"
+
+    def test_floor_tile_adhesive_beats_floor_finish(self):
+        """tile adhesive rows must classify as floor_tile_adhesive, not floor_finish."""
+        from v3_boq_system.alignment.family_classifier import classify
+        result = classify("Floor Tile Adhesive — Wet Area (20kg bag)")
+        assert result == "floor_tile_adhesive", f"Expected floor_tile_adhesive, got {result!r}"
+
+    def test_floor_tile_grout_beats_floor_finish(self):
+        from v3_boq_system.alignment.family_classifier import classify
+        result = classify("Floor Tile Grout — Wet Area (3kg bag)")
+        assert result == "floor_tile_grout", f"Expected floor_tile_grout, got {result!r}"
+
+    def test_bulk_earthworks_classifies_as_earthworks(self):
+        from v3_boq_system.alignment.family_classifier import classify
+        assert classify("Bulk Earthworks / Level (provisional)") == "earthworks"
+
+    def test_site_preparation_classifies_as_site_prep(self):
+        from v3_boq_system.alignment.family_classifier import classify
+        assert classify("Site Preparation (Provisional)") == "site_prep"
+
+    def test_soffit_batten_classifies_as_ceiling_batten(self):
+        from v3_boq_system.alignment.family_classifier import classify
+        assert classify("Verandah Soffit Batten (LGS / timber)") == "ceiling_batten"
+
+    def test_wet_area_wall_tiling_classifies_as_wet_area_lining(self):
+        from v3_boq_system.alignment.family_classifier import classify
+        assert classify("Wet Area Wall Tiling — Toilet") == "wet_area_lining"
