@@ -1,6 +1,6 @@
 {
   "project_type": "pharmacy",
-  "total_items": 169,
+  "total_items": 220,
   "package_completeness": {
     "structural_frame": {
       "present": true,
@@ -14,9 +14,9 @@
     },
     "roof_cladding": {
       "present": true,
-      "item_count": 3,
+      "item_count": 4,
       "measured": 0,
-      "calculated": 3,
+      "calculated": 4,
       "inferred": 0,
       "placeholder": 0,
       "manual_review": 1,
@@ -24,45 +24,25 @@
     },
     "openings_doors": {
       "present": true,
-      "item_count": 5,
-      "measured": 3,
-      "calculated": 2,
+      "item_count": 7,
+      "measured": 4,
+      "calculated": 3,
       "inferred": 0,
       "placeholder": 0,
-      "manual_review": 0,
+      "manual_review": 1,
       "status": "OK"
     },
     "openings_windows": {
       "present": true,
-      "item_count": 12,
-      "measured": 3,
-      "calculated": 9,
+      "item_count": 14,
+      "measured": 4,
+      "calculated": 10,
       "inferred": 0,
       "placeholder": 0,
-      "manual_review": 3,
+      "manual_review": 2,
       "status": "OK"
     },
     "wall_lining_external": {
-      "present": true,
-      "item_count": 2,
-      "measured": 0,
-      "calculated": 2,
-      "inferred": 0,
-      "placeholder": 0,
-      "manual_review": 0,
-      "status": "OK"
-    },
-    "wall_lining_internal": {
-      "present": true,
-      "item_count": 3,
-      "measured": 0,
-      "calculated": 3,
-      "inferred": 0,
-      "placeholder": 0,
-      "manual_review": 0,
-      "status": "OK"
-    },
-    "ceiling_lining": {
       "present": true,
       "item_count": 5,
       "measured": 0,
@@ -72,68 +52,95 @@
       "manual_review": 0,
       "status": "OK"
     },
-    "finishes": {
+    "wall_lining_internal": {
       "present": true,
-      "item_count": 4,
+      "item_count": 5,
       "measured": 0,
-      "calculated": 4,
+      "calculated": 5,
       "inferred": 0,
       "placeholder": 0,
       "manual_review": 0,
+      "status": "OK"
+    },
+    "ceiling_lining": {
+      "present": true,
+      "item_count": 8,
+      "measured": 0,
+      "calculated": 8,
+      "inferred": 0,
+      "placeholder": 0,
+      "manual_review": 0,
+      "status": "OK"
+    },
+    "finishes": {
+      "present": true,
+      "item_count": 9,
+      "measured": 0,
+      "calculated": 9,
+      "inferred": 0,
+      "placeholder": 0,
+      "manual_review": 7,
       "status": "OK"
     },
     "floor_system": {
       "present": true,
-      "item_count": 7,
+      "item_count": 16,
       "measured": 0,
-      "calculated": 2,
-      "inferred": 5,
+      "calculated": 8,
+      "inferred": 8,
       "placeholder": 0,
-      "manual_review": 4,
+      "manual_review": 8,
       "status": "UNCONFIRMED"
     },
     "footings": {
       "present": true,
-      "item_count": 8,
+      "item_count": 16,
       "measured": 1,
-      "calculated": 6,
-      "inferred": 0,
+      "calculated": 12,
+      "inferred": 2,
       "placeholder": 1,
-      "manual_review": 4,
+      "manual_review": 5,
       "status": "OK"
     },
     "services": {
       "present": true,
-      "item_count": 27,
+      "item_count": 25,
       "measured": 0,
       "calculated": 0,
-      "inferred": 25,
+      "inferred": 23,
       "placeholder": 2,
-      "manual_review": 27,
+      "manual_review": 25,
       "status": "OK"
     },
     "insulation": {
       "present": true,
-      "item_count": 2,
+      "item_count": 7,
       "measured": 0,
-      "calculated": 2,
+      "calculated": 7,
       "inferred": 0,
       "placeholder": 0,
-      "manual_review": 0,
+      "manual_review": 1,
       "status": "OK"
     }
   },
   "provenance_summary": {
-    "total": 169,
-    "measured": 20,
-    "calculated": 104,
-    "inferred": 40,
+    "total": 220,
+    "measured": 22,
+    "calculated": 147,
+    "inferred": 46,
     "placeholder": 5,
-    "pct_measured": 11.8,
-    "pct_calculated": 61.5,
-    "pct_inferred": 23.7,
-    "pct_placeholder": 3.0,
-    "manual_review_count": 66
+    "pct_measured": 10.0,
+    "pct_calculated": 66.8,
+    "pct_inferred": 20.9,
+    "pct_placeholder": 2.3,
+    "manual_review_count": 84,
+    "evidence_class_counts": {
+      "measured_source": 22,
+      "calculated_source": 138,
+      "config_backed": 6,
+      "heuristic_inferred": 49,
+      "placeholder": 5
+    }
   },
   "benchmark_comparison": {},
   "traceability_check": {
@@ -144,6 +151,69 @@
     "status": "OK"
   },
   "manual_review_items": [
+    {
+      "item_no": "F04",
+      "section": "F - Finishes",
+      "item_name": "Floor Finish \u2014 Dry Zone (vinyl plank)",
+      "quantity": 60.3,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. [Zone: internal_dry] Vinyl plank finish for 5 dry internal space(s). Verandah (21.6 m\u00b2) excluded \u2014 WPC decking in K-package. CONFIG-BACKED FALLBACK: Space areas from config room_schedule only. No room polygons in DXF; no IfcSpace in IFC. These are estimated areas \u2014 verify all room dimensions from architectural drawings.  LAYERED ASSEMBLY \u2014 FINISH LAYER: this row is the finish above the FC sheet substrate (G-package, 64.80 m\u00b2 total internal substrate). Substrate covers all internal zones; finish type differs per zone. External verandah (21.6 m\u00b2) uses WPC decking (K-package) \u2014 no FC substrate and no finish row here."
+    },
+    {
+      "item_no": "F05",
+      "section": "F - Finishes",
+      "item_name": "Vinyl Plank \u2014 Supply Total (10% cut waste)",
+      "quantity": 66.3,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. [Zone: internal_dry] Vinyl plank supply: 60.30m\u00b2 net + 10% cut waste = 66.3m\u00b2. 10% is standard for rectangular rooms with plank direction runs. Adjust for irregular layout or diagonal pattern. Spec: LVT/SPC vinyl plank \u2014 thickness and finish to be confirmed by architect."
+    },
+    {
+      "item_no": "F06",
+      "section": "F - Finishes",
+      "item_name": "Floor Finish \u2014 Wet Zone (ceramic tile)",
+      "quantity": 4.5,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. [Zone: internal_wet] Ceramic tile (non-slip) for wet space(s): Toilet (4.50 m\u00b2). CONFIG-BACKED FALLBACK: Space areas from config room_schedule only. No room polygons in DXF; no IfcSpace in IFC. These are estimated areas \u2014 verify all room dimensions from architectural drawings. Verify wet zone classification with architect.   LAYERED ASSEMBLY \u2014 FINISH LAYER: this row is the finish above the FC sheet substrate (G-package, 64.80 m\u00b2 total internal substrate). Substrate covers all internal zones; finish type differs per zone. External verandah (21.6 m\u00b2) uses WPC decking (K-package) \u2014 no FC substrate and no finish row here."
+    },
+    {
+      "item_no": "F07",
+      "section": "F - Finishes",
+      "item_name": "Ceramic Floor Tile \u2014 Supply Total (15% cut waste)",
+      "quantity": 5.17,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Ceramic floor tile supply order quantity = 4.50m\u00b2 net area + 15% cut waste = 5.17m\u00b2. 15% is standard for square tiles in a regular wet room. Tile spec (size, finish, slip rating) to be confirmed by architect. Verify with wet area tile schedule before ordering."
+    },
+    {
+      "item_no": "F08",
+      "section": "F - Finishes",
+      "item_name": "Floor Tile Adhesive \u2014 Wet Area (20kg bag)",
+      "quantity": 2,
+      "unit": "bags",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. 20kg bag of tile adhesive \u2248 4 m\u00b2 coverage on floor. Verify tile size and spec."
+    },
+    {
+      "item_no": "F09",
+      "section": "F - Finishes",
+      "item_name": "Floor Tile Grout \u2014 Wet Area (3kg bag)",
+      "quantity": 1,
+      "unit": "bags",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. 3kg bag of grout \u2248 6 m\u00b2 floor tile coverage. Adjust for joint width and tile size."
+    },
+    {
+      "item_no": "F12",
+      "section": "F - Finishes",
+      "item_name": "Paint Primer / Sealer Coat (10L can)",
+      "quantity": 24,
+      "unit": "cans",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Primer/sealer for FC sheet surfaces before topcoat. 10L can \u2248 12 m\u00b2 at 1 coat. Adjust for 2-coat system and specific product coverage. Verify primer type (FC-compatible acrylic sealer) with painter."
+    },
     {
       "item_no": "G01",
       "section": "G - Floor System",
@@ -156,6 +226,15 @@
     {
       "item_no": "G02",
       "section": "G - Floor System",
+      "item_name": "Floor Cassette Panel \u2014 Total Area (9 panels)",
+      "quantity": 64.64,
+      "unit": "m2",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Total floor cassette panel area = 9 panels \u00d7 7.182m\u00b2 (3000mm \u00d7 2394mm each). Cross-check: main_floor_area from DXF = 64.80m\u00b2. Verify panel count and area against FrameCAD floor panel layout tab before ordering."
+    },
+    {
+      "item_no": "G03",
+      "section": "G - Floor System",
       "item_name": "Floor Joist (J1) \u2014 150S41-095-500 \u00d7 2394mm",
       "quantity": 63,
       "unit": "nr",
@@ -163,7 +242,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Profile: 150S41-095-500, length: 2394mm. 7 joists per panel (HIGH confidence \u2014 DWG Onpage FLayout schedule). Total 63 nr = 7 \u00d7 9 panels. Total lm: 150.82 lm (63 \u00d7 2.394m)."
     },
     {
-      "item_no": "G04",
+      "item_no": "G05",
       "section": "G - Floor System",
       "item_name": "Floor Edge Beam (E1+E2) \u2014 150P41-115-500 \u00d7 3000mm",
       "quantity": 18,
@@ -172,7 +251,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Profile: 150P41-115-500, length: 3000mm. 2 edge beams per panel (E1\u00d71 + E2\u00d71). Total 18 nr. Total lm: 54.00 lm."
     },
     {
-      "item_no": "G05",
+      "item_no": "G07",
       "section": "G - Floor System",
       "item_name": "Floor Stringer (S1+S2) \u2014 150S41-115-500 \u00d7 2394mm",
       "quantity": 18,
@@ -181,16 +260,52 @@
       "notes": "MANUAL REVIEW REQUIRED. Profile: 150S41-115-500, length: 2394mm. 2 stringers per panel (S1\u00d71 + S2\u00d71). Total 18 nr. Total lm: 43.09 lm."
     },
     {
-      "item_no": "H02",
-      "section": "H - Substructure",
-      "item_name": "Strip Footing \u2014 Concrete Volume",
-      "quantity": 7.68,
-      "unit": "m3",
+      "item_no": "G09",
+      "section": "G - Floor System",
+      "item_name": "Floor Bearer / Support Beam (steel SHS/RHS) \u2014 2 lines \u00d7 9.0m",
+      "quantity": 18.0,
+      "unit": "lm",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Internal floor bearer / support beam at joist-end bearing positions. DWG panel depth = 2394mm \u2192 3 rows across 7.2m span. Perimeter boundary lines bear on strip footings (no separate member needed). 2 internal lines \u00d7 9.0m = 18.0 lm. Bearer section (SHS/RHS or engineered timber) to be confirmed from structural drawings. Verify with FrameCAD engineer."
+    },
+    {
+      "item_no": "G10",
+      "section": "G - Floor System",
+      "item_name": "Sub-Floor Support Post / Adjustable Steel Stump",
+      "quantity": 4,
+      "unit": "nr",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Strip footing assumed for steel floor frame bearing lines. Assumed 500 mm deep \u00d7 400 mm wide. Verify type and dimensions from structural drawings."
+      "notes": "MANUAL REVIEW REQUIRED. Adjustable steel stumps or concrete piers at mid-span support points of internal floor bearers. 2 bearer lines \u00d7 2 mid-span pads each = 4 nr. Perimeter end-points land on strip footings. Post type and base plate spec from structural engineer. Verify against pad footing layout and FrameCAD sub-floor schedule."
+    },
+    {
+      "item_no": "G11",
+      "section": "G - Floor System",
+      "item_name": "Joist Hanger Connector (J1 end fix)",
+      "quantity": 126,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. LGS joist hanger or clip angle at each J1 joist end. Total: 63 joists \u00d7 2 ends = 126 nr. Verify hanger type and connection requirement from FrameCAD engineer."
     },
     {
       "item_no": "H04",
+      "section": "H - Substructure",
+      "item_name": "Strip Footing \u2014 Reo Bar Y12 (2 bars, ext perimeter)",
+      "quantity": 76.8,
+      "unit": "lm",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. 2 \u00d7 Y12 continuous bars assumed for strip footing bearing. Total: 76.8 lm = 13 \u00d7 6m stock lengths. Verify bar size, spacing, and lap length from structural engineer."
+    },
+    {
+      "item_no": "H05",
+      "section": "H - Substructure",
+      "item_name": "Termite Barrier \u2014 Physical Membrane (ext perimeter)",
+      "quantity": 38.4,
+      "unit": "lm",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Physical termite management (barrier membrane / Granitgard or equivalent) at all footing/bearer interfaces. Verify treatment type and specification from pest management consultant. Chemical treatment not included."
+    },
+    {
+      "item_no": "H06",
       "section": "H - Substructure",
       "item_name": "Bulk Earthworks / Level (provisional)",
       "quantity": 0,
@@ -199,22 +314,22 @@
       "notes": "MANUAL REVIEW REQUIRED. Excavation volume cannot be derived from architectural documents."
     },
     {
-      "item_no": "H06",
+      "item_no": "H11",
       "section": "H - Substructure",
-      "item_name": "Strip Footing Internal \u2014 Concrete Volume",
-      "quantity": 5.88,
-      "unit": "m3",
+      "item_name": "Strip Footing Internal \u2014 Reo Bar Y12 (2 bars per run)",
+      "quantity": 58.8,
+      "unit": "lm",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Assumed 500 mm deep \u00d7 400 mm wide. Verify."
+      "notes": "MANUAL REVIEW REQUIRED. 2 \u00d7 Y12 bars for internal bearing strip footings. Total: 58.8 lm = 10 \u00d7 6m lengths. Verify from structural engineer."
     },
     {
-      "item_no": "H08",
+      "item_no": "H12",
       "section": "H - Substructure",
-      "item_name": "Pad Footing Concrete (m3)",
-      "quantity": 5.145,
-      "unit": "m3",
+      "item_name": "Termite Barrier \u2014 Physical Membrane (internal bearing lines)",
+      "quantity": 29.4,
+      "unit": "lm",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Assumes 700\u00d7700\u00d7700 mm pads. Verify from structural engineer."
+      "notes": "MANUAL REVIEW REQUIRED. Physical termite management at internal bearing interfaces. Verify treatment specification from pest management consultant."
     },
     {
       "item_no": "A12",
@@ -316,7 +431,7 @@
       "notes": "MANUAL REVIEW REQUIRED. PLACEHOLDER for connection schedule items not derivable from member lm alone. Typical items: M10/M12/M16 hex bolts (hold-down posts), angle brackets (knee bracing, ridge connections), spring washers, nyloc nuts. Obtain FrameCAD connection report for full schedule. Reference BOQ includes 256+ individual fixing line items \u2014 this row represents residual scope."
     },
     {
-      "item_no": "B03",
+      "item_no": "B05",
       "section": "B - Roof",
       "item_name": "Roof Cladding Sheet (corrugated / CGI)",
       "quantity": 33,
@@ -334,7 +449,43 @@
       "notes": "MANUAL REVIEW REQUIRED. Weatherboard: 200mm exposure, 4200mm stock length. Count includes 5% waste.  Verify board profile and lap from spec."
     },
     {
-      "item_no": "K13",
+      "item_no": "K06",
+      "section": "K - External Works",
+      "item_name": "FC Weatherboard \u2014 Total Supply lm (4200mm stock)",
+      "quantity": 529.2,
+      "unit": "lm",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Total FC weatherboard supply in lineal metres. 126 boards \u00d7 4.2m stock length = 529.2 lm. Includes 5% waste. Verify board profile and lap detail with cladding specification."
+    },
+    {
+      "item_no": "K15",
+      "section": "K - External Works",
+      "item_name": "Window / Door Reveal Trim (FC / timber)",
+      "quantity": 68.03,
+      "unit": "lm",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Jamb / reveal trim at external openings: 2 \u00d7 height + 1 \u00d7 width per opening. Verify trim profile and dimensions with cladding specification."
+    },
+    {
+      "item_no": "K17",
+      "section": "K - External Works",
+      "item_name": "Verandah Decking \u2014 WPC Supply Area (5% cut waste)",
+      "quantity": 22.68,
+      "unit": "m2",
+      "confidence": "HIGH",
+      "notes": "MANUAL REVIEW REQUIRED. WPC composite decking board supply area including 5% cut waste. Net area: 21.60 m\u00b2. Supply (5% waste): 22.68 m\u00b2. Verify decking board width, fixing centres and colour from specification. Confirm surface finish: WPC, hardwood, or concrete slab."
+    },
+    {
+      "item_no": "K18",
+      "section": "K - External Works",
+      "item_name": "Verandah Decking \u2014 WPC Board Count (140mm \u00d7 3.6m)",
+      "quantity": 45,
+      "unit": "nr",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Estimated WPC board count at 140mm nominal width, 3.6m stock length. 22.68 m\u00b2 \u00f7 (0.14m \u00d7 3.6m) = 45 nr. LOW confidence \u2014 board size assumed. Verify from supplier/specification."
+    },
+    {
+      "item_no": "K19",
       "section": "K - External Works",
       "item_name": "Site Preparation (Provisional)",
       "quantity": 0,
@@ -343,61 +494,43 @@
       "notes": "MANUAL REVIEW REQUIRED. Site preparation scope cannot be derived from drawings. Confirm with engineer."
     },
     {
-      "item_no": "D26",
+      "item_no": "D06",
       "section": "D - Openings",
-      "item_name": "Louvre Blade \u2014 WINDOW_LOUVRE_1100",
-      "quantity": 64,
-      "unit": "nr",
-      "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Frame height 750 mm (config_default=750mm). 8 blades per frame at 100 mm pitch. Verify blade count and size from window schedule."
+      "item_name": "Door Sill Flashing",
+      "quantity": 1.02,
+      "unit": "lm",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Sill flashing for external doors only (width \u2265 850mm threshold). Classified external: DOOR_90\u00d71. Classified internal (no sill): DOOR_82\u00d74, DOOR_72\u00d71. Threshold is heuristic \u2014 verify from door schedule and architectural drawings."
     },
     {
-      "item_no": "D29",
-      "section": "D - Openings",
-      "item_name": "Louvre Blade \u2014 WINDOW_LOUVRE_800",
-      "quantity": 16,
-      "unit": "nr",
-      "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Frame height 750 mm (config_default=750mm). 8 blades per frame at 100 mm pitch. Verify blade count and size from window schedule."
-    },
-    {
-      "item_no": "D32",
+      "item_no": "D34",
       "section": "D - Openings",
       "item_name": "Louvre Blade \u2014 WINDOW_LOUVRE_1800",
       "quantity": 8,
       "unit": "nr",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Frame height 750 mm (config_default=750mm). 8 blades per frame at 100 mm pitch. Verify blade count and size from window schedule."
+      "notes": "MANUAL REVIEW REQUIRED. BLOCKED PENDING WINDOW SCHEDULE: Window height not available in DXF block geometry or opening schedule for WINDOW_LOUVRE_1800. Using config default 750 mm \u2192 8 blades per frame at 100 mm pitch. Blade count will change when window schedule is supplied. Verify frame height and blade quantity from window/door schedule."
     },
     {
-      "item_no": "D42",
+      "item_no": "D45",
       "section": "D - Openings",
-      "item_name": "Fly Screen \u2014 WINDOW_LOUVRE_1100",
-      "quantity": 6.48,
-      "unit": "m2",
+      "item_name": "Louvre Window Frame \u2014 Total Family lm (all marks combined)",
+      "quantity": 35.33,
+      "unit": "lm",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Fly screen for louvre window WINDOW_LOUVRE_1100 (8 nr). Area: 1.08m \u00d7 0.750m = 0.810 m\u00b2 each. Tropical building \u2014 all louvre openings require insect screening. Verify frame height from window schedule."
+      "notes": "MANUAL REVIEW REQUIRED. Total louvre window frame perimeter for all 11 windows. WINDOW_LOUVRE_1100 (h=1.203m) and WINDOW_LOUVRE_800 (h=0.623m): MEDIUM (FrameCAD label evidence). WINDOW_LOUVRE_1800 (h=0.750m): LOW (config default \u2014 height blocked). Widths from DXF block names. Use for frame section procurement across all window marks."
     },
     {
-      "item_no": "D43",
-      "section": "D - Openings",
-      "item_name": "Fly Screen \u2014 WINDOW_LOUVRE_800",
-      "quantity": 1.2,
-      "unit": "m2",
-      "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Fly screen for louvre window WINDOW_LOUVRE_800 (2 nr). Area: 0.80m \u00d7 0.750m = 0.599 m\u00b2 each. Tropical building \u2014 all louvre openings require insect screening. Verify frame height from window schedule."
-    },
-    {
-      "item_no": "D44",
+      "item_no": "D48",
       "section": "D - Openings",
       "item_name": "Fly Screen \u2014 WINDOW_LOUVRE_1800",
       "quantity": 1.39,
       "unit": "m2",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Fly screen for louvre window WINDOW_LOUVRE_1800 (1 nr). Area: 1.85m \u00d7 0.750m = 1.385 m\u00b2 each. Tropical building \u2014 all louvre openings require insect screening. Verify frame height from window schedule."
+      "notes": "MANUAL REVIEW REQUIRED. BLOCKED PENDING WINDOW SCHEDULE: Height not available in DXF for WINDOW_LOUVRE_1800 \u2014 using config default 0.750 m. Screen area 1.39 m\u00b2 is a heuristic estimate. Screen area will change when window schedule is supplied. Tropical building \u2014 all louvre openings require insect screening."
     },
     {
-      "item_no": "D45",
+      "item_no": "D49",
       "section": "D - Openings",
       "item_name": "Door Closer \u2014 Hydraulic (main entrance)",
       "quantity": 1,
@@ -406,13 +539,58 @@
       "notes": "MANUAL REVIEW REQUIRED. Door closer inferred for pharmacy entrance doors. Marks: DOOR_90 (1 nr). Verify which doors require closers from door schedule and architect. Commercial pharmacy may require controlled entry."
     },
     {
-      "item_no": "E06",
+      "item_no": "E11",
       "section": "E - Linings & Ceilings",
       "item_name": "Wet Area Wall Lining \u2014 Waterproof Board / FC",
       "quantity": 7,
       "unit": "sheets",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Wet area lining derived from room perimeter estimate. Verify room dimensions."
+      "notes": "MANUAL REVIEW REQUIRED. Wet area lining: wall area = perimeter \u00d7 wall height (perimeter estimated \u2014 verify room dimensions). Verify count against wet area wall schedule."
+    },
+    {
+      "item_no": "E12",
+      "section": "E - Linings & Ceilings",
+      "item_name": "Wet Area Wall Lining \u2014 FC Sheet Total Area (1200\u00d72700mm)",
+      "quantity": 22.68,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Gross wet area FC/waterproof board supply area. Wall area: 19.68m\u00b2 \u00d7 1.05 waste = 20.66m\u00b2. Rounded to 7 full sheets \u00d7 3.24m\u00b2 = 22.68m\u00b2. Verify from wet area wall schedule. Match sheet spec to waterproofing system."
+    },
+    {
+      "item_no": "E13",
+      "section": "E - Linings & Ceilings",
+      "item_name": "Wet Area Tile Adhesive (20kg bag)",
+      "quantity": 5,
+      "unit": "bags",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. 20kg bag of tile adhesive \u2248 4 m\u00b2 coverage. Verify spec with tiler."
+    },
+    {
+      "item_no": "E14",
+      "section": "E - Linings & Ceilings",
+      "item_name": "Wet Area Wall Tile Grout (3kg bag)",
+      "quantity": 4,
+      "unit": "bags",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. 3kg bag of grout \u2248 6 m\u00b2 wall tile coverage. Adjust for tile size and joint width."
+    },
+    {
+      "item_no": "E15",
+      "section": "E - Linings & Ceilings",
+      "item_name": "Wet Area Waterproof Membrane (floor + upstand)",
+      "quantity": 6.14,
+      "unit": "m2",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. Waterproof membrane: floor area + ~200mm wall upstand. Verify method (liquid-applied vs sheet) from hydraulic engineer."
+    },
+    {
+      "item_no": "E24",
+      "section": "E - Linings & Ceilings",
+      "item_name": "Cornice End Cap / Internal Mitre Set",
+      "quantity": 4,
+      "unit": "sets",
+      "confidence": "LOW",
+      "notes": "MANUAL REVIEW REQUIRED. 4 internal corner mitre sets assumed for rectangular plan. Adjust if non-rectangular or if external cornice returns required. Verify with cornice supplier."
     },
     {
       "item_no": "I01",
@@ -453,15 +631,6 @@
     {
       "item_no": "I05",
       "section": "I - Services",
-      "item_name": "Builder's Works \u2014 Services (unclassified room)",
-      "quantity": 1,
-      "unit": "item",
-      "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'waiting'."
-    },
-    {
-      "item_no": "I06",
-      "section": "I - Services",
       "item_name": "Hand Basin (consulting room)",
       "quantity": 1,
       "unit": "nr",
@@ -469,7 +638,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'consulting'."
     },
     {
-      "item_no": "I07",
+      "item_no": "I06",
       "section": "I - Services",
       "item_name": "Tapware (basin)",
       "quantity": 1,
@@ -478,7 +647,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'consulting'."
     },
     {
-      "item_no": "I08",
+      "item_no": "I07",
       "section": "I - Services",
       "item_name": "Builder's Works \u2014 Plumbing (consulting)",
       "quantity": 1,
@@ -487,7 +656,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'consulting'."
     },
     {
-      "item_no": "I09",
+      "item_no": "I08",
       "section": "I - Services",
       "item_name": "Builder's Works \u2014 Electrical (office)",
       "quantity": 1,
@@ -496,7 +665,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'office'."
     },
     {
-      "item_no": "I10",
+      "item_no": "I09",
       "section": "I - Services",
       "item_name": "WC Pan (close-coupled)",
       "quantity": 1,
@@ -505,7 +674,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
     },
     {
-      "item_no": "I11",
+      "item_no": "I10",
       "section": "I - Services",
       "item_name": "WC Cistern",
       "quantity": 1,
@@ -514,7 +683,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
     },
     {
-      "item_no": "I12",
+      "item_no": "I11",
       "section": "I - Services",
       "item_name": "Hand Basin",
       "quantity": 1,
@@ -523,7 +692,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
     },
     {
-      "item_no": "I13",
+      "item_no": "I12",
       "section": "I - Services",
       "item_name": "Tapware (basin)",
       "quantity": 1,
@@ -532,7 +701,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
     },
     {
-      "item_no": "I14",
+      "item_no": "I13",
       "section": "I - Services",
       "item_name": "Mirror / Medicine Cabinet",
       "quantity": 1,
@@ -541,7 +710,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
     },
     {
-      "item_no": "I15",
+      "item_no": "I14",
       "section": "I - Services",
       "item_name": "Toilet Roll Holder",
       "quantity": 1,
@@ -550,7 +719,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
     },
     {
-      "item_no": "I16",
+      "item_no": "I15",
       "section": "I - Services",
       "item_name": "Hand Towel Rail / Dryer",
       "quantity": 1,
@@ -559,7 +728,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
     },
     {
-      "item_no": "I17",
+      "item_no": "I16",
       "section": "I - Services",
       "item_name": "Floor Waste",
       "quantity": 1,
@@ -568,7 +737,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
     },
     {
-      "item_no": "I18",
+      "item_no": "I17",
       "section": "I - Services",
       "item_name": "Builder's Works \u2014 Plumbing (toilet)",
       "quantity": 1,
@@ -577,34 +746,25 @@
       "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'toilet'."
     },
     {
-      "item_no": "I19",
+      "item_no": "I18",
       "section": "I - Services",
       "item_name": "Wet Area Wall Tiling \u2014 Toilet",
       "quantity": 15.3,
       "unit": "m2",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Inferred: perimeter (8.5 m) \u00d7 1800 mm splash-zone height. No finish schedule in source documents. Verify tile type, height, and area from architectural drawings. Deduct openings."
+      "notes": "MANUAL REVIEW REQUIRED. Heuristic estimate \u2014 room boundary not source-derived. Perimeter: 4\u00d7\u221a4.5=8.5m (heuristic \u2014 no room polygon). Tile area: 8.5m \u00d7 1800mm splash zone = 15.30 m\u00b2. No finish schedule in source documents. Verify tile type, actual room perimeter, splash-zone height, and area from architectural drawings. Deduct door/window openings."
     },
     {
-      "item_no": "I20",
+      "item_no": "I19",
       "section": "I - Services",
       "item_name": "Wet Area Waterproofing \u2014 Membrane",
       "quantity": 5.78,
       "unit": "m2",
-      "confidence": "MEDIUM",
-      "notes": "MANUAL REVIEW REQUIRED. Waterproofing: floor area + 150 mm upstand on walls for Toilet. Verify room dimensions and upstand height from architectural drawings."
-    },
-    {
-      "item_no": "I21",
-      "section": "I - Services",
-      "item_name": "Builder's Works \u2014 Services (unclassified room)",
-      "quantity": 1,
-      "unit": "item",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Inferred from room type 'store'."
+      "notes": "MANUAL REVIEW REQUIRED. Heuristic estimate: floor area (4.50 m\u00b2) + 150 mm upstand for Toilet. Perimeter 8.5 m estimated as 4\u00d7\u221a4.5 (no room polygon \u2014 config estimate). Verify room dimensions and upstand height from architectural drawings."
     },
     {
-      "item_no": "I22",
+      "item_no": "I20",
       "section": "I - Services",
       "item_name": "Air Conditioning / Mechanical Ventilation \u2014 PLACEHOLDER",
       "quantity": 0,
@@ -613,7 +773,7 @@
       "notes": "MANUAL REVIEW REQUIRED. PLACEHOLDER. Commercial building in tropical climate likely requires split-system or cassette AC units. No mechanical schedule or equipment schedule in source documents. Obtain from mechanical engineer or building services consultant. Include: outdoor units, indoor units, refrigerant pipework, electrical supply, condensate drainage, ceiling penetrations."
     },
     {
-      "item_no": "I23",
+      "item_no": "I21",
       "section": "I - Services",
       "item_name": "Exhaust Fan \u2014 Wet Area (toilet / laundry)",
       "quantity": 0,
@@ -622,7 +782,7 @@
       "notes": "MANUAL REVIEW REQUIRED. PLACEHOLDER. BCA F4.6 requires mechanical exhaust in rooms without openable windows. Confirm exhaust fan type, ducting, and external discharge location from architectural drawings."
     },
     {
-      "item_no": "I24",
+      "item_no": "I22",
       "section": "I - Services",
       "item_name": "Main Electrical Switchboard / Distribution Board",
       "quantity": 1,
@@ -631,7 +791,7 @@
       "notes": "MANUAL REVIEW REQUIRED. 1 per building; adjust for sub-boards"
     },
     {
-      "item_no": "I25",
+      "item_no": "I23",
       "section": "I - Services",
       "item_name": "Main Water Meter / Stopcock",
       "quantity": 1,
@@ -640,7 +800,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Whole-building service allowance."
     },
     {
-      "item_no": "I26",
+      "item_no": "I24",
       "section": "I - Services",
       "item_name": "Hot Water System (central)",
       "quantity": 1,
@@ -649,13 +809,22 @@
       "notes": "MANUAL REVIEW REQUIRED. only if not allocated to individual rooms"
     },
     {
-      "item_no": "I27",
+      "item_no": "I25",
       "section": "I - Services",
       "item_name": "Smoke Detectors (provisional)",
-      "quantity": 3,
+      "quantity": 2,
       "unit": "nr",
       "confidence": "LOW",
       "notes": "MANUAL REVIEW REQUIRED. 1 per 40 m\u00b2 floor area (indicative)"
+    },
+    {
+      "item_no": "C06",
+      "section": "C - Insulation",
+      "item_name": "Insulation Batts \u2014 Internal Wall (acoustic, R1.5)",
+      "quantity": 70.56,
+      "unit": "m2",
+      "confidence": "HIGH",
+      "notes": "MANUAL REVIEW REQUIRED. Acoustic batt insulation in internal partition stud cavities. Area based on single face per wall run (not doubled). Verify with architectural acoustic requirements."
     },
     {
       "item_no": "J01",
@@ -748,14 +917,411 @@
     }
   ],
   "confidence_summary": {
-    "HIGH": 31,
-    "MEDIUM": 80,
-    "LOW": 58,
-    "pct_high": 18.3,
-    "pct_medium": 47.3,
-    "pct_low": 34.3
+    "HIGH": 39,
+    "MEDIUM": 103,
+    "LOW": 78,
+    "pct_high": 17.7,
+    "pct_medium": 46.8,
+    "pct_low": 35.5
+  },
+  "evidence_quality": {
+    "measured_source_count": 22,
+    "calculated_source_count": 138,
+    "config_backed_count": 6,
+    "heuristic_inferred_count": 49,
+    "placeholder_count": 5,
+    "config_backed_items": [
+      {
+        "item_no": "F04",
+        "item_name": "Floor Finish \u2014 Dry Zone (vinyl plank)",
+        "confidence": "LOW",
+        "manual_review": true
+      },
+      {
+        "item_no": "F05",
+        "item_name": "Vinyl Plank \u2014 Supply Total (10% cut waste)",
+        "confidence": "LOW",
+        "manual_review": true
+      },
+      {
+        "item_no": "F06",
+        "item_name": "Floor Finish \u2014 Wet Zone (ceramic tile)",
+        "confidence": "LOW",
+        "manual_review": true
+      },
+      {
+        "item_no": "F07",
+        "item_name": "Ceramic Floor Tile \u2014 Supply Total (15% cut waste)",
+        "confidence": "LOW",
+        "manual_review": true
+      },
+      {
+        "item_no": "F08",
+        "item_name": "Floor Tile Adhesive \u2014 Wet Area (20kg bag)",
+        "confidence": "LOW",
+        "manual_review": true
+      },
+      {
+        "item_no": "F09",
+        "item_name": "Floor Tile Grout \u2014 Wet Area (3kg bag)",
+        "confidence": "LOW",
+        "manual_review": true
+      }
+    ],
+    "heuristic_items_not_manual_review": [
+      {
+        "item_no": "G04",
+        "item_name": "Floor Joist (J1) \u2014 150S41-095-500 (total lm)"
+      },
+      {
+        "item_no": "G06",
+        "item_name": "Floor Edge Beam (E1+E2) \u2014 150P41-115-500 (total lm)"
+      },
+      {
+        "item_no": "G08",
+        "item_name": "Floor Stringer (S1+S2) \u2014 150S41-115-500 (total lm)"
+      },
+      {
+        "item_no": "K08",
+        "item_name": "External Corner Flashing (FC cladding)"
+      }
+    ],
+    "config_backed_not_flagged_manual": [],
+    "note": "config_backed: quantity derived from project_config room_schedule (not from drawings). heuristic_inferred: room template, building-type rule, or config default value. All config_backed rows should be manual_review=True."
+  },
+  "pdf_schedule_recovery": {
+    "pdfs_scanned": [
+      "ANGAU PHARMACY MARKETING SET.pdf",
+      "Angau Pharmacy Summary.pdf",
+      "Angau Pharmacy-Layouts.pdf"
+    ],
+    "schedule_coverage": {
+      "ANGAU PHARMACY MARKETING SET.pdf": [
+        "no_schedule_data_found"
+      ],
+      "Angau Pharmacy Summary.pdf": [
+        "no_schedule_data_found"
+      ],
+      "Angau Pharmacy-Layouts.pdf": [
+        "roof_pitch=15.0deg",
+        "opening_marks=16",
+        "wall_panel_ids=30",
+        "roof_truss_ids=8",
+        "panel_dim_labels=6"
+      ]
+    },
+    "roof_pitch_recovered": true,
+    "roof_pitch_degrees": 15.0,
+    "roof_pitch_source": "framecad_layout:Angau Pharmacy-Layouts.pdf",
+    "opening_marks_recovered": 16,
+    "opening_marks": [
+      "N1",
+      "N2",
+      "N3",
+      "N4",
+      "N5",
+      "N6",
+      "N7",
+      "N8",
+      "N9",
+      "N10",
+      "N11",
+      "N12",
+      "N13",
+      "N14",
+      "N15",
+      "N16"
+    ],
+    "wall_panel_ids_count": 30,
+    "roof_truss_ids_count": 8,
+    "schedules_not_found": [
+      "window_schedule",
+      "door_schedule",
+      "room_finish_schedule",
+      "services_schedule"
+    ],
+    "promoted_rows": [
+      {
+        "item_no": "B02",
+        "item_name": "Hip Capping (metal, pre-formed)",
+        "quantity": 23.6,
+        "unit": "lm",
+        "promoted_from": "new_item",
+        "promoted_by": "framecad_layout_pitch",
+        "confidence": "MEDIUM",
+        "evidence_class": "calculated_source"
+      },
+      {
+        "item_no": "B03",
+        "item_name": "Hip Cap Fixing Screws",
+        "quantity": 79,
+        "unit": "nr",
+        "promoted_from": "new_item",
+        "promoted_by": "framecad_layout_pitch",
+        "confidence": "MEDIUM",
+        "evidence_class": "calculated_source"
+      }
+    ],
+    "promoted_count": 2,
+    "still_blocked_count": 56,
+    "still_blocked_sample": [
+      {
+        "item_no": "F04",
+        "item_name": "Floor Finish \u2014 Dry Zone (vinyl plank)",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. [Zone: internal_dry] Vinyl plank finish for 5 dry internal space(s). Verandah (21.6 m\u00b2) excluded"
+      },
+      {
+        "item_no": "F05",
+        "item_name": "Vinyl Plank \u2014 Supply Total (10% cut waste)",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. [Zone: internal_dry] Vinyl plank supply: 60.30m\u00b2 net + 10% cut waste = 66.3m\u00b2. 10% is standard f"
+      },
+      {
+        "item_no": "F06",
+        "item_name": "Floor Finish \u2014 Wet Zone (ceramic tile)",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. [Zone: internal_wet] Ceramic tile (non-slip) for wet space(s): Toilet (4.50 m\u00b2). CONFIG-BACKED F"
+      },
+      {
+        "item_no": "F07",
+        "item_name": "Ceramic Floor Tile \u2014 Supply Total (15% cut waste)",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. Ceramic floor tile supply order quantity = 4.50m\u00b2 net area + 15% cut waste = 5.17m\u00b2. 15% is stan"
+      },
+      {
+        "item_no": "F08",
+        "item_name": "Floor Tile Adhesive \u2014 Wet Area (20kg bag)",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. 20kg bag of tile adhesive \u2248 4 m\u00b2 coverage on floor. Verify tile size and spec."
+      },
+      {
+        "item_no": "F09",
+        "item_name": "Floor Tile Grout \u2014 Wet Area (3kg bag)",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. 3kg bag of grout \u2248 6 m\u00b2 floor tile coverage. Adjust for joint width and tile size."
+      },
+      {
+        "item_no": "G01",
+        "item_name": "Floor Cassette Panel \u2014 3000mm \u00d7 2394mm",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. Panel count derived from floor area / per-panel area (7.182m\u00b2). Panel width=3000mm (from E1/E2 e"
+      },
+      {
+        "item_no": "G02",
+        "item_name": "Floor Cassette Panel \u2014 Total Area (9 panels)",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. Total floor cassette panel area = 9 panels \u00d7 7.182m\u00b2 (3000mm \u00d7 2394mm each). Cross-check: main_f"
+      },
+      {
+        "item_no": "G03",
+        "item_name": "Floor Joist (J1) \u2014 150S41-095-500 \u00d7 2394mm",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. Profile: 150S41-095-500, length: 2394mm. 7 joists per panel (HIGH confidence \u2014 DWG Onpage FLayou"
+      },
+      {
+        "item_no": "G05",
+        "item_name": "Floor Edge Beam (E1+E2) \u2014 150P41-115-500 \u00d7 3000mm",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. Profile: 150P41-115-500, length: 3000mm. 2 edge beams per panel (E1\u00d71 + E2\u00d71). Total 18 nr. Tota"
+      }
+    ],
+    "evidence_class_after": {
+      "measured_source": 22,
+      "calculated_source": 138,
+      "config_backed": 6,
+      "heuristic_inferred": 49,
+      "placeholder": 5
+    },
+    "reconciliation": {
+      "openings": {
+        "promoted_rows": [],
+        "still_blocked": [
+          "D26 Louvre Blade WINDOW_LOUVRE_1100: height \u2014 no window schedule in PDFs",
+          "D29 Louvre Blade WINDOW_LOUVRE_800: height \u2014 no window schedule in PDFs",
+          "D32 Louvre Blade WINDOW_LOUVRE_1800: height \u2014 no window schedule in PDFs",
+          "D42 Fly Screen WINDOW_LOUVRE_1100: height \u2014 no window schedule in PDFs",
+          "D43 Fly Screen WINDOW_LOUVRE_800: height \u2014 no window schedule in PDFs",
+          "D44 Fly Screen WINDOW_LOUVRE_1800: height \u2014 no window schedule in PDFs",
+          "DOOR_*: external/internal classification \u2014 no door schedule in PDFs"
+        ],
+        "opening_marks_from_layout": [
+          "N1",
+          "N2",
+          "N3",
+          "N4",
+          "N5",
+          "N6",
+          "N7",
+          "N8",
+          "N9",
+          "N10",
+          "N11",
+          "N12",
+          "N13",
+          "N14",
+          "N15",
+          "N16"
+        ],
+        "window_schedule_found": false,
+        "door_schedule_found": false,
+        "opening_count_dxf": 17,
+        "opening_count_layout": 16,
+        "count_consistent": true,
+        "notes": "FrameCAD wall panel layout confirms 16 structural opening marks (N1\u2013N16 from framecad_layout:Angau Pharmacy-Layouts.pdf). DXF opening count = 17. Counts consistent (delta \u2264 2). No window schedule found in source PDFs. Window heights remain config-default 750mm (LOW confidence). Louvre blade counts and fly screen areas remain BLOCKED PENDING WINDOW SCHEDULE."
+      },
+      "finishes": {
+        "promoted_rows": [],
+        "still_blocked": [
+          "F04 Floor Finish Dry: room areas from config room_schedule \u2014 no finish schedule",
+          "F05 Floor Finish Wet: room areas from config room_schedule \u2014 no finish schedule",
+          "I18 Wet Area Wall Tiling: perimeter heuristic \u2014 no room finish schedule",
+          "I19 Wet Area Waterproofing: config room area \u2014 no finish schedule"
+        ],
+        "finish_schedule_found": false,
+        "notes": "No room finish schedule found in source PDFs. Floor finish rows remain config-backed (LOW confidence). Wet area tiling and waterproofing remain heuristic (LOW confidence)."
+      },
+      "services": {
+        "promoted_rows": [],
+        "still_blocked": [
+          "I20 AC/Mechanical Ventilation: no mechanical schedule in source PDFs",
+          "I21 Exhaust Fan Wet Area: no services schedule",
+          "I22\u2013I25 Whole-building services: no electrical/plumbing schedule",
+          "I01\u2013I17 Room-template services: no MEP schedule"
+        ],
+        "services_schedule_found": false,
+        "notes": "No services schedule found in source PDFs. All services rows remain manual_review / placeholder."
+      },
+      "graphical": {
+        "promoted_rows": [
+          {
+            "target": "OpeningElement.height_m",
+            "mark": "WINDOW_LOUVRE_800",
+            "height_m": 0.623,
+            "height_mm": 623,
+            "source": "framecad_panel_label_ocr",
+            "confidence": "MEDIUM",
+            "promoted_by": "graphical_schedule_reconciler",
+            "note": "Window height 623 mm recovered from framecad_panel_label_ocr."
+          },
+          {
+            "target": "OpeningElement.height_m",
+            "mark": "WINDOW_LOUVRE_1100",
+            "height_m": 1.203,
+            "height_mm": 1203,
+            "source": "framecad_panel_label_ocr",
+            "confidence": "MEDIUM",
+            "promoted_by": "graphical_schedule_reconciler",
+            "note": "Window height 1203 mm recovered from framecad_panel_label_ocr."
+          }
+        ],
+        "still_blocked": [
+          {
+            "item": "Louvre Blade / Fly Screen \u2014 WINDOW_LOUVRE_1800",
+            "reason": "Window height not found in DXF annotations (no proximity text with WxH pattern found near window INSERT position), no OCR result, and no window schedule in source PDFs. Requires window schedule from client.",
+            "requires": "window_schedule"
+          },
+          {
+            "item": "Door external/internal classification \u2014 all doors",
+            "reason": "No explicit EXT/INT annotation found near door INSERT positions in DXF. Classification remains heuristic (width \u2265 850mm = external). Requires door schedule or explicit notation from architectural drawings.",
+            "requires": "door_schedule"
+          }
+        ],
+        "window_heights_recovered": [
+          {
+            "mark": "WINDOW_LOUVRE_800",
+            "height_mm": 623,
+            "width_mm": 803,
+            "label_count": 5,
+            "source": "framecad_panel_label_ocr",
+            "confidence": "MEDIUM",
+            "note": "FrameCAD wall-panel label 803h623 (\u00d75 OCR hit(s)) matched to DXF WINDOW_LOUVRE_800 (DXF width 799mm, \u0394=0.5%). Height 623mm is the structural rough-opening height from FrameCAD wall panel layout drawing."
+          },
+          {
+            "mark": "WINDOW_LOUVRE_1100",
+            "height_mm": 1203,
+            "width_mm": 1083,
+            "label_count": 10,
+            "source": "framecad_panel_label_ocr",
+            "confidence": "MEDIUM",
+            "note": "FrameCAD wall-panel label 1083h1203 (\u00d710 OCR hit(s)) matched to DXF WINDOW_LOUVRE_1100 (DXF width 1080mm, \u0394=0.3%). Height 1203mm is the structural rough-opening height from FrameCAD wall panel layout drawing."
+          }
+        ],
+        "door_hints_recovered": [],
+        "stair_details_recovered": [],
+        "footing_details_recovered": [],
+        "ocr_regions_detected": 10,
+        "ocr_backend": "pytesseract",
+        "table_regions_detected": 51,
+        "notes": [
+          "FrameCAD panel label OCR: 2 window height(s) matched by width from FrameCAD layout drawing labels.",
+          "Graphical recovery: 51 table regions detected in PDFs, 10 crops processed via OCR (pytesseract), 2 window heights recovered, 0 door hints recovered, 0 stair details, 0 footing details.",
+          "Promoted: 2 BOQ field updates. Still blocked: 2 items."
+        ]
+      }
+    }
+  },
+  "graphical_recovery": {
+    "table_regions_detected": 51,
+    "ocr_backend": "pytesseract",
+    "ocr_regions_processed": 10,
+    "window_heights_recovered": [
+      {
+        "mark": "WINDOW_LOUVRE_800",
+        "height_mm": 623,
+        "width_mm": 803,
+        "label_count": 5,
+        "source": "framecad_panel_label_ocr",
+        "confidence": "MEDIUM",
+        "note": "FrameCAD wall-panel label 803h623 (\u00d75 OCR hit(s)) matched to DXF WINDOW_LOUVRE_800 (DXF width 799mm, \u0394=0.5%). Height 623mm is the structural rough-opening height from FrameCAD wall panel layout drawing."
+      },
+      {
+        "mark": "WINDOW_LOUVRE_1100",
+        "height_mm": 1203,
+        "width_mm": 1083,
+        "label_count": 10,
+        "source": "framecad_panel_label_ocr",
+        "confidence": "MEDIUM",
+        "note": "FrameCAD wall-panel label 1083h1203 (\u00d710 OCR hit(s)) matched to DXF WINDOW_LOUVRE_1100 (DXF width 1080mm, \u0394=0.3%). Height 1203mm is the structural rough-opening height from FrameCAD wall panel layout drawing."
+      }
+    ],
+    "door_hints_recovered": [],
+    "stair_details_recovered": [],
+    "footing_details_recovered": [],
+    "promoted_count": 2,
+    "promoted_rows": [
+      {
+        "target": "OpeningElement.height_m",
+        "mark": "WINDOW_LOUVRE_800",
+        "height_m": 0.623,
+        "height_mm": 623,
+        "source": "framecad_panel_label_ocr",
+        "confidence": "MEDIUM",
+        "promoted_by": "graphical_schedule_reconciler",
+        "note": "Window height 623 mm recovered from framecad_panel_label_ocr."
+      },
+      {
+        "target": "OpeningElement.height_m",
+        "mark": "WINDOW_LOUVRE_1100",
+        "height_m": 1.203,
+        "height_mm": 1203,
+        "source": "framecad_panel_label_ocr",
+        "confidence": "MEDIUM",
+        "promoted_by": "graphical_schedule_reconciler",
+        "note": "Window height 1203 mm recovered from framecad_panel_label_ocr."
+      }
+    ],
+    "still_blocked_count": 2,
+    "still_blocked": [
+      {
+        "item": "Louvre Blade / Fly Screen \u2014 WINDOW_LOUVRE_1800",
+        "reason": "Window height not found in DXF annotations (no proximity text with WxH pattern found near window INSERT position), no OCR result, and no window schedule in source PDFs. Requires window schedule from client.",
+        "requires": "window_schedule"
+      },
+      {
+        "item": "Door external/internal classification \u2014 all doors",
+        "reason": "No explicit EXT/INT annotation found near door INSERT positions in DXF. Classification remains heuristic (width \u2265 850mm = external). Requires door schedule or explicit notation from architectural drawings.",
+        "requires": "door_schedule"
+      }
+    ],
+    "notes": [
+      "FrameCAD panel label OCR: 2 window height(s) matched by width from FrameCAD layout drawing labels.",
+      "Graphical recovery: 51 table regions detected in PDFs, 10 crops processed via OCR (pytesseract), 2 window heights recovered, 0 door hints recovered, 0 stair details, 0 footing details.",
+      "Promoted: 2 BOQ field updates. Still blocked: 2 items."
+    ]
   },
   "warnings": [
+    "GRAPHICAL RECOVERY: 2 BOQ field(s) promoted from DXF annotation / OCR evidence.",
     "Template contamination check: PASSED \u2014 no BOQ template quantities detected."
   ]
 }

@@ -142,6 +142,19 @@ def quantify_floor_system(
     # external works; the main floor system should not include that area.
     ver_area  = sum(v.area_m2  for v in model.verandahs)
     ver_perim = sum(v.perimeter_m for v in model.verandahs)
+
+    # ── Zone areas from space model (for substrate cross-reference in notes) ─
+    # internal_dry + internal_wet = total internal substrate area.
+    # These are passed to _floor_sheeting_rows() for explicit zone labeling only;
+    # they do NOT change the substrate quantity (which covers all internal zones).
+    _dry_zone_m2 = round(sum(
+        s.area_m2 for s in model.spaces
+        if s.is_enclosed and not s.is_wet and not s.is_verandah
+    ), 2)
+    _wet_zone_m2 = round(sum(
+        s.area_m2 for s in model.spaces
+        if s.is_enclosed and s.is_wet
+    ), 2)
     span_dxf, run_dxf, main_floor_area, dims_note = _main_building_dims(
         floor_area, ext_perim, ver_area, ver_perim,
     )
@@ -150,6 +163,338 @@ def quantify_floor_system(
                  span_dxf, run_dxf, main_floor_area)
     else:
         main_floor_area = floor_area   # fall back to total area
+
+    # ── CASE 0.5: DWG floor cassette schedule (FrameCAD Onpage FLayout) ─────────
+    # Triggered when element_builder found DWG member schedule data.
+    # Panel dimensions are HIGH confidence; panel count is MEDIUM (geometry-derived).
+    # Each member type (joist, edge beam, stringer) emits its own BOQ row.
+    dwg_floor_panels = [fs for fs in floor_systems if fs.source == "framecad_dwg"]
+    if dwg_floor_panels:
+        fp = dwg_floor_panels[0]
+        log.info("Floor system: DWG cassette schedule (panel_count=%d, conf=%s)",
+                 fp.panel_count, fp.confidence)
+
+        # Panel dimensions from notes
+        pw_mm   = fp.panel_width_mm    # E1/E2 length — HIGH
+        pd_mm   = fp.panel_length_mm   # joist/stringer span — HIGH
+        p_count = fp.panel_count       # geometry-derived — MEDIUM
+        j_count = fp.joist_count       # total joists — MEDIUM
+        j_len   = fp.joist_length_mm
+        j_lm    = fp.total_joist_lm
+
+        # Extract edge beam / stringer totals from notes text
+        # Notes format: "... Edge beams (E1+E2): N nr total. Stringers (S1+S2): M nr total."
+        import re as _re
+        _eb_match = _re.search(r"Edge beams.*?:\s*(\d+)\s*nr", fp.notes or "")
+        _st_match = _re.search(r"Stringers.*?:\s*(\d+)\s*nr", fp.notes or "")
+        eb_count  = int(_eb_match.group(1)) if _eb_match else 0
+        st_count  = int(_st_match.group(1)) if _st_match else 0
+        eb_len    = pw_mm    # edge beam runs along panel width
+        st_len    = pd_mm    # stringer runs along panel span
+        eb_lm     = round(eb_count * eb_len / 1000, 2) if eb_count else 0.0
+        st_lm     = round(st_count * st_len / 1000, 2) if st_count else 0.0
+
+        # Extract profile from notes
+        _prf_match = _re.search(r"Profile:\s*([^\.\s]+)", fp.notes or "")
+        j_profile = _prf_match.group(1) if _prf_match else "150S41-095-500"
+
+        _eb_prf = _re.search(r"Edge beam.*?(\d+P\d+-\d+-\d+)", fp.notes or "")
+        eb_profile = _eb_prf.group(1) if _eb_prf else "150P41-115-500"
+
+        _st_prf = _re.search(r"Stringer.*?(\d+S\d+-\d+-\d+)", fp.notes or "")
+        st_profile = _st_prf.group(1) if _st_prf else "150S41-115-500"
+
+        src_ev   = fp.source_reference
+        src_conf = fp.confidence
+
+        # ── Floor Panel Cassettes ───────────────────────────────────────────
+        if p_count > 0:
+            panel_area_each = round(pw_mm * pd_mm / 1_000_000, 4)
+            rows.append(_row(
+                "floor_system",
+                f"Floor Cassette Panel — {pw_mm}mm × {pd_mm}mm",
+                "nr", p_count,
+                "inferred",
+                (f"DWG geometry: floor_area / panel_area = "
+                 f"main_floor_area / ({pw_mm}mm×{pd_mm}mm={panel_area_each:.4f}m²)"),
+                f"framecad_dwg: {src_ev}",
+                f"floor_area / {panel_area_each}m² per panel → {p_count} panels",
+                src_conf,
+                manual_review=True,
+                notes=(
+                    f"Panel count derived from floor area / per-panel area ({panel_area_each:.3f}m²). "
+                    f"Panel width={pw_mm}mm (from E1/E2 edge beam length, HIGH confidence). "
+                    f"Panel depth={pd_mm}mm (from J1/S1/S2 span length, HIGH confidence). "
+                    f"Count={p_count} is MEDIUM confidence — verify from FrameCAD floor panel layout."
+                ),
+            ))
+            # Floor panel total area — primary procurement family (m2)
+            total_panel_area = round(p_count * panel_area_each, 2)
+            rows.append(_row(
+                "floor_system",
+                f"Floor Cassette Panel — Total Area ({p_count} panels)",
+                "m2", total_panel_area,
+                "inferred",
+                f"DWG geometry: {p_count} panels × {panel_area_each:.4f}m² per panel ({pw_mm}mm×{pd_mm}mm)",
+                f"framecad_dwg: {src_ev}",
+                f"{p_count} × {panel_area_each:.4f}",
+                src_conf,
+                manual_review=True,
+                notes=(
+                    f"Total floor cassette panel area = {p_count} panels × {panel_area_each:.3f}m² "
+                    f"({pw_mm}mm × {pd_mm}mm each). "
+                    f"Cross-check: main_floor_area from DXF = {main_floor_area:.2f}m². "
+                    "Verify panel count and area against FrameCAD floor panel layout tab before ordering."
+                ),
+            ))
+
+        # ── Joists (J1) ────────────────────────────────────────────────────
+        if j_count > 0:
+            j_per = j_count // p_count if p_count else 0
+            rows.append(_row(
+                "floor_system",
+                f"Floor Joist (J1) — {j_profile} × {j_len}mm",
+                "nr", j_count,
+                "inferred",
+                f"DWG schedule: {j_per} J1 joists per panel × {p_count} panels",
+                f"framecad_dwg: {src_ev}",
+                f"{j_per} × {p_count} panels",
+                src_conf,
+                manual_review=(src_conf != "HIGH"),
+                notes=(
+                    f"Profile: {j_profile}, length: {j_len}mm. "
+                    f"{j_per} joists per panel (HIGH confidence — DWG Onpage FLayout schedule). "
+                    f"Total {j_count} nr = {j_per} × {p_count} panels. "
+                    f"Total lm: {j_lm:.2f} lm ({j_count} × {j_len/1000:.3f}m)."
+                ),
+            ))
+            rows.append(_row(
+                "floor_system",
+                f"Floor Joist (J1) — {j_profile} (total lm)",
+                "lm", j_lm,
+                "inferred",
+                f"DWG schedule: {j_count} joists × {j_len}mm",
+                f"framecad_dwg: {src_ev}",
+                f"{j_count} × {j_len}/1000 = {j_lm:.2f}",
+                src_conf,
+                notes=f"Total joist lm from DWG cassette schedule.",
+            ))
+
+        # ── Edge Beams (E1+E2) ──────────────────────────────────────────────
+        if eb_count > 0:
+            eb_per = eb_count // p_count if p_count else 0
+            rows.append(_row(
+                "floor_system",
+                f"Floor Edge Beam (E1+E2) — {eb_profile} × {eb_len}mm",
+                "nr", eb_count,
+                "inferred",
+                f"DWG schedule: {eb_per} edge beams per panel × {p_count} panels",
+                f"framecad_dwg: {src_ev}",
+                f"{eb_per} × {p_count} panels",
+                src_conf,
+                manual_review=(src_conf != "HIGH"),
+                notes=(
+                    f"Profile: {eb_profile}, length: {eb_len}mm. "
+                    f"{eb_per} edge beams per panel (E1×1 + E2×1). "
+                    f"Total {eb_count} nr. Total lm: {eb_lm:.2f} lm."
+                ),
+            ))
+            if eb_lm > 0:
+                rows.append(_row(
+                    "floor_system",
+                    f"Floor Edge Beam (E1+E2) — {eb_profile} (total lm)",
+                    "lm", eb_lm,
+                    "inferred",
+                    f"DWG schedule: {eb_count} edge beams × {eb_len}mm",
+                    f"framecad_dwg: {src_ev}",
+                    f"{eb_count} × {eb_len}/1000 = {eb_lm:.2f}",
+                    src_conf,
+                    notes=(
+                        f"Total edge beam lm for procurement ordering. "
+                        f"{eb_count} nr × {eb_len}mm = {eb_lm:.2f} lm. "
+                        f"Verify profile {eb_profile} and section from FrameCAD engineer before ordering."
+                    ),
+                ))
+
+        # ── Stringers (S1+S2) ───────────────────────────────────────────────
+        if st_count > 0:
+            st_per = st_count // p_count if p_count else 0
+            rows.append(_row(
+                "floor_system",
+                f"Floor Stringer (S1+S2) — {st_profile} × {st_len}mm",
+                "nr", st_count,
+                "inferred",
+                f"DWG schedule: {st_per} stringers per panel × {p_count} panels",
+                f"framecad_dwg: {src_ev}",
+                f"{st_per} × {p_count} panels",
+                src_conf,
+                manual_review=(src_conf != "HIGH"),
+                notes=(
+                    f"Profile: {st_profile}, length: {st_len}mm. "
+                    f"{st_per} stringers per panel (S1×1 + S2×1). "
+                    f"Total {st_count} nr. Total lm: {st_lm:.2f} lm."
+                ),
+            ))
+            if st_lm > 0:
+                rows.append(_row(
+                    "floor_system",
+                    f"Floor Stringer (S1+S2) — {st_profile} (total lm)",
+                    "lm", st_lm,
+                    "inferred",
+                    f"DWG schedule: {st_count} stringers × {st_len}mm",
+                    f"framecad_dwg: {src_ev}",
+                    f"{st_count} × {st_len}/1000 = {st_lm:.2f}",
+                    src_conf,
+                    notes=(
+                        f"Total stringer lm for procurement ordering. "
+                        f"{st_count} nr × {st_len}mm = {st_lm:.2f} lm. "
+                        "Verify profile and section from FrameCAD engineer before ordering."
+                    ),
+                ))
+
+        # ── Internal Floor Bearers ──────────────────────────────────────────
+        # Derived purely from DWG panel grid geometry:
+        #   - Joists (J1) span pd_mm across the building short span (span_dxf).
+        #   - At every joist-end boundary (every pd_mm in the span direction) the
+        #     cassette needs a bearing support running the full building run (run_dxf).
+        #   - Perimeter boundaries (first and last) land on the strip footings → no
+        #     separate member required there.
+        #   - Internal boundaries = panel_rows − 1, each running run_dxf metres.
+        #
+        # Evidence source: framecad_dwg (pd_mm, pw_mm) + dxf_geometry (span, run).
+        # This is the primary structural bearing element missing from earlier passes.
+        if span_dxf > 0 and run_dxf > 0 and pd_mm > 0 and pw_mm > 0:
+            pd_m = pd_mm / 1000
+            pw_m = pw_mm / 1000
+            panel_rows = round(span_dxf / pd_m)   # rows across the short span
+            panel_cols = round(run_dxf  / pw_m)   # columns along the long run
+            internal_bearer_lines = max(0, panel_rows - 1)
+            if internal_bearer_lines > 0:
+                bearer_lm = round(internal_bearer_lines * run_dxf, 1)
+                rows.append(_row(
+                    "floor_system",
+                    f"Floor Bearer / Support Beam (steel SHS/RHS) — {internal_bearer_lines} lines × {run_dxf:.1f}m",
+                    "lm", bearer_lm,
+                    "calculated",
+                    (
+                        f"panel_rows({panel_rows}) from span({span_dxf:.1f}m)÷panel_depth({pd_mm}mm); "
+                        f"internal_bearer_lines = panel_rows−1 = {internal_bearer_lines}; "
+                        f"each line runs full building run = {run_dxf:.1f}m"
+                    ),
+                    f"framecad_dwg+dxf_geometry: panel_depth={pd_mm}mm, span_dxf={span_dxf:.1f}m, run_dxf={run_dxf:.1f}m",
+                    f"(panel_rows−1) × run = ({panel_rows}−1) × {run_dxf:.1f}",
+                    "MEDIUM",
+                    manual_review=True,
+                    notes=(
+                        f"Internal floor bearer / support beam at joist-end bearing positions. "
+                        f"DWG panel depth = {pd_mm}mm → {panel_rows} rows across {span_dxf:.1f}m span. "
+                        f"Perimeter boundary lines bear on strip footings (no separate member needed). "
+                        f"{internal_bearer_lines} internal lines × {run_dxf:.1f}m = {bearer_lm:.1f} lm. "
+                        "Bearer section (SHS/RHS or engineered timber) to be confirmed from structural drawings. "
+                        "Verify with FrameCAD engineer."
+                    ),
+                ))
+                # Sub-floor support posts/stumps under each internal bearer
+                # Posts needed at internal panel-column boundaries (perimeter positions
+                # are at strip footing — no post required there).
+                internal_cols = max(0, panel_cols - 1)  # mid-span positions per bearer
+                if internal_cols > 0:
+                    post_count = internal_bearer_lines * internal_cols
+                    rows.append(_row(
+                        "floor_system",
+                        "Sub-Floor Support Post / Adjustable Steel Stump",
+                        "nr", post_count,
+                        "calculated",
+                        (
+                            f"internal_bearer_lines({internal_bearer_lines}) × "
+                            f"mid-span_pads_per_bearer({internal_cols}) "
+                            f"[panel_cols({panel_cols})−1; perimeter pads on strip footings]"
+                        ),
+                        f"framecad_dwg+dxf_geometry: panel_grid={panel_rows}×{panel_cols}, "
+                        f"span={span_dxf:.1f}m, run={run_dxf:.1f}m",
+                        f"{internal_bearer_lines} × ({panel_cols}−1)",
+                        "LOW",
+                        manual_review=True,
+                        notes=(
+                            f"Adjustable steel stumps or concrete piers at mid-span support points of "
+                            f"internal floor bearers. "
+                            f"{internal_bearer_lines} bearer lines × {internal_cols} mid-span pads each "
+                            f"= {post_count} nr. "
+                            "Perimeter end-points land on strip footings. "
+                            "Post type and base plate spec from structural engineer. "
+                            "Verify against pad footing layout and FrameCAD sub-floor schedule."
+                        ),
+                    ))
+
+        # ── Joist Hanger Connectors ─────────────────────────────────────────
+        # One joist hanger at each joist-to-edge-beam connection (both ends)
+        if j_count > 0:
+            hanger_count = j_count * 2  # 2 connections per joist (each end)
+            rows.append(_row(
+                "floor_system",
+                f"Joist Hanger Connector (J1 end fix)",
+                "nr", hanger_count,
+                "calculated",
+                f"joist_count({j_count}) × 2 ends = {hanger_count} hangers",
+                f"framecad_dwg: {src_ev}",
+                f"{j_count} × 2",
+                src_conf,
+                manual_review=True,
+                notes=(
+                    f"LGS joist hanger or clip angle at each J1 joist end. "
+                    f"Total: {j_count} joists × 2 ends = {hanger_count} nr. "
+                    "Verify hanger type and connection requirement from FrameCAD engineer."
+                ),
+            ))
+
+        # ── DPM / Moisture Barrier ──────────────────────────────────────────
+        # Under floor cassettes: 1 layer polyethylene 200µm over main floor area
+        if main_floor_area > 0:
+            dpm_area = round(main_floor_area * 1.1, 2)  # 10% laps
+            rows.append(_row(
+                "floor_system",
+                "DPM / Polyethylene Moisture Barrier (200µm)",
+                "m2", dpm_area,
+                "calculated",
+                f"main_floor_area({main_floor_area:.2f}) × 1.10 (laps)",
+                f"dxf_geometry: main_floor_area={main_floor_area:.2f} m²",
+                f"{main_floor_area:.2f} × 1.1",
+                "MEDIUM",
+                notes=(
+                    "200µm polyethylene DPM beneath floor cassettes. "
+                    "10% added for laps and edge tuck-under. "
+                    "Verify specification from structural/hydraulic engineer."
+                ),
+            ))
+
+        # Floor sheet confidence: upgrade to HIGH when DWG panel grid cross-validates
+        # DXF floor area.  Two independent sources must agree within 3%.
+        #   DWG: p_count × panel_area_each  (from cassette schedule)
+        #   DXF: main_floor_area             (from LWPOLYLINE measurement)
+        _dwg_area = round(p_count * panel_area_each, 2) if p_count > 0 and panel_area_each > 0 else 0.0
+        _xcheck_ok = (
+            _dwg_area > 0
+            and abs(_dwg_area - main_floor_area) / max(_dwg_area, main_floor_area) <= 0.03
+        )
+        _sheet_conf = "HIGH" if _xcheck_ok else src_conf
+        _xnote = (
+            f"DWG panel grid ({p_count} panels × {panel_area_each:.4f}m² = {_dwg_area:.2f}m²) "
+            f"vs DXF area ({main_floor_area:.2f}m²): "
+            f"delta={abs(_dwg_area-main_floor_area):.2f}m² ({abs(_dwg_area-main_floor_area)/max(_dwg_area,main_floor_area)*100:.1f}%) — "
+            "double-source confirmation upgrades sheet confidence to HIGH"
+        ) if _xcheck_ok else ""
+        rows += _floor_sheeting_rows(
+            main_floor_area,
+            "framecad_dwg+dxf_geometry",
+            src_conf,
+            lining_cfg,
+            confidence_override=_sheet_conf,
+            crosscheck_note=_xnote,
+            dry_area=_dry_zone_m2,
+            wet_area=_wet_zone_m2,
+            ver_area=ver_area,
+        )
+        return rows
 
     # ── CASE 1: FrameCAD BOM has floor panel tabs ─────────────────────────────
     bom_floor_panels = [fs for fs in floor_systems if fs.source == "framecad_bom"]
@@ -212,7 +557,11 @@ def quantify_floor_system(
                         f"Verify bearer schedule from FrameCAD engineer."
                     ),
                 ))
-        rows += _floor_sheeting_rows(floor_area, "framecad_bom", "HIGH", lining_cfg)
+        # BUG FIX: use main_floor_area (verandah excluded) not raw floor_area
+        rows += _floor_sheeting_rows(
+            main_floor_area, "framecad_bom+dxf_geometry", "HIGH", lining_cfg,
+            dry_area=_dry_zone_m2, wet_area=_wet_zone_m2, ver_area=ver_area,
+        )
         return rows
 
     # ── CASE 2: IFC floor joists ──────────────────────────────────────────────
@@ -252,7 +601,11 @@ def quantify_floor_system(
                     manual_review=True,
                     notes=f"Bearer spacing assumed {int(bearer_spacing*1000)} mm. Verify from structural drawings.",
                 ))
-            rows += _floor_sheeting_rows(floor_area, "ifc_model", "MEDIUM", lining_cfg)
+            # BUG FIX: use main_floor_area (verandah excluded) not raw floor_area
+            rows += _floor_sheeting_rows(
+                main_floor_area, "ifc_model+dxf_geometry", "MEDIUM", lining_cfg,
+                dry_area=_dry_zone_m2, wet_area=_wet_zone_m2, ver_area=ver_area,
+            )
             return rows
 
     # ── CASE 2.5: Config floor_panel_schedule (between IFC and area-derived) ───
@@ -343,7 +696,10 @@ def quantify_floor_system(
             ))
 
         # Floor sheeting over main floor area only (verandah excluded — has own decking row)
-        rows += _floor_sheeting_rows(area_for_calc, "project_config+dxf_geometry", "LOW", lining_cfg)
+        rows += _floor_sheeting_rows(
+            area_for_calc, "project_config+dxf_geometry", "LOW", lining_cfg,
+            dry_area=_dry_zone_m2, wet_area=_wet_zone_m2, ver_area=ver_area,
+        )
         return rows
 
     # ── CASE 3: Steel floor frame confirmed but no panel schedule ─────────────
@@ -422,7 +778,10 @@ def quantify_floor_system(
             notes="2 end cleats per joist estimated. Verify against FrameCAD connection schedule.",
         ))
 
-        rows += _floor_sheeting_rows(fa_use, fs.source + "+dxf_geometry", "LOW", lining_cfg)
+        rows += _floor_sheeting_rows(
+            fa_use, fs.source + "+dxf_geometry", "LOW", lining_cfg,
+            dry_area=_dry_zone_m2, wet_area=_wet_zone_m2, ver_area=ver_area,
+        )
         return rows
 
     # ── CASE 4: No floor system or slab footing — slab items in floor_system ──
@@ -456,18 +815,57 @@ def quantify_floor_system(
 
 
 def _floor_sheeting_rows(
-    floor_area: float,
-    src:        str,
-    conf:       str,
-    lining_cfg: dict,
+    floor_area:          float,
+    src:                 str,
+    conf:                str,
+    lining_cfg:          dict,
+    confidence_override: str | None = None,
+    crosscheck_note:     str = "",
+    dry_area:            float = 0.0,
+    wet_area:            float = 0.0,
+    ver_area:            float = 0.0,
 ) -> list[dict]:
-    """Produce floor sheeting procurement rows for a given floor area."""
+    """Produce floor sheeting procurement rows for a given floor area.
+
+    floor_area must be the INTERNAL enclosed area only (verandah already excluded).
+
+    confidence_override: when the floor area is cross-validated by a secondary
+        source (e.g. DWG panel grid), pass the validated confidence level here.
+        This overrides ``conf`` for the sheet count and supply area rows only.
+    crosscheck_note: optional traceability note added when override is used.
+    dry_area / wet_area: zone breakdown for explicit notes (both optional).
+        When provided, the note documents the layered assembly:
+          substrate (this row) → dry zone gets vinyl (F-pkg) / wet zone gets tile (F-pkg).
+    ver_area: verandah area (for explicit exclusion note).
+    """
     if floor_area <= 0:
         return []
     sheet_area = lining_cfg.get("fc_ceiling_sheet_area_m2", 2.88)  # same sheet dims as ceiling
     waste      = lining_cfg.get("waste_factor", 1.05)
     sheet_count = math.ceil(floor_area * waste / sheet_area)
+    supply_area_m2 = round(sheet_count * sheet_area, 2)
 
+    _conf = confidence_override if confidence_override else conf
+    _mr   = (_conf == "LOW")
+    _xnote = (f"  Cross-check: {crosscheck_note}." if crosscheck_note else "")
+
+    # Build zone-breakdown note (added when zone info is available)
+    _zone_note = ""
+    if dry_area > 0 or wet_area > 0:
+        _zone_parts = []
+        if dry_area > 0:
+            _zone_parts.append(f"dry_internal={dry_area:.2f} m² (vinyl finish, F-package)")
+        if wet_area > 0:
+            _zone_parts.append(f"wet_internal={wet_area:.2f} m² (ceramic tile finish, F-package)")
+        _zone_sum = round(dry_area + wet_area, 2)
+        _zone_note = (
+            f"  Zone breakdown: {' + '.join(_zone_parts)} = {_zone_sum:.2f} m² total substrate. "
+            + (f"External verandah ({ver_area:.2f} m²) is excluded — WPC decking in K-package. "
+               if ver_area > 0 else "")
+            + "Both dry and wet internal zones use identical FC substrate; finish layer differs above."
+        )
+
+    adhesive_tubes = math.ceil(floor_area / 3.0)  # 1 tube per ~3 m² floor area
     return [
         _row(
             "floor_system", "Floor Sheet (FC / plywood)",
@@ -477,9 +875,32 @@ def _floor_sheeting_rows(
             f"ceil(floor_area × {waste} / {sheet_area})",
             f"{src}: floor_area={floor_area:.2f} m²",
             f"ceil({floor_area:.2f} × {waste} / {sheet_area})",
-            conf,
-            manual_review=(conf == "LOW"),
-            notes="Sheet size assumed same as ceiling FC sheet (1.2×2.4). Adjust if different.",
+            _conf,
+            manual_review=_mr,
+            notes=(
+                "FC/ply substrate for all internal enclosed zones (dry + wet combined). "
+                "Sheet 1200×2400mm (same spec as ceiling FC sheet — confirm if different)."
+                + _zone_note
+                + _xnote
+            ),
+        ),
+        _row(
+            "floor_system", "Floor Sheet — Total Supply Area (1200×2400mm)",
+            "m2", supply_area_m2,
+            "calculated",
+            f"sheet_count({sheet_count}) × sheet_area({sheet_area}m²) — gross supply incl. waste",
+            f"{src}: floor_area={floor_area:.2f}m² × waste({waste}) → {sheet_count} sheets × {sheet_area}m²",
+            f"{sheet_count} × {sheet_area}",
+            _conf,
+            manual_review=_mr,
+            notes=(
+                f"Gross FC/ply sheet supply area (all internal zones). "
+                f"Net floor: {floor_area:.2f}m² × {waste} waste = {round(floor_area*waste,2)}m². "
+                f"Rounded up to {sheet_count} full sheets × {sheet_area}m² each = {supply_area_m2}m². "
+                "1200×2400mm sheet assumed."
+                + _zone_note
+                + _xnote
+            ),
         ),
         _row(
             "floor_system", "Floor Sheet Fixing Screws",
@@ -491,5 +912,16 @@ def _floor_sheeting_rows(
             "ceil(sheets × 16 / 200)",
             "LOW",
             notes="16 fixings per sheet; 200 per box.",
+        ),
+        _row(
+            "floor_system", "Floor Sheet Adhesive (construction adhesive, 300mL tube)",
+            "tubes",
+            adhesive_tubes,
+            "calculated",
+            f"ceil(floor_area({floor_area:.2f}) / 3 m² per tube)",
+            f"{src}: floor_area={floor_area:.2f} m²",
+            "ceil(floor_area / 3.0)",
+            "LOW",
+            notes="Construction adhesive for floor sheet to joist. 1 tube per ~3 m² of floor area.",
         ),
     ]

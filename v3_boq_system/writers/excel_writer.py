@@ -2,22 +2,16 @@
 excel_writer.py — Write BOQ to Excel with companion sheets.
 
 Sheets produced:
-  1. BOQ          — main bill of quantities (column layout matches final approved BOQ)
-  2. Traceability — evidence + derivation rule for every item
-  3. Manual Review — items flagged for review
-  4. QA Summary   — package completeness + provenance stats
-  5. Source Summary — which files contributed which data
-
-STRUCTURE ALIGNMENT NOTE (2026-03-26):
-  The BOQ sheet column order now matches the approved final BOQ format:
-    STOCK CODE | MATERIALS DESCRIPTION | QTY | RATE (PGK) | AMOUNT (PGK)
-    | CONFIDENCE | SOURCE | NOTES / DRAWING REF
-
-  Section header rows use the final BOQ numeric package codes (50106–50129).
-  Rows are sorted by package order (50106 → 50107 → ... → 50124).
-  Item display names use "Category | Specification" convention.
-
-  No quantities were changed by this alignment step.
+  1. BOQ (Commercial) — baseline-aligned commercial presentation
+       - Items grouped by commercial_package_code (remapped for commercial logic)
+       - Within each section: main family rows first, accessories after, MR/PH last
+       - Columns: STOCK CODE | DESCRIPTION | QTY | UNIT | RATE | AMOUNT | CONF | NOTES
+       - Confidence shown as row background colour (no verbose column)
+  2. Engine Truth   — full source-driven rows with confidence/evidence (all items)
+  3. Traceability   — evidence + derivation rule for every item
+  4. Manual Review  — items flagged for review
+  5. QA Summary     — package completeness + provenance stats
+  6. Source Summary — which files contributed which data
 """
 from __future__ import annotations
 
@@ -46,6 +40,7 @@ _SECTION_COLOURS_FINAL: dict[str, str] = {
     "50113": "FFFFE6CC",   # Ext Cladding — peach
     "50114": "FFFCF3CF",   # Openings — yellow
     "50115": "FFFDEBD0",   # Int Linings — apricot
+    "50116": "FFF5CBA7",   # Painting — warm orange
     "50117": "FFE8DAEF",   # Services — lavender
     "50118": "FFEAF4FB",   # Insulation — pale sky
     "50119": "FFFDEDEC",   # Electrical — pale pink
@@ -69,10 +64,13 @@ _SECTION_COLOURS_LEGACY: dict[str, str] = {
     "K - External Works":     "FFEAFAF1",
 }
 
-_HEADER_FILL       = "FF2C3E50"   # dark slate
-_SECTION_HDR_FILL  = "FF3D5A80"   # medium blue — matches final BOQ section header style
-_MR_FILL           = "FFFFF3CD"   # light amber for manual review rows
-_PLACEHOLDER_FILL  = "FFFFE0E0"   # light red for placeholder rows
+_HEADER_FILL               = "FF2C3E50"   # dark slate
+_SECTION_HDR_FILL          = "FF3D5A80"   # medium blue  — section headers
+_COMMERCIAL_BLOCK_HDR_FILL = "FF5B8DB8"   # steel blue   — commercial block headers
+_TRADE_GROUP_HDR_FILL      = "FF5B8DB8"   # steel blue   — trade group headers (Phase 5 legacy)
+_SUBGROUP_HDR_FILL         = "FFB8D0E8"   # light blue   — optional subgroup headers
+_MR_FILL              = "FFFFF3CD"   # light amber for manual review rows
+_PLACEHOLDER_FILL     = "FFFFE0E0"   # light red for placeholder rows
 
 _THIN   = Side(style="thin",   color="FFCCCCCC")
 _MEDIUM = Side(style="medium", color="FF999999")
@@ -82,6 +80,34 @@ _SECTION_BORDER = Border(
     right=Side(style="medium", color="FF3D5A80"),
     bottom=Side(style="medium", color="FF3D5A80"),
 )
+
+# Commercial BOQ confidence colours (row background)
+_CONF_FILL = {
+    "HIGH":   "FFD5F5E3",   # mint green
+    "MEDIUM": "FFFEF9E7",   # cream
+    "LOW":    "FFFDEBD0",   # apricot
+}
+_ACCESSORY_THRESHOLD = 400   # family_sort_key >= this → accessory row
+_MR_THRESHOLD       = 1000   # family_sort_key >= this → MR row in commercial view
+
+# Item names that should be consolidated when the same name appears multiple times
+# within the same commercial section (e.g. per-door-type hardware rows).
+# Consolidation sums quantities and shows a single aggregate row in the commercial view.
+# Engine Truth sheet is NEVER affected — all per-type rows are preserved there.
+# Display names (item_display_name) to consolidate in the commercial view.
+# Items sharing the same display name, commercial section, and unit are summed
+# into a single aggregate row.  Engine Truth is unaffected.
+_HARDWARE_CONSOLIDATE_NAMES: frozenset = frozenset([
+    # Door hardware (display names — aggregated across door types)
+    "Door | Leaf", "Door | Frame Set", "Door | Hinge (pair)",
+    "Door | Lockset", "Door | Stop", "Door | Closer, Hydraulic",
+    # Window hardware (display names — aggregated across window types)
+    "Window | Louvre Frame", "Window | Louvre Blade", "Window | Fly Screen",
+    # Window flashings — one row per window type in engine; single total in commercial
+    "Flashing | Window Head, Galvanised", "Flashing | Window Sill, Galvanised",
+    # Timber architrave — door + window architrave shown as single lm total
+    "Timber Architrave | 12 x 75 x 2400mm Timber",
+])
 
 
 def _apply_fill(cell, hex_argb: str) -> None:
@@ -119,24 +145,28 @@ def write_boq_excel(
 
     wb = openpyxl.Workbook()
 
-    # ── Sheet 1: BOQ (final BOQ column format) ────────────────────────────────
+    # ── Sheet 1: BOQ (Commercial — baseline-aligned presentation) ─────────────
     ws_boq = wb.active
     ws_boq.title = "BOQ"
-    _write_boq_sheet(ws_boq, boq_items, project_name)
+    _write_commercial_boq_sheet(ws_boq, boq_items, project_name)
 
-    # ── Sheet 2: Traceability ─────────────────────────────────────────────────
+    # ── Sheet 2: Engine Truth (full source-driven rows) ───────────────────────
+    ws_truth = wb.create_sheet("Engine Truth")
+    _write_boq_sheet(ws_truth, boq_items, project_name)
+
+    # ── Sheet 3: Traceability ─────────────────────────────────────────────────
     ws_trace = wb.create_sheet("Traceability")
     _write_traceability_sheet(ws_trace, boq_items)
 
-    # ── Sheet 3: Manual Review ────────────────────────────────────────────────
+    # ── Sheet 4: Manual Review ────────────────────────────────────────────────
     ws_mr = wb.create_sheet("Manual Review")
     _write_manual_review_sheet(ws_mr, boq_items)
 
-    # ── Sheet 4: QA Summary ───────────────────────────────────────────────────
+    # ── Sheet 5: QA Summary ───────────────────────────────────────────────────
     ws_qa = wb.create_sheet("QA Summary")
     _write_qa_sheet(ws_qa, qa_report)
 
-    # ── Sheet 5: Source Summary ───────────────────────────────────────────────
+    # ── Sheet 6: Source Summary ───────────────────────────────────────────────
     ws_src = wb.create_sheet("Source Summary")
     _write_source_sheet(ws_src, boq_items, source_files or [])
 
@@ -146,15 +176,332 @@ def write_boq_excel(
     return output_path
 
 
-def _write_boq_sheet(ws, boq_items: list[dict], project_name: str) -> None:
+def _build_commercial_items(boq_items: list[dict]) -> list[dict]:
     """
-    Write main BOQ sheet.
+    Prepare items for the commercial BOQ sheet.
 
-    Column layout matches approved final BOQ:
+    Consolidates duplicate hardware rows that have the same item_name within the
+    same commercial_package_code section (e.g. Door Leaf appears once per door type
+    in the engine but should be shown as a single aggregate row in the commercial view).
+
+    Rules:
+    - Only consolidates names listed in _HARDWARE_CONSOLIDATE_NAMES
+    - All duplicates must share the same commercial_package_code and unit
+    - None of the duplicates may be manual_review (MR items are never merged)
+    - Quantity = sum of all individual quantities
+    - Confidence = most conservative (lowest) of the group
+    - Notes = notes from first item + consolidation annotation
+    - family_sort_key = minimum across the group (earliest position in section)
+
+    Engine Truth sheet is NOT affected — it calls _write_boq_sheet with full boq_items.
+    """
+    import copy
+
+    _CONF_ORDER = {"HIGH": 2, "MEDIUM": 1, "LOW": 0}
+
+    # First pass: collect items into groups keyed by (comm_pkg, display_name).
+    # Using display_name (normalised) allows window flashings and architrave to
+    # consolidate even though their item_names are type-specific.
+    from collections import defaultdict
+    groups: dict[tuple, list[dict]] = defaultdict(list)
+    for item in boq_items:
+        name = item.get("item_display_name") or item.get("item_name", "")
+        pkg  = item.get("commercial_package_code", "50199")
+        groups[(pkg, name)].append(item)
+
+    # Build the consolidated list
+    result: list[dict] = []
+    seen_keys: set = set()
+
+    for item in boq_items:
+        name = item.get("item_display_name") or item.get("item_name", "")
+        pkg  = item.get("commercial_package_code", "50199")
+        key  = (pkg, name)
+
+        if key in seen_keys:
+            continue  # already handled as part of a merged group
+
+        group = groups[key]
+
+        # Only consolidate names in the allowlist with 2+ non-MR items sharing same unit
+        units = {it.get("unit", "") for it in group}
+        all_non_mr = not any(it.get("manual_review", False) for it in group)
+        if (name in _HARDWARE_CONSOLIDATE_NAMES
+                and len(group) > 1
+                and len(units) == 1
+                and all_non_mr):
+            # Merge into a single aggregate row
+            merged = copy.deepcopy(group[0])
+            total_qty = sum(
+                it["quantity"] for it in group
+                if it.get("quantity") is not None
+            )
+            min_conf = min(
+                group,
+                key=lambda x: _CONF_ORDER.get(x.get("confidence", "LOW"), 0),
+            )
+            merged["quantity"] = round(total_qty, 3)
+            merged["confidence"] = min_conf.get("confidence", "LOW")
+            merged["family_sort_key"] = min(
+                it.get("family_sort_key", 500) for it in group
+            )
+            base_note = group[0].get("notes", "") or ""
+            merged["notes"] = (
+                f"[Commercial total — {len(group)} types combined: "
+                + ", ".join(
+                    f"{it.get('notes','').split('swing=')[-1].split(')')[0] or str(it.get('quantity','?'))}"
+                    for it in group
+                )
+                + f"] {base_note}"
+            ).strip()
+            result.append(merged)
+            seen_keys.add(key)
+        else:
+            result.append(item)
+            seen_keys.add(key) if len(group) == 1 else None
+
+    return result
+
+
+def _write_commercial_boq_sheet(ws, boq_items: list[dict], project_name: str) -> None:
+    """
+    Write the commercial BOQ sheet — baseline-aligned, clean presentation.
+
+    Columns:
       A: STOCK CODE
       B: MATERIALS DESCRIPTION
       C: QTY
-      D: (blank — quantity basis note)
+      D: UNIT
+      E: RATE (PGK)
+      F: AMOUNT (PGK)
+      G: CONF
+      H: NOTES
+
+    Section structure:
+      - Groups by commercial_package_code (remapped vs engine package_code)
+      - Within each section: sorted by family_sort_key
+        0-399: main material / structural rows
+        400-999: accessory / fixing / adhesive rows (lighter visual treatment)
+        1000+: manual review / placeholder rows (amber, at bottom of each section)
+      - Accessory sub-group separated by a thin divider row
+      - MR/placeholder sub-group separated by a thicker divider row
+    """
+    title = f"BILL OF QUANTITIES — {project_name}" if project_name else "BILL OF QUANTITIES"
+    ws.cell(row=1, column=1, value=title).font = Font(bold=True, size=14, color="FF2C3E50")
+    ws.merge_cells("A1:H1")
+    ws.row_dimensions[1].height = 28
+
+    headers = ["STOCK CODE", "MATERIALS DESCRIPTION", "QTY", "UNIT",
+               "RATE (PGK)", "AMOUNT (PGK)", "CONF", "NOTES"]
+    _header_row(ws, headers, row=2)
+    ws.row_dimensions[2].height = 28
+
+    # Consolidate repeated hardware rows (per-door-type → single aggregate per type)
+    # before sorting. Engine Truth sheet receives unmodified boq_items.
+    commercial_items = _build_commercial_items(boq_items)
+
+    # Sort by commercial package → trade_group_sort_key (estimator mode) or
+    # family_sort_key (commercial / engine mode).
+    # trade_group_sort_key encodes both trade-group order and within-group
+    # family order in a single integer, so the sort is always correct.
+    _PKG_ORDER = ["50106","50107","50111","50112","50113",
+                  "50114","50115","50116","50117","50118","50119","50124","50129","50199"]
+    def _ckey(item: dict):
+        code = item.get("commercial_package_code", "50199")
+        try:
+            idx = _PKG_ORDER.index(code)
+        except ValueError:
+            idx = len(_PKG_ORDER)
+        # Prefer commercial_block_sort_key (Phase 6 — commercial blocks)
+        # Fallback: trade_group_sort_key (Phase 5), then family_sort_key
+        sk = item.get("commercial_block_sort_key",
+              item.get("trade_group_sort_key",
+              item.get("family_sort_key", 500)))
+        return (idx, sk, item.get("item_no", ""))
+
+    sorted_items = sorted(commercial_items, key=_ckey)
+
+    current_comm_pkg = ""
+    prev_fam_key = -1
+    row_idx = 3
+
+    for item in sorted_items:
+        comm_pkg   = item.get("commercial_package_code", "50199")
+        fam_key    = item.get("family_sort_key", 500)  # used for divider logic only
+        is_mr      = item.get("manual_review", False)
+        is_ph      = item.get("quantity_status") == "placeholder"
+        drule      = item.get("derivation_rule", "")
+        is_cb_hdr  = drule == "insert_commercial_block_headers"
+        is_tg_hdr  = drule == "insert_trade_group_headers"    # Phase 5 legacy
+        is_sg_hdr  = (item.get("export_class") == "export_only_grouping"
+                      and not is_cb_hdr and not is_tg_hdr)
+        conf       = item.get("confidence", "LOW")
+        sec_label  = item.get("commercial_section_label", comm_pkg)
+
+        # ── Section header (when commercial package changes) ──────────────────
+        if comm_pkg != current_comm_pkg:
+            if current_comm_pkg:
+                ws.row_dimensions[row_idx].height = 6
+                row_idx += 1
+
+            hdr_cell = ws.cell(row=row_idx, column=1, value=sec_label)
+            hdr_cell.font  = Font(bold=True, color="FFFFFFFF", size=11)
+            hdr_cell.fill  = PatternFill(fill_type="solid", fgColor=_SECTION_HDR_FILL[2:])
+            hdr_cell.alignment = Alignment(vertical="center")
+            for col in range(1, len(headers) + 1):
+                c = ws.cell(row=row_idx, column=col)
+                c.fill   = PatternFill(fill_type="solid", fgColor=_SECTION_HDR_FILL[2:])
+                c.border = _SECTION_BORDER
+            ws.merge_cells(f"A{row_idx}:H{row_idx}")
+            ws.row_dimensions[row_idx].height = 20
+            row_idx += 1
+            current_comm_pkg = comm_pkg
+            prev_fam_key = -1
+
+        # ── Commercial block header (estimator mode — Phase 6) ───────────────
+        if is_cb_hdr:
+            cb_name  = item.get("item_display_name", "")
+            cb_cell  = ws.cell(row=row_idx, column=1, value=f"  {cb_name}")
+            cb_cell.font      = Font(bold=True, color="FFFFFFFF", size=10)
+            cb_cell.alignment = Alignment(vertical="center")
+            for col in range(1, len(headers) + 1):
+                c = ws.cell(row=row_idx, column=col)
+                c.fill   = PatternFill(fill_type="solid",
+                                       fgColor=_COMMERCIAL_BLOCK_HDR_FILL[2:])
+                c.border = Border(
+                    bottom=Side(style="medium", color="FF2A5F8E"),
+                    left =Side(style="thin",   color="FF2A5F8E"),
+                    right=Side(style="thin",   color="FF2A5F8E"),
+                )
+            ws.merge_cells(f"A{row_idx}:H{row_idx}")
+            ws.row_dimensions[row_idx].height = 16
+            row_idx += 1
+            prev_fam_key = -1   # reset divider logic for each new commercial block
+            continue
+
+        # ── Trade group header (Phase 5 legacy — still supported) ─────────────
+        if is_tg_hdr:
+            tg_name  = item.get("item_display_name", "")
+            tg_cell  = ws.cell(row=row_idx, column=1, value=f"  {tg_name}")
+            tg_cell.font      = Font(bold=True, color="FFFFFFFF", size=10)
+            tg_cell.alignment = Alignment(vertical="center")
+            for col in range(1, len(headers) + 1):
+                c = ws.cell(row=row_idx, column=col)
+                c.fill   = PatternFill(fill_type="solid",
+                                       fgColor=_TRADE_GROUP_HDR_FILL[2:])
+                c.border = Border(
+                    bottom=Side(style="medium", color="FF2A5F8E"),
+                    left =Side(style="thin",   color="FF2A5F8E"),
+                    right=Side(style="thin",   color="FF2A5F8E"),
+                )
+            ws.merge_cells(f"A{row_idx}:H{row_idx}")
+            ws.row_dimensions[row_idx].height = 16
+            row_idx += 1
+            prev_fam_key = -1   # reset divider logic for each new trade group
+            continue
+
+        # ── Subgroup header (optional, legacy estimator mode) ─────────────────
+        if is_sg_hdr:
+            sg_name = item.get("item_display_name", "")
+            sg_cell = ws.cell(row=row_idx, column=1, value=f"    {sg_name}")
+            sg_cell.font      = Font(bold=True, italic=True,
+                                     color="FF1A3A5C", size=9)
+            sg_cell.alignment = Alignment(vertical="center")
+            for col in range(1, len(headers) + 1):
+                c = ws.cell(row=row_idx, column=col)
+                c.fill   = PatternFill(fill_type="solid",
+                                       fgColor=_SUBGROUP_HDR_FILL[2:])
+                c.border = Border(bottom=Side(style="thin", color="FF8DB0CC"))
+            ws.merge_cells(f"A{row_idx}:H{row_idx}")
+            ws.row_dimensions[row_idx].height = 14
+            row_idx += 1
+            prev_fam_key = fam_key
+            continue
+
+        # ── Thin accessory divider (first time fam_key enters accessory range)
+        elif (prev_fam_key < _ACCESSORY_THRESHOLD <= fam_key < _MR_THRESHOLD
+              and not is_mr and not is_ph):
+            for col in range(1, len(headers) + 1):
+                c = ws.cell(row=row_idx, column=col)
+                c.fill = PatternFill(fill_type="solid", fgColor="FFE8E8E8")
+                c.border = Border(bottom=Side(style="thin", color="FFBBBBBB"))
+            ws.row_dimensions[row_idx].height = 4
+            row_idx += 1
+
+        # ── MR / placeholder sub-group divider
+        elif prev_fam_key < _MR_THRESHOLD <= fam_key:
+            for col in range(1, len(headers) + 1):
+                c = ws.cell(row=row_idx, column=col)
+                c.fill = PatternFill(fill_type="solid", fgColor="FFFCE8C3")
+                c.border = Border(bottom=Side(style="medium", color="FFCC9900"))
+            label_cell = ws.cell(
+                row=row_idx, column=1,
+                value="▸ Items below require manual review / site confirmation",
+            )
+            label_cell.font = Font(italic=True, color="FF996600", size=9)
+            ws.merge_cells(f"A{row_idx}:H{row_idx}")
+            ws.row_dimensions[row_idx].height = 14
+            row_idx += 1
+
+        prev_fam_key = fam_key
+
+        # ── Row fill based on confidence + MR/PH status ───────────────────────
+        if is_ph:
+            row_fill = _PLACEHOLDER_FILL[2:]
+        elif is_mr:
+            row_fill = _MR_FILL[2:]
+        elif fam_key >= _ACCESSORY_THRESHOLD:
+            row_fill = "FFF5F5F5"  # very light grey for accessories
+        else:
+            fill_hex = _CONF_FILL.get(conf, "FFFFFFFF")
+            row_fill = fill_hex[2:] if fill_hex.startswith("FF") else fill_hex
+
+        display_name = item.get("item_display_name") or item.get("item_name", "")
+        stock_code   = item.get("item_code", "")
+        qty          = item.get("quantity")
+        unit         = item.get("unit", "")
+        # Short notes for commercial view (strip long derivation text)
+        notes_raw = item.get("notes", "")
+        short_notes = notes_raw[:120] if notes_raw else ""
+
+        values = [
+            stock_code,
+            display_name,
+            qty if qty is not None else "",
+            unit,
+            None,   # RATE — not populated
+            None,   # AMOUNT — not populated
+            conf[:1],  # H/M/L single char
+            short_notes,
+        ]
+
+        for col_idx, val in enumerate(values, 1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=val)
+            cell.fill   = PatternFill(fill_type="solid", fgColor=row_fill)
+            cell.border = _BORDER
+            if col_idx == 2:
+                cell.alignment = Alignment(wrap_text=True, vertical="top")
+            if col_idx == 3:
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+            if col_idx == 8:
+                cell.alignment = Alignment(wrap_text=True, vertical="top")
+
+        row_idx += 1
+
+    _set_col_widths(ws, [16, 50, 8, 6, 10, 12, 5, 45])
+    ws.freeze_panes = "A3"
+    ws.auto_filter.ref = f"A2:H{row_idx - 1}"
+
+
+def _write_boq_sheet(ws, boq_items: list[dict], project_name: str) -> None:
+    """
+    Write Engine Truth BOQ sheet — full source-driven rows with traceability metadata.
+
+    Column layout:
+      A: STOCK CODE
+      B: MATERIALS DESCRIPTION
+      C: QTY
+      D: (quantity basis note)
       E: RATE (PGK)
       F: AMOUNT (PGK)
       G: CONFIDENCE
@@ -162,8 +509,7 @@ def _write_boq_sheet(ws, boq_items: list[dict], project_name: str) -> None:
       I: NOTES / DRAWING REF
 
     Section header rows:
-      Use final BOQ numeric package codes (50106–50129) as section headers,
-      matching the style of the approved BOQ.
+      Use engine BOQ numeric package codes (50106–50129).
     """
     # ── Title row ─────────────────────────────────────────────────────────────
     title = f"BILL OF QUANTITIES — {project_name}" if project_name else "BILL OF QUANTITIES"

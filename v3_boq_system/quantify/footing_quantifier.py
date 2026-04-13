@@ -60,6 +60,16 @@ def quantify_footings(
         for fs in model.floor_systems
     )
 
+    # Determine whether footing dimensions are project-specific (explicitly set
+    # in the project config file) or only generic defaults.  When both depth and
+    # width are present in the loaded config dict, treat them as project-specific
+    # and use MEDIUM confidence for derived concrete volumes.
+    _dim_depth_explicit = "strip_footing_depth_m" in fgt_cfg
+    _dim_width_explicit = "strip_footing_width_m" in fgt_cfg
+    _dim_pad_explicit   = ("pad_size_m" in fgt_cfg) and ("pad_depth_m" in fgt_cfg)
+    _conc_conf = "MEDIUM" if (_dim_depth_explicit and _dim_width_explicit) else "LOW"
+    _pad_conc_conf = "MEDIUM" if _dim_pad_explicit else "LOW"
+
     # ── Strip footings (for steel floor frame bearing lines) ─────────────────
     if has_steel_floor and ext_perim > 0:
         depth = fgt_cfg.get("strip_footing_depth_m", 0.50)
@@ -83,12 +93,20 @@ def quantify_footings(
             "footings", "Strip Footing — Concrete Volume",
             "m3", vol,
             "calculated",
-            f"perimeter × {depth} m depth × {width} m width",
-            f"{src}: {ext_perim:.1f} × {depth} × {width}",
+            f"perimeter({ext_perim:.1f}m) × depth({depth}m) × width({width}m)",
+            (
+                f"dxf_geometry: ext_perim={ext_perim:.1f}m (MEDIUM); "
+                f"project_config: depth={depth}m width={width}m"
+                + (" (project-specific)" if _dim_depth_explicit else " (default)")
+            ),
             f"{ext_perim:.1f} × {depth} × {width}",
-            conf,
-            manual_review=True,
-            notes=note,
+            _conc_conf,
+            manual_review=(_conc_conf == "LOW"),
+            notes=(
+                f"Strip footing concrete: {ext_perim:.1f}m × {depth}m deep × {width}m wide = {vol:.2f}m³. "
+                + ("Dimensions from project_config — project-specific. " if _dim_depth_explicit else "Dimensions assumed — verify from structural drawings. ")
+                + "Confirm grade (min N25) with structural engineer."
+            ),
         ))
         rows.append(_row(
             "footings", "Strip Footing — Formwork",
@@ -97,6 +115,40 @@ def quantify_footings(
             f"{src}: perimeter={ext_perim:.1f} m",
             "= ext_wall_perimeter",
             "MEDIUM",
+        ))
+        # Reinforcement: 2 continuous Y12 bars per strip footing run
+        reo_lm_ext = round(ext_perim * 2, 1)
+        reo_lengths = math.ceil(reo_lm_ext / 6.0)  # standard 6 m stock lengths
+        rows.append(_row(
+            "footings", "Strip Footing — Reo Bar Y12 (2 bars, ext perimeter)",
+            "lm", reo_lm_ext,
+            "calculated",
+            f"ext_perim({ext_perim:.1f}m) × 2 bars = {reo_lm_ext:.1f} lm ({reo_lengths} × 6m lengths)",
+            f"{src}: perimeter={ext_perim:.1f} m",
+            "ext_perim × 2 bars",
+            "LOW",
+            manual_review=True,
+            notes=(
+                f"2 × Y12 continuous bars assumed for strip footing bearing. "
+                f"Total: {reo_lm_ext:.1f} lm = {reo_lengths} × 6m stock lengths. "
+                "Verify bar size, spacing, and lap length from structural engineer."
+            ),
+        ))
+        # Termite barrier — physical management along all external bearing lines
+        rows.append(_row(
+            "footings", "Termite Barrier — Physical Membrane (ext perimeter)",
+            "lm", round(ext_perim, 1),
+            "inferred",
+            "= ext_wall_perimeter (physical termite management at all bearer-to-footing interfaces)",
+            f"{src}: perimeter={ext_perim:.1f} m",
+            "= ext_wall_perimeter",
+            "LOW",
+            manual_review=True,
+            notes=(
+                "Physical termite management (barrier membrane / Granitgard or equivalent) "
+                "at all footing/bearer interfaces. Verify treatment type and specification "
+                "from pest management consultant. Chemical treatment not included."
+            ),
         ))
         rows.append(_row(
             "footings", "Bulk Earthworks / Level (provisional)",
@@ -107,6 +159,18 @@ def quantify_footings(
             "LOW",
             manual_review=True,
             notes="Excavation volume cannot be derived from architectural documents.",
+        ))
+        # Bar chairs for external strip footing reo bars
+        ext_chairs = math.ceil(ext_perim / 0.6)
+        rows.append(_row(
+            "footings", "Bar Chair / Reo Spacer — External Strip Footing",
+            "nr", ext_chairs,
+            "calculated",
+            f"ceil(ext_perim({ext_perim:.1f}m) / 0.6m spacing)",
+            f"{src}: perimeter={ext_perim:.1f} m",
+            "ceil(ext_perim / 0.6)",
+            "LOW",
+            notes=f"Bar chairs at ~600mm spacing to support Y12 reo bars in external strip footings.",
         ))
         # Also emit internal bearing line footing based on internal wall total
         int_wall_lm = sum(
@@ -130,15 +194,79 @@ def quantify_footings(
                 ),
             ))
             rows.append(_row(
+                "footings", "Strip Footing Internal — Formwork",
+                "lm", round(int_wall_lm, 1),
+                "calculated", "= int_wall_lm (strip footing edge form, internal bearing lines)",
+                f"dxf_geometry: int_wall_lm={int_wall_lm:.1f} m",
+                "= int_wall_lm",
+                "MEDIUM",
+                notes=(
+                    f"Edge formwork for internal bearing line strip footings. "
+                    f"Matches external formwork method (H03). Total: {int_wall_lm:.1f} lm."
+                ),
+            ))
+            rows.append(_row(
                 "footings", "Strip Footing Internal — Concrete Volume",
                 "m3", int_vol,
                 "calculated",
-                f"int_lm × {depth} m depth × {width} m width",
-                f"derived: {int_wall_lm:.1f} × {depth} × {width}",
+                f"int_lm({int_wall_lm:.1f}m) × depth({depth}m) × width({width}m)",
+                (
+                    f"dxf_geometry: int_wall_lm={int_wall_lm:.1f}m (MEDIUM); "
+                    f"project_config: depth={depth}m width={width}m"
+                    + (" (project-specific)" if _dim_depth_explicit else " (default)")
+                ),
                 f"{int_wall_lm:.1f} × {depth} × {width}",
+                _conc_conf,
+                manual_review=(_conc_conf == "LOW"),
+                notes=(
+                    f"Internal bearing strip footing concrete: {int_wall_lm:.1f}m × {depth}m deep × {width}m wide = {int_vol:.2f}m³. "
+                    + ("Dimensions from project_config — project-specific. " if _dim_depth_explicit else "Dimensions assumed — verify from structural drawings. ")
+                    + "Confirm grade (min N25) with structural engineer."
+                ),
+            ))
+            # Reo bar for internal bearing lines
+            reo_lm_int = round(int_wall_lm * 2, 1)
+            reo_len_int = math.ceil(reo_lm_int / 6.0)
+            rows.append(_row(
+                "footings", "Strip Footing Internal — Reo Bar Y12 (2 bars per run)",
+                "lm", reo_lm_int,
+                "calculated",
+                f"int_wall_lm({int_wall_lm:.1f}m) × 2 bars = {reo_lm_int:.1f} lm ({reo_len_int} × 6m lengths)",
+                f"dxf_geometry: int_wall_lm={int_wall_lm:.1f} m",
+                "int_wall_lm × 2 bars",
                 "LOW",
                 manual_review=True,
-                notes=f"Assumed {int(depth*1000)} mm deep × {int(width*1000)} mm wide. Verify.",
+                notes=(
+                    f"2 × Y12 bars for internal bearing strip footings. "
+                    f"Total: {reo_lm_int:.1f} lm = {reo_len_int} × 6m lengths. Verify from structural engineer."
+                ),
+            ))
+            # Termite barrier — internal bearing lines
+            rows.append(_row(
+                "footings", "Termite Barrier — Physical Membrane (internal bearing lines)",
+                "lm", round(int_wall_lm, 1),
+                "inferred",
+                f"= int_wall_lm (physical termite management at all internal bearer interfaces)",
+                f"dxf_geometry: int_wall_lm={int_wall_lm:.1f} m",
+                "= int_wall_lm",
+                "LOW",
+                manual_review=True,
+                notes=(
+                    "Physical termite management at internal bearing interfaces. "
+                    "Verify treatment specification from pest management consultant."
+                ),
+            ))
+            # Bar chairs / reo spacers for internal strip footings
+            int_chairs = math.ceil(int_wall_lm / 0.6)
+            rows.append(_row(
+                "footings", "Bar Chair / Reo Spacer — Internal Strip Footings",
+                "nr", int_chairs,
+                "calculated",
+                f"ceil(int_wall_lm({int_wall_lm:.1f}m) / 0.6m spacing)",
+                f"dxf_geometry: int_wall_lm={int_wall_lm:.1f} m",
+                "ceil(int_lm / 0.6)",
+                "LOW",
+                notes=f"Bar chairs at ~600mm spacing to support Y12 reo in internal strip footings.",
             ))
         # Fall through to pad footing section below
 
@@ -258,13 +386,48 @@ def quantify_footings(
             "footings", "Pad Footing Concrete (m3)",
             "m3", round(total_pads * pad_vol, 3),
             "calculated",
-            f"count × {pad_size}×{pad_size}×{pad_depth} m = {pad_vol:.3f} m³ each",
-            f"derived: {total_pads} pads × {pad_vol:.3f} m³",
+            f"pad_count({total_pads}) × {pad_size}m×{pad_size}m×{pad_depth}m = {pad_vol:.3f}m³ each",
+            (
+                f"dxf_geometry: pad_count={total_pads} (MEDIUM); "
+                f"project_config: pad_size={pad_size}m pad_depth={pad_depth}m"
+                + (" (project-specific)" if _dim_pad_explicit else " (default)")
+            ),
             f"{total_pads} × {pad_vol:.3f}",
-            "LOW",
-            manual_review=True,
-            notes=f"Assumes {int(pad_size*1000)}×{int(pad_size*1000)}×{int(pad_depth*1000)} mm pads. "
-                  "Verify from structural engineer.",
+            _pad_conc_conf,
+            manual_review=(_pad_conc_conf == "LOW"),
+            notes=(
+                f"{total_pads} pads × {int(pad_size*1000)}mm × {int(pad_size*1000)}mm × {int(pad_depth*1000)}mm = {round(total_pads*pad_vol,3):.3f}m³. "
+                + ("Pad dimensions from project_config — project-specific. " if _dim_pad_explicit else "Pad dimensions assumed — verify from structural drawings. ")
+                + "Confirm grade (min N25) and reinforcement with structural engineer."
+            ),
+        ))
+
+    # ── Concrete family total summary ─────────────────────────────────────────
+    # Sum all concrete volumes across strip and pad footings for a family procurement row.
+    conc_rows = [r for r in rows if "Concrete" in r.get("item_name", "") and r.get("unit") == "m3"]
+    total_conc_m3 = round(sum(r.get("quantity", 0) for r in conc_rows), 3)
+    if total_conc_m3 > 0:
+        conc_parts = [f"{r['item_name'].split('—')[-1].strip() if '—' in r['item_name'] else r['item_name']}({r['quantity']:.3f}m³)"
+                      for r in conc_rows]
+        # Total confidence = min of component confidences
+        _conf_rank = {"HIGH": 3, "MEDIUM": 2, "LOW": 1}
+        _total_conf_rank = min(_conf_rank.get(r.get("confidence","LOW"), 1) for r in conc_rows)
+        _total_conc_conf = {3: "HIGH", 2: "MEDIUM", 1: "LOW"}[_total_conf_rank]
+        rows.append(_row(
+            "footings", "Concrete Supply — Substructure Total (all footings)",
+            "m3", total_conc_m3,
+            "calculated",
+            "sum of all footing concrete volumes (strip ext + strip int + pad footings)",
+            f"derived: {' + '.join(conc_parts)} = {total_conc_m3:.3f} m³",
+            "sum(concrete_m3 per footing type)",
+            _total_conc_conf,
+            manual_review=(_total_conc_conf == "LOW"),
+            notes=(
+                "Primary concrete family procurement total for all substructure elements. "
+                f"Includes: {'; '.join(conc_parts)}. "
+                "Specify grade (N25 minimum for footings) and confirm with structural engineer. "
+                "Order as single concrete pour or split by element type as required."
+            ),
         ))
 
     return rows

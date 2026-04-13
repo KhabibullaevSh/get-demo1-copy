@@ -294,6 +294,57 @@ def quantify_roof(
                 W_roof, rafter_run_m, ridge_lm, eaves_lm,
             )
 
+    # ── Hip flashings (requires confirmed pitch from PDF schedule) ──────────
+    # Generated only when pitch_deg is set on the roof element (i.e. recovered
+    # from FrameCAD Truss Design Summary via pdf_schedule_extractor).
+    if (roof_type == "hip"
+            and rafter_run_m and rafter_run_m > 0
+            and primary_roof.pitch_deg > 0.0):
+        pitch_deg = primary_roof.pitch_deg
+        pitch_rad = math.radians(pitch_deg)
+        rise       = rafter_run_m * math.tan(pitch_rad)
+        hip_plan   = rafter_run_m * math.sqrt(2)      # plan diagonal to eave corner
+        hip_slope  = round(math.sqrt(hip_plan ** 2 + rise ** 2), 2)
+        hip_lm_val = round(hip_slope * 4, 1)           # 4 hips on a standard hip roof
+        hip_screws = math.ceil(hip_lm_val / 0.3)
+
+        hip_evidence = (
+            f"framecad_layout: pitch={pitch_deg:.1f}° (FrameCAD Truss Design Summary); "
+            f"dxf_geometry: rafter_run={rafter_run_m:.2f} m → "
+            f"hip_plan={hip_plan:.2f} m, rise={rise:.3f} m → "
+            f"hip_slope={hip_slope:.2f} m × 4 hips = {hip_lm_val:.1f} lm"
+        )
+        rows.append(_row(
+            "roof_flashings", "Hip Capping (metal, pre-formed)",
+            "lm", hip_lm_val,
+            "calculated",
+            "4 × sqrt((rafter_run×√2)² + (rafter_run×tan(pitch))²)",
+            hip_evidence,
+            f"4×sqrt(({rafter_run_m:.2f}×√2)²+({rise:.3f})²) = 4×{hip_slope:.2f} = {hip_lm_val:.1f} lm",
+            "MEDIUM",
+            notes=(
+                f"Hip capping over all 4 hip rafter runs. "
+                f"Pitch={pitch_deg:.1f}° confirmed from FrameCAD Truss Design Summary. "
+                f"Rafter run={rafter_run_m:.2f} m from DXF roof plan geometry. "
+                f"Hip slope per hip={hip_slope:.2f} m × 4 = {hip_lm_val:.1f} lm."
+            ),
+        ))
+        rows.append(_row(
+            "roof_flashings", "Hip Cap Fixing Screws",
+            "nr", hip_screws,
+            "calculated",
+            "ceil(hip_lm / 0.3)",
+            hip_evidence,
+            f"ceil({hip_lm_val:.1f} / 0.3) = {hip_screws}",
+            "MEDIUM",
+            notes="1 screw per 300 mm of hip capping.",
+        ))
+        log.info(
+            "Hip flashings added: pitch=%.1f°, rafter_run=%.2f m, "
+            "hip_slope=%.2f m, hip_lm=%.1f lm, screws=%d",
+            pitch_deg, rafter_run_m, hip_slope, hip_lm_val, hip_screws,
+        )
+
     dp_count = _downpipe_count(eaves_lm, config)
     assembly_rows = apply_all_roof_assemblies(
         roof_area_m2   = roof_area,
@@ -316,22 +367,73 @@ def quantify_roof(
         "roof_drainage":  "roof_eaves_drainage",
         "roof_valley":    "roof_flashings",
         "roof_barge":     "roof_flashings",
+        "roof_hip":       "roof_flashings",
     }
     for ar in assembly_rows:
         ar["package"] = _pkg_remap.get(ar.get("package",""), ar.get("package",""))
     rows += assembly_rows
 
     # ── Insulation ────────────────────────────────────────────────────────────
+    # Ceiling area for separate ceiling-level batt row
+    ceil_elements = model.ceilings
+    ceil_area_ins = round(sum(c.area_m2 for c in ceil_elements), 2) if ceil_elements else 0.0
+
     if roof_area > 0:
+        # Split: roof cavity batts (between sarking and roof sheet) vs ceiling batts
         rows.append(_row(
             "insulation",
-            "Insulation Batts — Roof / Ceiling",
+            "Insulation Batts — Roof Cavity (R2.5, between rafters)",
             "m2", round(roof_area, 2),
             "calculated",
-            "= roof_area_m2 (batts cover full roof area)",
+            "= roof_area_m2 (batts in rafter cavity above ceiling)",
             f"{roof_src}: roof_area={roof_area:.2f} m²",
             "= roof_area",
             roof_conf,
+            notes="Roof cavity batt insulation above ceiling plane. R-value to be confirmed by ESD consultant.",
+        ))
+        # Reflective foil / sisalation underlay beneath roof sheeting
+        sark_area = round(roof_area * 1.05, 2)
+        rows.append(_row(
+            "insulation",
+            "Reflective Foil / Sisalation Underlay (roof)",
+            "m2", sark_area,
+            "calculated",
+            f"roof_area({roof_area:.2f}) × 1.05 overlap allowance",
+            f"{roof_src}: roof_area={roof_area:.2f} m²",
+            f"{roof_area:.2f} × 1.05",
+            roof_conf,
+            notes="Reflective foil sarking / sisalation beneath roof sheeting. 5% for laps.",
+        ))
+        # Sisalation lap tape
+        import math as _math
+        tape_rolls = _math.ceil(roof_area / 50)
+        rows.append(_row(
+            "insulation",
+            "Sisalation Lap Tape (50mm × 30m rolls)",
+            "rolls", tape_rolls,
+            "calculated",
+            f"ceil(roof_area({roof_area:.2f}) / 50 m² per roll)",
+            f"{roof_src}: roof_area={roof_area:.2f} m²",
+            f"ceil({roof_area:.2f}/50)",
+            "LOW",
+            notes="Lap tape for sisalation overlaps. 1 roll per ~50 m².",
+        ))
+
+    if ceil_area_ins > 0:
+        rows.append(_row(
+            "insulation",
+            "Insulation Batts — Ceiling (R4.0, between ceiling battens)",
+            "m2", ceil_area_ins,
+            "calculated",
+            "= ceiling_area_m2 (batts between ceiling joists/battens)",
+            f"dxf_geometry: ceiling_area={ceil_area_ins:.2f} m² (CEILING HATCH layer)",
+            "= ceiling_area",
+            "HIGH" if (ceil_elements and ceil_elements[0].confidence == "HIGH") else "MEDIUM",
+            notes=(
+                f"Ceiling-level batt insulation: {ceil_area_ins:.2f} m² from DXF CEILING HATCH. "
+                "R-value to be confirmed by ESD consultant. "
+                "Note: 15.8 m² partial ceiling — area may differ from full floor area."
+            ),
         ))
 
     ext_walls = [w for w in model.walls if w.wall_type == "external"]
@@ -341,14 +443,64 @@ def quantify_roof(
         ins_area = round(ext_lm * ext_h, 2)
         rows.append(_row(
             "insulation",
-            "Insulation Batts — External Wall",
+            "Insulation Batts — External Wall (R2.0)",
             "m2", ins_area,
             "calculated",
             "ext_wall_perimeter × wall_height",
             f"dxf_geometry: ext_wall_lm={ext_lm:.2f} × h={ext_h:.1f}",
             f"{ext_lm:.2f} × {ext_h:.1f}",
             "MEDIUM",
-            notes="Gross wall area; deduct large openings if required.",
+            notes="Gross wall area; deduct large openings if required. R-value to confirm with ESD.",
+        ))
+
+    # Internal wall acoustic insulation
+    int_walls_ins = [w for w in model.walls if w.wall_type == "internal"]
+    if int_walls_ins:
+        int_lm_ins = sum(w.length_m for w in int_walls_ins)
+        int_h_ins  = max(w.height_m for w in int_walls_ins)
+        int_ins_area = round(int_lm_ins * int_h_ins, 2)
+        rows.append(_row(
+            "insulation",
+            "Insulation Batts — Internal Wall (acoustic, R1.5)",
+            "m2", int_ins_area,
+            "calculated",
+            "int_wall_lm × wall_height (single face area per partition)",
+            f"dxf_geometry: int_wall_lm={int_lm_ins:.2f} × h={int_h_ins:.1f}",
+            f"{int_lm_ins:.2f} × {int_h_ins:.1f}",
+            int_walls_ins[0].confidence if int_walls_ins else "LOW",
+            manual_review=True,
+            notes=(
+                "Acoustic batt insulation in internal partition stud cavities. "
+                "Area based on single face per wall run (not doubled). "
+                "Verify with architectural acoustic requirements."
+            ),
+        ))
+
+    # ── Insulation batts total summary ─────────────────────────────────────────
+    # Sum all batt rows (exclude sarking/tape which are separate products).
+    _batt_rows = [r for r in rows if "Insulation Batts" in r.get("item_name", "")]
+    if _batt_rows:
+        import math as _math
+        _total_batt_m2 = round(sum(r["quantity"] for r in _batt_rows), 2)
+        _batt_parts = []
+        for r in _batt_rows:
+            _label = r["item_name"].replace("Insulation Batts — ", "").split("(")[0].strip()
+            _batt_parts.append(f"{_label}({r['quantity']:.1f}m²)")
+        rows.append(_row(
+            "insulation",
+            "Insulation Batts — Total Supply (all zones)",
+            "m2", _total_batt_m2,
+            "calculated",
+            "sum of all insulation batt areas: roof cavity + ceiling + ext wall + int wall",
+            f"derived: {' + '.join(_batt_parts)} = {_total_batt_m2}m²",
+            "sum(batt_area per zone)",
+            "MEDIUM",
+            notes=(
+                "Total insulation batt supply area across all zones. "
+                "Includes roof cavity, ceiling, external wall, and internal wall batts. "
+                "Each zone has a different R-value and batt thickness — order as separate line items. "
+                "Use this total for preliminary material cost estimate only."
+            ),
         ))
 
     return rows

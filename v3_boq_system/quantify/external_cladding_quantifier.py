@@ -162,6 +162,26 @@ def quantify_external_cladding(
         ),
     ))
 
+    # ── Weatherboard total supply lm (primary procurement family) ─────────────
+    total_wb_lm = round(total_boards * board_length_m, 1)
+    rows.append(_row(
+        "external_cladding",
+        f"FC Weatherboard — Total Supply lm ({board_length_mm}mm stock)",
+        "lm", total_wb_lm,
+        "calculated",
+        f"board_count({total_boards}) × board_length({board_length_m:.1f}m) = {total_wb_lm} lm",
+        f"{src}: ext_lm={ext_lm:.2f} m, wall_h={ext_h:.1f} m",
+        f"{total_boards} × {board_length_m:.1f}",
+        "MEDIUM",
+        manual_review=True,
+        notes=(
+            f"Total FC weatherboard supply in lineal metres. "
+            f"{total_boards} boards × {board_length_m:.1f}m stock length = {total_wb_lm} lm. "
+            f"Includes {(waste_factor-1)*100:.0f}% waste. "
+            "Verify board profile and lap detail with cladding specification."
+        ),
+    ))
+
     # ── H-joiners (per-façade method when L/W available) ─────────────────────
     # H-joiners occur at butt-joins WITHIN a wall run, not at corners.
     # Per-façade method avoids over-counting by treating each face independently.
@@ -334,5 +354,65 @@ def quantify_external_cladding(
         manual_review=False,
         notes="Includes 5% for laps. Gross area — no deduction for openings in sarking schedule.",
     ))
+
+    # ── Building wrap lap tape ────────────────────────────────────────────────
+    # 1 roll (50m × 65mm) per ~100 m² of sarking
+    tape_rolls = math.ceil(sarking_area / 100)
+    rows.append(_row(
+        "external_cladding",
+        "Building Wrap Lap Tape (50m × 65mm roll)",
+        "rolls", tape_rolls,
+        "calculated",
+        f"ceil(sarking_area({sarking_area:.2f}) / 100 m² per roll)",
+        f"derived from sarking_area={sarking_area:.2f} m²",
+        "ceil(sarking_area / 100)",
+        "LOW",
+        notes="Lap tape for building wrap horizontal and vertical overlaps. 1 roll per ~100 m².",
+    ))
+
+    # ── Expansion joint sealant ───────────────────────────────────────────────
+    # H-joiner butt-joins require sealant backing: ~1 tube (300mL) per 10 joiners
+    if h_joiner_count > 0:
+        sealant_tubes = math.ceil(h_joiner_count / 10)
+        rows.append(_row(
+            "external_cladding",
+            "Expansion Joint Sealant — H-Joiner (300mL tube)",
+            "tubes", sealant_tubes,
+            "calculated",
+            f"ceil(h_joiner_count({h_joiner_count}) / 10 joiners per tube)",
+            f"derived from h_joiner_count={h_joiner_count}",
+            "ceil(h_joiners / 10)",
+            "LOW",
+            notes=(
+                f"Polyurethane sealant at FC weatherboard H-joiner butt joins. "
+                f"{h_joiner_count} joiners ÷ 10 per tube = {sealant_tubes} tubes. "
+                "Verify sealant colour match and compatibility with FC manufacturer spec."
+            ),
+        ))
+
+    # ── Window / door reveal trim ─────────────────────────────────────────────
+    # Jamb / reveal trim at each opening: 2 × height + 1 × width per opening
+    opening_trim_lm = 0.0
+    ext_openings = [o for o in model.openings if o.is_external and o.width_m > 0]
+    for o in ext_openings:
+        h_used = o.height_m if o.height_m > 0 else ext_h
+        opening_trim_lm += (2 * h_used + o.width_m) * o.quantity
+    opening_trim_lm = round(opening_trim_lm, 2)
+    if opening_trim_lm > 0:
+        rows.append(_row(
+            "external_cladding",
+            "Window / Door Reveal Trim (FC / timber)",
+            "lm", opening_trim_lm,
+            "calculated",
+            "sum((2×h + w) × qty) for each external opening",
+            f"dxf_geometry: {len(ext_openings)} external openings",
+            "sum((2h+w)×qty per opening)",
+            "MEDIUM",
+            manual_review=True,
+            notes=(
+                "Jamb / reveal trim at external openings: 2 × height + 1 × width per opening. "
+                "Verify trim profile and dimensions with cladding specification."
+            ),
+        ))
 
     return rows

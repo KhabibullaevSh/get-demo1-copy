@@ -5,7 +5,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import pytest
 from v3_boq_system.normalize.element_model import (
-    FloorElement, FloorSystemElement, FootingElement, ProjectElementModel
+    FloorElement, FloorSystemElement, FootingElement, ProjectElementModel,
+    VerandahElement, SpaceElement,
 )
 from v3_boq_system.quantify.floor_system_quantifier import quantify_floor_system
 from v3_boq_system.quantify.footing_quantifier import quantify_footings
@@ -147,3 +148,108 @@ class TestFloorSystemQuantifier:
             ev = row.get("source_evidence","").lower()
             assert "boq_template" not in ev
             assert "benchmark" not in ev
+
+
+class TestFloorSheetZoneExclusion:
+    """Tests that verandah area is excluded from FC floor sheet regardless of source case."""
+
+    def _model_with_verandah(self, building_area=86.4, building_perim=38.4,
+                              ver_area=21.6, ver_perim=20.4) -> ProjectElementModel:
+        m = ProjectElementModel()
+        m.floors.append(FloorElement(
+            element_id="gf", area_m2=building_area, perimeter_m=building_perim,
+            source="dxf_geometry", confidence="HIGH",
+        ))
+        m.verandahs.append(VerandahElement(
+            element_id="ver", area_m2=ver_area, perimeter_m=ver_perim,
+            source="dxf_geometry", confidence="HIGH",
+        ))
+        return m
+
+    def test_bom_case_excludes_verandah_from_floor_sheet(self):
+        """CASE 1 (BOM): floor sheet area must not include verandah area."""
+        m = self._model_with_verandah()
+        m.floor_systems.append(FloorSystemElement(
+            element_id="fp_bom", assembly_type="floor_panel",
+            total_joist_lm=300.0, source="framecad_bom", confidence="HIGH",
+        ))
+        rows = quantify_floor_system(m, _BASE_CONFIG)
+        sheet_rows = [r for r in rows if "Floor Sheet" in r["item_name"]
+                      and r["unit"] in ("sheets", "m2")]
+        assert sheet_rows, "BOM case must produce floor sheet rows"
+        for r in sheet_rows:
+            # Evidence must NOT reference the full 86.4 m² (which would include verandah)
+            ev = r.get("source_evidence", "")
+            # The correct main_floor_area is 86.4 - 21.6 = 64.8 m²
+            assert "64.8" in ev or "64.80" in ev, (
+                f"BOM floor sheet evidence should reference main_floor_area=64.8m², not full 86.4m². "
+                f"Got: {ev}"
+            )
+
+    def test_ifc_case_excludes_verandah_from_floor_sheet(self):
+        """CASE 2 (IFC): floor sheet area must not include verandah area."""
+        m = self._model_with_verandah()
+        m.floor_systems.append(FloorSystemElement(
+            element_id="fl_ifc", assembly_type="floor_joist",
+            total_joist_lm=250.0, source="ifc_model", confidence="HIGH",
+        ))
+        rows = quantify_floor_system(m, _BASE_CONFIG)
+        sheet_rows = [r for r in rows if "Floor Sheet" in r["item_name"]
+                      and r["unit"] in ("sheets", "m2")]
+        assert sheet_rows, "IFC case must produce floor sheet rows"
+        for r in sheet_rows:
+            ev = r.get("source_evidence", "")
+            assert "64.8" in ev or "64.80" in ev, (
+                f"IFC floor sheet evidence should reference main_floor_area=64.8m², not full 86.4m². "
+                f"Got: {ev}"
+            )
+
+    def test_floor_sheet_zone_notes_show_dry_wet_breakdown(self):
+        """When space model has dry and wet zones, floor sheet notes document the split."""
+        m = self._model_with_verandah()
+        m.floor_systems.append(FloorSystemElement(
+            element_id="fp_bom", assembly_type="floor_panel",
+            total_joist_lm=300.0, source="framecad_bom", confidence="HIGH",
+        ))
+        # Add dry and wet spaces to the model
+        m.spaces.append(SpaceElement(
+            element_id="s_dry", space_id="space_01", space_name="Office",
+            space_type="office", area_m2=60.3, is_enclosed=True, is_wet=False,
+            source_type="config", confidence="LOW",
+        ))
+        m.spaces.append(SpaceElement(
+            element_id="s_wet", space_id="space_02", space_name="Toilet",
+            space_type="toilet", area_m2=4.5, is_enclosed=True, is_wet=True,
+            source_type="config", confidence="LOW",
+        ))
+        rows = quantify_floor_system(m, _BASE_CONFIG)
+        sheet_rows = [r for r in rows if "Floor Sheet" in r["item_name"]
+                      and r["unit"] == "sheets"]
+        assert sheet_rows, "Should produce a sheet-count row"
+        notes = sheet_rows[0].get("notes", "")
+        assert "dry_internal" in notes or "internal_dry" in notes, (
+            f"Sheet notes should document dry zone. Got: {notes[:200]}"
+        )
+        assert "wet_internal" in notes or "internal_wet" in notes, (
+            f"Sheet notes should document wet zone. Got: {notes[:200]}"
+        )
+
+    def test_verandah_explicitly_excluded_from_substrate_notes(self):
+        """Floor sheet notes must explicitly state verandah is excluded."""
+        m = self._model_with_verandah()
+        m.floor_systems.append(FloorSystemElement(
+            element_id="fp_bom", assembly_type="floor_panel",
+            total_joist_lm=300.0, source="framecad_bom", confidence="HIGH",
+        ))
+        m.spaces.append(SpaceElement(
+            element_id="s_dry", space_id="space_01", space_name="Dispensary",
+            space_type="pharmacy", area_m2=64.8, is_enclosed=True, is_wet=False,
+            source_type="config", confidence="LOW",
+        ))
+        rows = quantify_floor_system(m, _BASE_CONFIG)
+        sheet_rows = [r for r in rows if "Floor Sheet" in r["item_name"]
+                      and r["unit"] == "sheets"]
+        notes = sheet_rows[0].get("notes", "") if sheet_rows else ""
+        assert "verandah" in notes.lower() or "K-package" in notes, (
+            f"Floor sheet notes must mention verandah exclusion. Got: {notes[:200]}"
+        )

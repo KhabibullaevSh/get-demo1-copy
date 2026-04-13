@@ -77,6 +77,25 @@ stair_schedule:
     confidence: "LOW"
     notes: "Entry stair — riser count estimated from raised floor height (~525mm). Verify from architectural drawings."
 
+# Floor panel schedule — config fallback (no FrameCAD floor panel tab available)
+# Panel types derived from building use: general pharmacy (1.8kPa) and dispensary (4kPa).
+# Area fractions are estimates — verify with FrameCAD engineer before ordering.
+# Joist spacing and bearer spacing from structural config defaults.
+# All items: confidence=LOW, manual_review=true.
+floor_panel_schedule:
+  - load_class: "1.8kPa"
+    description: "Standard Load Floor Panel — General Areas"
+    floor_area_fraction: 0.70
+    source: "project_config"
+    confidence: "LOW"
+    notes: "General pharmacy areas (waiting, consultation, staff, storage). 70% area estimate from building use. No FrameCAD floor tab available — obtain actual panel schedule from engineer."
+  - load_class: "4kPa"
+    description: "High-Load Floor Panel — Dispensary"
+    floor_area_fraction: 0.30
+    source: "project_config"
+    confidence: "LOW"
+    notes: "Dispensary area with heavy shelving/equipment. 30% area estimate. Obtain actual panel schedule from FrameCAD engineer before ordering."
+
 # Known data gaps for this project
 notes: |
   Floor panel schedule not available — no FrameCAD floor panel tab in BOM.

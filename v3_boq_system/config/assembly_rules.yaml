@@ -15,12 +15,8 @@ roof_cladding:
   description: Items derived per m2 of roof area
   input_unit: m2
   items:
-    - name: Roof Cladding Sheet (corrugated / CGI)
-      unit: m2
-      qty_expr: "x"
-      confidence: high
-    # Sheet count (nr) is computed in roof_quantifier.py using run_m from eaves_lm
-    # to select the correct stock length — NOT here, to avoid wrong area/sheet formula
+    # NOTE: Roof Cladding Sheet count (sheets) is computed in assembly_engine.py
+    # using run-based stock-length selection — m2 area row removed to avoid duplicate export row.
     - name: Roof Tek Screws
       unit: boxes
       qty_expr: "ceil(x / 10)"
@@ -70,8 +66,8 @@ roof_eaves:
       confidence: high
     - name: Gutter Joiner
       unit: nr
-      qty_expr: "ceil(x / 3.6)"
-      note: "1 joiner per 3.6 m gutter length"
+      qty_expr: "max(0, ceil(x / 6.0) - ceil(x / 10))"
+      note: "PVC box gutter 6 m stock: joiners = total_lengths − estimated_run_count (≈eaves/10 m per run)"
       confidence: medium
     - name: Gutter Stop End
       unit: nr
@@ -100,6 +96,21 @@ roof_drainage:
       unit: nr
       qty_expr: "x * 3"
       note: "approx 3 clips per 3 m drop"
+      confidence: medium
+
+roof_hip:
+  description: Hip capping items per total lm of hip rafter runs (all 4 hips on a hip roof)
+  input_unit: lm
+  items:
+    - name: Hip Capping (metal, pre-formed)
+      unit: lm
+      qty_expr: "x"
+      note: "hip_lm = 4 × sqrt((rafter_run×√2)² + (rafter_run×tan(pitch))²); pitch confirmed from FrameCAD layout"
+      confidence: medium
+    - name: Hip Cap Fixing Screws
+      unit: nr
+      qty_expr: "ceil(x / 0.3)"
+      note: "1 screw per 300 mm"
       confidence: medium
 
 roof_valley:

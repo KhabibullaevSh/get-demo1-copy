@@ -259,6 +259,25 @@ room_templates:
         unit: item
         confidence: medium
 
+  # Waiting/reception rooms — no plumbing fixtures assumed; MEP in NIC scope.
+  # Explicit template prevents fallback to 'unknown' for classifiable rooms.
+  waiting:
+    wet_area: false
+    waterproofing_m2_each: 0
+    fixtures: []
+
+  # Store/storage rooms — no service fixtures; access only.
+  store:
+    wet_area: false
+    waterproofing_m2_each: 0
+    fixtures: []
+
+  # Corridor/hallway — no service fixtures.
+  corridor:
+    wet_area: false
+    waterproofing_m2_each: 0
+    fixtures: []
+
   unknown:
     wet_area: false
     waterproofing_m2_each: 0
@@ -267,6 +286,7 @@ room_templates:
         qty: 1
         unit: item
         confidence: low
+        note: "PLACEHOLDER — room type not recognised. Verify service requirements from MEP drawings."
 
 # ── Default services (whole-building, not room-specific) ──────────────────────
 whole_building_services:

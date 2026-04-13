@@ -1,26 +1,26 @@
 {
-  "version": "v3.0-project2-benchmark",
-  "date": "2026-03-24",
+  "version": "v3.3-project2-fc-sheet-completion",
+  "date": "2026-03-31",
   "project_name": "project 2",
   "project_display": "Angau Pharmacy",
   "pipeline_version": "v3",
 
-  "item_count": 155,
+  "item_count": 220,
   "placeholder_count": 5,
-  "manual_review_count": 58,
-  "tests_passed": 61,
-  "tests_total": 61,
+  "manual_review_count": 88,
+  "tests_passed": 83,
+  "tests_total": 83,
 
   "status_breakdown": {
     "measured": 22,
-    "calculated": 91,
-    "inferred": 37,
+    "calculated": 147,
+    "inferred": 46,
     "placeholder": 5
   },
   "confidence_breakdown": {
     "HIGH": 36,
-    "MEDIUM": 63,
-    "LOW": 56
+    "MEDIUM": 100,
+    "LOW": 84
   },
 
   "packages_covered": [
@@ -37,17 +37,17 @@
     "K - External Works"
   ],
   "package_item_counts": {
-    "A - Structural Frame": 13,
+    "A - Structural Frame": 22,
     "B - Roof": 19,
-    "C - Insulation": 2,
-    "D - Openings": 41,
-    "E - Linings & Ceilings": 10,
-    "F - Finishes": 6,
-    "G - Floor System": 5,
-    "H - Substructure": 8,
-    "I - Services": 27,
+    "C - Insulation": 7,
+    "D - Openings": 49,
+    "E - Linings & Ceilings": 25,
+    "F - Finishes": 12,
+    "G - Floor System": 16,
+    "H - Substructure": 16,
+    "I - Services": 25,
     "J - Stairs": 10,
-    "K - External Works": 14
+    "K - External Works": 19
   },
 
   "placeholder_items": [

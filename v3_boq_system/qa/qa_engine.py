@@ -32,13 +32,20 @@ _EXPECTED_PACKAGES: dict[str, list[str]] = {
 
 
 def run_qa(
-    boq_items:        list[dict],
+    boq_items:             list[dict],
     element_model_summary: dict,
-    benchmark_items:  list[dict] | None,
-    config:           dict,
+    benchmark_items:       list[dict] | None,
+    config:                dict,
+    pdf_schedule_data=None,   # PdfScheduleData | None
+    reconciliation:        dict | None = None,
+    graphical_recovery:    dict | None = None,   # from graphical_schedule_reconciler
 ) -> dict:
     """
     Run full QA suite on the generated BOQ items.
+
+    Args:
+        pdf_schedule_data:  PdfScheduleData from pdf_schedule_extractor (optional).
+        reconciliation:     Reconciliation summaries from reconcile/ modules (optional).
 
     Returns a QA report dict.
     """
@@ -46,16 +53,19 @@ def run_qa(
     expected     = _EXPECTED_PACKAGES.get(project_type, _EXPECTED_PACKAGES["commercial_low_rise"])
 
     report: dict = {
-        "project_type":         project_type,
-        "total_items":          len(boq_items),
-        "package_completeness": {},
-        "provenance_summary":   {},
-        "benchmark_comparison": {},
-        "traceability_check":   {},
-        "manual_review_items":  [],
-        "gap_analysis":         [],
-        "confidence_summary":   {},
-        "warnings":             [],
+        "project_type":           project_type,
+        "total_items":            len(boq_items),
+        "package_completeness":   {},
+        "provenance_summary":     {},
+        "benchmark_comparison":   {},
+        "traceability_check":     {},
+        "manual_review_items":    [],
+        "gap_analysis":           [],
+        "confidence_summary":     {},
+        "evidence_quality":       {},
+        "pdf_schedule_recovery":  {},
+        "graphical_recovery":     {},
+        "warnings":               [],
     }
 
     # ── A. Package completeness ───────────────────────────────────────────────
@@ -108,6 +118,7 @@ def run_qa(
 
     # ── B. Provenance summary ─────────────────────────────────────────────────
     status_counts = Counter(i.get("quantity_status", "unknown") for i in boq_items)
+    ev_counts     = Counter(i.get("evidence_class",  "unknown") for i in boq_items)
     total = len(boq_items) or 1
     report["provenance_summary"] = {
         "total":        len(boq_items),
@@ -120,6 +131,14 @@ def run_qa(
         "pct_inferred":    round(status_counts.get("inferred",    0) / total * 100, 1),
         "pct_placeholder": round(status_counts.get("placeholder", 0) / total * 100, 1),
         "manual_review_count": sum(1 for i in boq_items if i.get("manual_review")),
+        # Evidence class breakdown — more granular than quantity_status
+        "evidence_class_counts": {
+            "measured_source":   ev_counts.get("measured_source",   0),
+            "calculated_source": ev_counts.get("calculated_source", 0),
+            "config_backed":     ev_counts.get("config_backed",     0),
+            "heuristic_inferred":ev_counts.get("heuristic_inferred",0),
+            "placeholder":       ev_counts.get("placeholder",       0),
+        },
     }
 
     # ── C. Benchmark comparison (structure only) ──────────────────────────────
@@ -203,6 +222,161 @@ def run_qa(
         "pct_medium": round(conf_counts.get("MEDIUM", 0) / total * 100, 1),
         "pct_low":    round(conf_counts.get("LOW",    0) / total * 100, 1),
     }
+
+    # ── G. Evidence class quality report ─────────────────────────────────────
+    config_backed_items  = [i for i in boq_items if i.get("evidence_class") == "config_backed"]
+    heuristic_items      = [i for i in boq_items if i.get("evidence_class") == "heuristic_inferred"]
+    # Config-backed rows that are not flagged manual_review — should always be flagged
+    non_flagged_config   = [i for i in config_backed_items if not i.get("manual_review")]
+
+    report["evidence_quality"] = {
+        "measured_source_count":    ev_counts.get("measured_source",   0),
+        "calculated_source_count":  ev_counts.get("calculated_source", 0),
+        "config_backed_count":      ev_counts.get("config_backed",     0),
+        "heuristic_inferred_count": ev_counts.get("heuristic_inferred",0),
+        "placeholder_count":        ev_counts.get("placeholder",       0),
+        "config_backed_items": [
+            {"item_no": i.get("item_no",""), "item_name": i.get("item_name",""),
+             "confidence": i.get("confidence"), "manual_review": i.get("manual_review")}
+            for i in config_backed_items
+        ],
+        "heuristic_items_not_manual_review": [
+            {"item_no": i.get("item_no",""), "item_name": i.get("item_name","")}
+            for i in heuristic_items if not i.get("manual_review")
+        ],
+        "config_backed_not_flagged_manual": [
+            {"item_no": i.get("item_no",""), "item_name": i.get("item_name","")}
+            for i in non_flagged_config
+        ],
+        "note": (
+            "config_backed: quantity derived from project_config room_schedule (not from drawings). "
+            "heuristic_inferred: room template, building-type rule, or config default value. "
+            "All config_backed rows should be manual_review=True."
+        ),
+    }
+    if non_flagged_config:
+        report["warnings"].append(
+            f"EVIDENCE QUALITY: {len(non_flagged_config)} config_backed row(s) not flagged "
+            f"manual_review=True: {[i.get('item_name','') for i in non_flagged_config]}"
+        )
+
+    # ── H. PDF schedule recovery ──────────────────────────────────────────────
+    if pdf_schedule_data is not None:
+        # Evidence class counts before vs after promotion (the "after" is the current BOQ)
+        ev_after = Counter(i.get("evidence_class", "unknown") for i in boq_items)
+
+        # Promoted rows: items that were promoted by schedule evidence
+        # For project 2: hip flashing items are derived from confirmed roof pitch
+        promoted_items = [
+            i for i in boq_items
+            if "framecad_layout" in i.get("source_evidence", "").lower()
+            and i.get("quantity_status") == "calculated"
+        ]
+
+        # Still-blocked rows: all manual_review items that are heuristic/placeholder
+        blocked_items = [
+            {
+                "item_no":   i.get("item_no", ""),
+                "item_name": i.get("item_name", ""),
+                "blocked_reason": i.get("notes", "")[:120],
+            }
+            for i in boq_items
+            if i.get("manual_review") and i.get("evidence_class") in (
+                "heuristic_inferred", "placeholder", "config_backed"
+            )
+        ]
+
+        report["pdf_schedule_recovery"] = {
+            # What was scanned
+            "pdfs_scanned":            pdf_schedule_data.pdf_files_scanned,
+            "schedule_coverage":       pdf_schedule_data.schedule_coverage,
+            # What was recovered
+            "roof_pitch_recovered":    pdf_schedule_data.roof_pitch_degrees is not None,
+            "roof_pitch_degrees":      pdf_schedule_data.roof_pitch_degrees,
+            "roof_pitch_source":       pdf_schedule_data.roof_pitch_source,
+            "opening_marks_recovered": len(pdf_schedule_data.opening_marks),
+            "opening_marks":           pdf_schedule_data.opening_marks,
+            "wall_panel_ids_count":    len(pdf_schedule_data.wall_panel_ids),
+            "roof_truss_ids_count":    len(pdf_schedule_data.roof_truss_ids),
+            # What was NOT found
+            "schedules_not_found":     pdf_schedule_data.schedules_not_found,
+            # Promoted rows
+            "promoted_rows": [
+                {
+                    "item_no":         i.get("item_no", ""),
+                    "item_name":       i.get("item_name", ""),
+                    "quantity":        i.get("quantity"),
+                    "unit":            i.get("unit"),
+                    "promoted_from":   "new_item",
+                    "promoted_by":     "framecad_layout_pitch",
+                    "confidence":      i.get("confidence"),
+                    "evidence_class":  i.get("evidence_class"),
+                }
+                for i in promoted_items
+            ],
+            "promoted_count": len(promoted_items),
+            # Still-blocked
+            "still_blocked_count":  len(blocked_items),
+            "still_blocked_sample": blocked_items[:10],
+            # Evidence class distribution after recovery
+            "evidence_class_after": {
+                "measured_source":    ev_after.get("measured_source",   0),
+                "calculated_source":  ev_after.get("calculated_source", 0),
+                "config_backed":      ev_after.get("config_backed",     0),
+                "heuristic_inferred": ev_after.get("heuristic_inferred",0),
+                "placeholder":        ev_after.get("placeholder",       0),
+            },
+            # Reconciliation summaries
+            "reconciliation": reconciliation or {},
+        }
+    else:
+        report["pdf_schedule_recovery"] = {
+            "status": "pdf_schedule_extraction_not_run",
+            "note": "PDF schedule extractor was not invoked (no PDFs found or extraction failed)",
+        }
+
+    # ── I. Graphical + annotation recovery ───────────────────────────────────
+    gr = reconciliation.get("graphical", {}) if reconciliation else {}
+    if not gr and graphical_recovery:
+        gr = graphical_recovery
+
+    if gr:
+        report["graphical_recovery"] = {
+            # Infrastructure summary
+            "table_regions_detected":   gr.get("table_regions_detected", 0),
+            "ocr_backend":              gr.get("ocr_backend", "unavailable"),
+            "ocr_regions_processed":    gr.get("ocr_regions_detected", 0),
+            # What was recovered
+            "window_heights_recovered": gr.get("window_heights_recovered", []),
+            "door_hints_recovered":     gr.get("door_hints_recovered", []),
+            "stair_details_recovered":  gr.get("stair_details_recovered", []),
+            "footing_details_recovered":gr.get("footing_details_recovered", []),
+            # Promotion and blocking
+            "promoted_count":           len(gr.get("promoted_rows", [])),
+            "promoted_rows":            gr.get("promoted_rows", []),
+            "still_blocked_count":      len(gr.get("still_blocked", [])),
+            "still_blocked":            gr.get("still_blocked", []),
+            "notes":                    gr.get("notes", []),
+        }
+        n_promoted_gr = len(gr.get("promoted_rows", []))
+        n_blocked_gr  = len(gr.get("still_blocked", []))
+        if n_promoted_gr:
+            report["warnings"].append(
+                f"GRAPHICAL RECOVERY: {n_promoted_gr} BOQ field(s) promoted from "
+                f"DXF annotation / OCR evidence."
+            )
+        else:
+            report["warnings"].append(
+                f"Graphical recovery: 0 promotions from DXF annotations + OCR "
+                f"(backend={gr.get('ocr_backend','unavailable')}, "
+                f"regions={gr.get('table_regions_detected',0)}). "
+                f"Still blocked: {n_blocked_gr} items."
+            )
+    else:
+        report["graphical_recovery"] = {
+            "status": "graphical_recovery_not_run",
+            "note":   "Graphical/annotation recovery extractor was not invoked.",
+        }
 
     # ── Template contamination check ─────────────────────────────────────────
     # Verify no items have "boq_template" as their source

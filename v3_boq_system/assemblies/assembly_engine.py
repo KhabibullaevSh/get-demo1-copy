@@ -192,6 +192,29 @@ def apply_all_roof_assemblies(
             "manual_review":   True,
             "notes":           sheet_note + " Verify sheet length and profile from spec.",
         })
+        # Roof sheet total supply area — primary procurement family (m2)
+        _cover_w = 0.762   # effective cover width for corrugated CGI (762 mm)
+        _sheet_len_f = float(sheet_len_str.replace("m", ""))
+        _roof_supply_m2 = round(sheet_count * _cover_w * _sheet_len_f, 2)
+        rows.append({
+            "item_name":       f"Roof Cladding Sheet — Total Supply Area ({sheet_len_str} stock)",
+            "item_code":       "",
+            "unit":            "m2",
+            "quantity":        _roof_supply_m2,
+            "package":         "roof_cladding",
+            "quantity_status": "calculated",
+            "quantity_basis":  f"sheet_count({sheet_count}) × cover_w(0.762m) × sheet_len({sheet_len_str}) = {_roof_supply_m2}m²",
+            "source_evidence": f"{evidence_prefix}: roof_area={roof_area_m2:.2f} m²",
+            "derivation_rule": f"{sheet_count} × 0.762 × {_sheet_len_f}",
+            "confidence":      "MEDIUM",
+            "manual_review":   False,
+            "notes": (
+                f"Total corrugated CGI sheet supply area. "
+                f"{sheet_count} sheets × 0.762m cover width × {sheet_len_str} = {_roof_supply_m2}m². "
+                f"Net roof area: {roof_area_m2:.2f}m². Gross supply (incl. waste + side-lap): {_roof_supply_m2}m². "
+                "Verify sheet profile (Custom Orb / Trimdek / Klip-Lok) and colour from spec."
+            ),
+        })
     if ridge_lm > 0:
         rows += apply_assembly_rule(
             "roof_ridge", rules, ridge_lm,

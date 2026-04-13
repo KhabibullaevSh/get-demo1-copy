@@ -59,7 +59,21 @@ def quantify_services(
     """
     rows:    list[dict] = []
     svc_cfg  = config.get("services", {})
-    floor_area = sum(f.area_m2 for f in model.floors) if model.floors else 0.0
+    _total_floor_area = sum(f.area_m2 for f in model.floors) if model.floors else 0.0
+    _ver_area         = sum(v.area_m2 for v in model.verandahs) if model.verandahs else 0.0
+
+    # Use enclosed floor area (excludes verandah) for whole-building service calcs.
+    # When the space model is populated, use its validated enclosed area; otherwise
+    # subtract the DXF verandah polygon directly.
+    if model.spaces:
+        floor_area = model.enclosed_floor_area_m2() or round(max(0.0, _total_floor_area - _ver_area), 2)
+        _area_source = f"enclosed_floor_area={floor_area:.2f} m² (space model, excludes verandah)"
+    else:
+        floor_area   = round(max(0.0, _total_floor_area - _ver_area), 2)
+        _area_source = (
+            f"floor_area={floor_area:.2f} m² (total {_total_floor_area:.2f} − verandah {_ver_area:.2f})"
+            if _ver_area > 0 else f"floor_area={floor_area:.2f} m²"
+        )
 
     templates_dict = room_templates.get("room_templates", {})
     whole_bldg     = room_templates.get("whole_building_services", [])
@@ -97,12 +111,20 @@ def quantify_services(
                     notes=fix.get("note", f"Inferred from room type '{rtype}'."),
                 ))
 
-            # Wet area wall tiling — inferred for wet rooms, LOW confidence
+            # Wet area wall tiling — heuristic estimate, LOW confidence.
+            # Boundary NOT source-derived when room comes from config room_schedule.
+            # Perimeter estimated as 4×√area when not measured; do NOT promote
+            # to MEDIUM unless room polygon is source-backed.
             if tmpl.get("wet_area") and room.area_m2 > 0:
-                # Estimate wall tile area: perimeter × tile_height (1.8 m typical splash zone)
-                perim_est = room.perimeter_m if room.perimeter_m > 0 else round(4 * math.sqrt(room.area_m2), 1)
+                perim_measured = room.perimeter_m > 0
+                perim_est = room.perimeter_m if perim_measured else round(4 * math.sqrt(room.area_m2), 1)
                 tile_h = 1.8   # standard splash-zone tile height (m)
                 tile_area = round(perim_est * tile_h, 2)
+                perim_basis = (
+                    f"room.perimeter_m={perim_est:.1f}m (measured)"
+                    if perim_measured
+                    else f"4×√{room.area_m2:.1f}={perim_est:.1f}m (heuristic — no room polygon)"
+                )
                 rows.append(_row(
                     "services",
                     f"Wet Area Wall Tiling — {room.room_name}",
@@ -114,24 +136,32 @@ def quantify_services(
                     "LOW",
                     manual_review=True,
                     notes=(
-                        f"Inferred: perimeter ({perim_est:.1f} m) × {tile_h*1000:.0f} mm splash-zone height. "
-                        "No finish schedule in source documents. Verify tile type, height, and area "
-                        "from architectural drawings. Deduct openings."
+                        f"Heuristic estimate — room boundary not source-derived. "
+                        f"Perimeter: {perim_basis}. "
+                        f"Tile area: {perim_est:.1f}m × {tile_h*1000:.0f}mm splash zone = {tile_area:.2f} m². "
+                        "No finish schedule in source documents. "
+                        "Verify tile type, actual room perimeter, splash-zone height, and area "
+                        "from architectural drawings. Deduct door/window openings."
                     ),
                 ))
 
-            # Wet area waterproofing — use actual room area when available
+            # Wet area waterproofing — use actual room area when available.
+            # Confidence: MEDIUM only when room perimeter is source-derived (measured).
+            # LOW when perimeter is estimated from area (config-backed room — no polygon).
             if tmpl.get("wet_area"):
                 tmpl_area = tmpl.get("waterproofing_m2_each", 0)
                 if room.area_m2 > 0:
-                    # Floor area + 150 mm upstand on all walls (estimated from room perimeter)
-                    room_perim_est = room.perimeter_m if room.perimeter_m > 0 else round(4 * math.sqrt(room.area_m2), 1)
+                    perim_measured = room.perimeter_m > 0
+                    room_perim_est = room.perimeter_m if perim_measured else round(4 * math.sqrt(room.area_m2), 1)
                     upstand_h = 0.15   # 150 mm upstand
                     wfp_area  = round(room.area_m2 + room_perim_est * upstand_h, 2)
                     basis     = (
                         f"room_area({room.area_m2:.2f}) + perim({room_perim_est:.1f})×upstand({upstand_h}m)"
                     )
-                    conf_wfp  = "MEDIUM"
+                    # Confidence follows room source quality:
+                    # MEDIUM when room area is from a schedule/drawing source (HIGH or MEDIUM room confidence)
+                    # LOW when room is a config estimate (LOW room confidence — no source polygon)
+                    conf_wfp  = "MEDIUM" if room.confidence in ("HIGH", "MEDIUM") else "LOW"
                 elif tmpl_area > 0:
                     wfp_area  = tmpl_area
                     basis     = f"room_template:{rtype} waterproofing_m2_each={tmpl_area}"
@@ -139,6 +169,11 @@ def quantify_services(
                 else:
                     continue
                 wet_area_total += wfp_area
+                _perim_note = (
+                    f"Perimeter {room_perim_est:.1f} m (measured)."
+                    if perim_measured
+                    else f"Perimeter {room_perim_est:.1f} m estimated as 4×√{room.area_m2:.1f} (no room polygon — config estimate)."
+                )
                 rows.append(_row(
                     "services",
                     "Wet Area Waterproofing — Membrane",
@@ -149,7 +184,8 @@ def quantify_services(
                     basis,
                     conf_wfp,
                     notes=(
-                        f"Waterproofing: floor area + 150 mm upstand on walls for {room.room_name}. "
+                        f"Heuristic estimate: floor area ({room.area_m2:.2f} m²) + 150 mm upstand for {room.room_name}. "
+                        f"{_perim_note} "
                         "Verify room dimensions and upstand height from architectural drawings."
                     ),
                 ))
@@ -248,7 +284,7 @@ def quantify_services(
             qty,
             "inferred",
             "whole_building_services template",
-            f"floor_area={floor_area:.2f} m² (building-wide)",
+            _area_source,
             item.get("qty_rule", "= 1 per building"),
             item.get("confidence", "low").upper(),
             manual_review=True,
@@ -277,17 +313,86 @@ def quantify_finishes(
     ext_lm      = sum(w.length_m for w in ext_walls)
     ext_h       = max((w.height_m for w in ext_walls), default=2.4)
 
-    if floor_area > 0:
-        rows.append({
-            "item_name": f"Floor Finish — {floor_type.title()} / screed",
-            "item_code": "", "unit": "m2",
-            "quantity": round(floor_area, 2), "package": "finishes",
-            "quantity_status": "measured",
-            "quantity_basis": "DXF WALLS polygon area",
-            "source_evidence": f"dxf_geometry: floor_area={floor_area:.2f} m²",
-            "derivation_rule": "= floor_area_m2",
-            "confidence": "HIGH", "manual_review": False, "notes": "",
-        })
+    # Subtract verandah area — it has its own decking row in external works
+    ver_area     = sum(v.area_m2 for v in model.verandahs)
+    enclosed_area = round(max(0.0, floor_area - ver_area), 2)
+
+    # Wet / dry split from room_schedule config (more accurate than generic area)
+    room_schedule = config.get("room_schedule", [])
+    wet_area_sum  = round(sum(r.get("area_m2", 0.0) for r in room_schedule if r.get("is_wet_area")), 2)
+    dry_area_sum  = round(sum(r.get("area_m2", 0.0) for r in room_schedule if not r.get("is_wet_area")), 2)
+    rooms_total   = round(wet_area_sum + dry_area_sum, 2)
+    # Validate split: room areas must account for ≥90% of enclosed area to use split
+    split_ok = (
+        len(room_schedule) > 0
+        and wet_area_sum > 0
+        and rooms_total > 0
+        and abs(rooms_total - enclosed_area) / max(enclosed_area, 1.0) < 0.10
+    )
+
+    if enclosed_area > 0:
+        if split_ok:
+            # Dry-area floor finish
+            rows.append({
+                "item_name": "Floor Finish — Dry Area (vinyl plank / screed)",
+                "item_code": "", "unit": "m2",
+                "quantity": dry_area_sum, "package": "finishes",
+                "quantity_status": "calculated",
+                "quantity_basis": "sum(dry room areas from room_schedule)",
+                "source_evidence": (
+                    f"config room_schedule: "
+                    f"{', '.join(r['name'] for r in room_schedule if not r.get('is_wet_area'))} "
+                    f"= {dry_area_sum:.2f} m² (enclosed={enclosed_area:.2f} m²)"
+                ),
+                "derivation_rule": "sum(room_area for non-wet rooms)",
+                "confidence": "MEDIUM", "manual_review": False,
+                "notes": (
+                    f"Dry floor finish area from room schedule ({len([r for r in room_schedule if not r.get('is_wet_area')])} rooms). "
+                    f"Verandah ({ver_area:.1f} m²) excluded — has separate decking row. "
+                    "Verify room areas from architectural drawings."
+                ),
+            })
+            # Wet-area floor finish (ceramic tile / waterproof)
+            rows.append({
+                "item_name": "Floor Finish — Wet Area (ceramic tile)",
+                "item_code": "", "unit": "m2",
+                "quantity": wet_area_sum, "package": "finishes",
+                "quantity_status": "calculated",
+                "quantity_basis": "sum(wet room areas from room_schedule)",
+                "source_evidence": (
+                    f"config room_schedule: "
+                    f"{', '.join(r['name'] for r in room_schedule if r.get('is_wet_area'))} "
+                    f"= {wet_area_sum:.2f} m²"
+                ),
+                "derivation_rule": "sum(room_area for wet rooms)",
+                "confidence": "MEDIUM", "manual_review": False,
+                "notes": (
+                    f"Wet floor finish (ceramic tile / non-slip) for wet areas: "
+                    f"{', '.join(r['name'] for r in room_schedule if r.get('is_wet_area'))} "
+                    f"({wet_area_sum:.2f} m²). Verify with architect."
+                ),
+            })
+        else:
+            # Fallback: single row with enclosed area
+            rows.append({
+                "item_name": f"Floor Finish — {floor_type.title()} / screed",
+                "item_code": "", "unit": "m2",
+                "quantity": enclosed_area, "package": "finishes",
+                "quantity_status": "measured",
+                "quantity_basis": (
+                    "DXF floor polygon − verandah area" if ver_area > 0 else "DXF WALLS polygon area"
+                ),
+                "source_evidence": (
+                    f"dxf_geometry: floor_area={floor_area:.2f} m²"
+                    + (f" − verandah={ver_area:.2f} m² = {enclosed_area:.2f} m²" if ver_area > 0 else "")
+                ),
+                "derivation_rule": "floor_area − verandah_area",
+                "confidence": "HIGH", "manual_review": False,
+                "notes": (
+                    f"Verandah ({ver_area:.1f} m²) excluded — has separate decking row. "
+                    "No room schedule available for wet/dry split."
+                ) if ver_area > 0 else "",
+            })
 
     if ext_lm > 0:
         paint_ext = round(ext_lm * ext_h, 2)

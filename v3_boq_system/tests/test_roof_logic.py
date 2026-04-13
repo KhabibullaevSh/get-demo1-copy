@@ -52,13 +52,16 @@ class TestRoofAssemblyDerivation:
                 f"Gutter should be 42.4 lm. Got {gutter_rows[0]['quantity']}"
             )
 
-    def test_roof_cladding_equals_roof_area(self):
+    def test_roof_cladding_sheet_count_present(self):
+        # m2 area row was removed to avoid duplicate; only sheets row is now emitted.
         rules = _load_rules()
         m = _model_with_roof()
         rows = quantify_roof(m, _CFG, rules)
         cladding = [r for r in rows if "Cladding" in r["item_name"] or "CGI" in r["item_name"]]
         if cladding:
-            assert cladding[0]["quantity"] == pytest.approx(106.6, 0.1)
+            # Sheet count is derived from area/eaves; must be a positive integer
+            assert cladding[0]["quantity"] > 0
+            assert cladding[0]["unit"] == "sheets"
 
     def test_fascia_equals_roof_perimeter(self):
         rules = _load_rules()

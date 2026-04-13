@@ -203,6 +203,47 @@ class FinishZoneElement(BaseElement):
     room_ref:      str   = ""
 
 
+# ── Spaces ────────────────────────────────────────────────────────────────────
+
+@dataclass
+class SpaceElement(BaseElement):
+    """
+    Normalized building space (room / zone / external area).
+
+    Extends RoomElement with explicit geometry, classification flags, finish
+    assignments, and per-field source traceability.
+
+    Source priority: ifc > dxf > pdf > config
+    All values from config carry LOW confidence and manual_review=True.
+    """
+    category:                str   = "space"
+    space_id:                str   = ""   # unique within project (e.g. "space_toilet")
+    space_name:              str   = ""
+    space_type:              str   = "unknown"
+    # Geometry — polygon is empty when source is config (no measured boundary)
+    polygon:                 list  = field(default_factory=list)  # [[x,y], …] in metres
+    area_m2:                 float = 0.0
+    perimeter_m:             float = 0.0
+    ceiling_area_m2:         float = 0.0   # assigned ceiling area for this space
+    level:                   str   = "GF"
+    # Classification
+    is_wet:                  bool  = False
+    is_external:             bool  = False
+    is_verandah:             bool  = False
+    is_uncovered:            bool  = False
+    is_enclosed:             bool  = True
+    # Finish assignments (from schedule or inferred from type)
+    finish_floor_type:       str   = ""
+    finish_wall_type:        str   = ""
+    finish_ceiling_type:     str   = ""
+    # Traceability
+    quantity_basis:          str   = ""
+    source_type:             str   = ""   # ifc | dxf | pdf | config
+    source_ref:              str   = ""
+    classification_notes:    str   = ""
+    contributing_space_refs: list  = field(default_factory=list)
+
+
 # ── Normalized Project Element Model ─────────────────────────────────────────
 
 @dataclass
@@ -233,8 +274,11 @@ class ProjectElementModel:
     # Openings
     openings:        list[OpeningElement]        = field(default_factory=list)
 
-    # Rooms
+    # Rooms (legacy — kept for backward compatibility; quantifiers read from spaces)
     rooms:           list[RoomElement]           = field(default_factory=list)
+
+    # Spaces — structured space/room model with full classification + finish zoning
+    spaces:          list[SpaceElement]          = field(default_factory=list)
 
     # Substructure
     footings:        list[FootingElement]        = field(default_factory=list)
@@ -293,6 +337,24 @@ class ProjectElementModel:
 
     def wet_rooms(self) -> list[RoomElement]:
         return [r for r in self.rooms if r.is_wet_area]
+
+    # ── Space accessors ───────────────────────────────────────────────────────
+
+    def enclosed_spaces(self) -> list[SpaceElement]:
+        return [s for s in self.spaces if s.is_enclosed and not s.is_external]
+
+    def wet_spaces(self) -> list[SpaceElement]:
+        return [s for s in self.spaces if s.is_wet]
+
+    def verandah_spaces(self) -> list[SpaceElement]:
+        return [s for s in self.spaces if s.is_verandah]
+
+    def enclosed_floor_area_m2(self) -> float:
+        """Sum of enclosed (non-verandah, non-external) space areas."""
+        return round(sum(s.area_m2 for s in self.enclosed_spaces()), 2)
+
+    def wet_floor_area_m2(self) -> float:
+        return round(sum(s.area_m2 for s in self.wet_spaces()), 2)
 
     def has_stair_evidence(self) -> bool:
         return len(self.stairs) > 0
