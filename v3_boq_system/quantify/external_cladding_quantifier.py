@@ -98,19 +98,52 @@ def quantify_external_cladding(
     waste_factor      = clad_cfg.get("waste_factor", 1.05)
 
     # ── Gross cladding area ───────────────────────────────────────────────────
-    # Deduct openings when area data is available; otherwise note gross
-    opening_area = sum(
-        o.width_m * o.height_m
-        for o in model.openings
-        if o.is_external and o.width_m > 0 and o.height_m > 0
-    )
+    # Opening deductions: only openings that actually penetrate the external cladding face.
+    # Width threshold (0.85 m) separates external entrance doors (≥850 mm) from internal
+    # partition doors (<850 mm). All element-model openings carry is_external=True by
+    # default, so the width heuristic is necessary to exclude partition doors.
+    # Louvre windows with height_m=0 use the config default height (typically 0.75 m).
+    lining_cfg       = config.get("lining", {})
+    _louvre_h_default = lining_cfg.get("default_louvre_height_m", 0.75)
+    _EXT_DOOR_MIN_W   = 0.85   # ≥850 mm → external entrance; <850 mm → partition door
+
+    clad_ext_door_ops = [o for o in model.openings
+                         if o.opening_type == "door"   and o.width_m >= _EXT_DOOR_MIN_W]
+    clad_ext_win_ops  = [o for o in model.openings
+                         if o.opening_type == "window" and o.is_external and o.width_m > 0]
+
+    clad_door_area = round(sum(
+        o.width_m * o.height_m * o.quantity
+        for o in clad_ext_door_ops
+        if o.height_m > 0
+    ), 3)
+    clad_win_area  = round(sum(
+        o.width_m * (o.height_m if o.height_m > 0 else _louvre_h_default) * o.quantity
+        for o in clad_ext_win_ops
+    ), 3)
+    opening_area = round(clad_door_area + clad_win_area, 3)
+
     gross_area   = round(ext_lm * ext_h, 2)
     net_area     = round(gross_area - opening_area, 2) if opening_area > 0 else gross_area
-    area_note    = (
-        f"Gross {gross_area:.2f} m² − openings {opening_area:.2f} m² = {net_area:.2f} m²"
-        if opening_area > 0
-        else f"Gross area — deduct openings manually (no opening dimensions measured)"
-    )
+
+    if opening_area > 0:
+        door_parts = ", ".join(
+            f"{o.mark}×{o.quantity}({o.width_m:.3f}×{o.height_m:.2f})" for o in clad_ext_door_ops
+        )
+        win_parts = ", ".join(
+            f"{o.mark}×{o.quantity}({o.width_m:.3f}×{(o.height_m if o.height_m > 0 else _louvre_h_default):.2f})"
+            for o in clad_ext_win_ops
+        )
+        area_note = (
+            f"Gross {gross_area:.2f} m² − doors {clad_door_area:.3f} m² [{door_parts}] "
+            f"− windows {clad_win_area:.3f} m² [{win_parts}] "
+            f"(louvre h={_louvre_h_default:.2f} m from config default) "
+            f"= net {net_area:.2f} m². "
+            f"Partition doors (<{_EXT_DOOR_MIN_W:.2f} m wide) excluded — not in external cladding face."
+        )
+    else:
+        area_note = "Gross area — deduct openings manually (no opening dimensions measured)"
+
     area_status  = "calculated" if opening_area > 0 else "measured"
     area_conf    = conf if opening_area > 0 else "MEDIUM"
 
@@ -119,9 +152,12 @@ def quantify_external_cladding(
         "External Wall Cladding — FC Weatherboard (supply & fix)",
         "m2", net_area,
         area_status,
-        f"ext_wall_lm({ext_lm:.2f}) × wall_h({ext_h:.1f}){' − opening_area' if opening_area > 0 else ''}",
+        (f"ext_wall_lm({ext_lm:.2f}) × wall_h({ext_h:.1f})"
+         + (f" − ext_doors({clad_door_area:.3f}) − ext_windows({clad_win_area:.3f})"
+            if opening_area > 0 else "")),
         f"{src}: ext_wall_perimeter={ext_lm:.2f} m, h={ext_h:.1f} m",
-        f"{ext_lm:.2f} × {ext_h:.1f}" + (f" − {opening_area:.2f}" if opening_area > 0 else ""),
+        (f"{ext_lm:.2f} × {ext_h:.1f} − {opening_area:.3f}"
+         if opening_area > 0 else f"{ext_lm:.2f} × {ext_h:.1f}"),
         area_conf,
         manual_review=(not opening_area > 0),
         notes=area_note,
@@ -391,11 +427,14 @@ def quantify_external_cladding(
         ))
 
     # ── Window / door reveal trim ─────────────────────────────────────────────
-    # Jamb / reveal trim at each opening: 2 × height + 1 × width per opening
+    # Jamb / reveal trim at openings in the external cladding face.
+    # Uses same entrance-door threshold as area deduction (_EXT_DOOR_MIN_W).
+    # Partition doors (<0.85 m) are in internal walls — no external reveal trim.
+    # Louvre windows with height_m=0 use _louvre_h_default (not wall height).
+    trim_openings = clad_ext_door_ops + clad_ext_win_ops
     opening_trim_lm = 0.0
-    ext_openings = [o for o in model.openings if o.is_external and o.width_m > 0]
-    for o in ext_openings:
-        h_used = o.height_m if o.height_m > 0 else ext_h
+    for o in trim_openings:
+        h_used = o.height_m if o.height_m > 0 else _louvre_h_default
         opening_trim_lm += (2 * h_used + o.width_m) * o.quantity
     opening_trim_lm = round(opening_trim_lm, 2)
     if opening_trim_lm > 0:
@@ -404,13 +443,15 @@ def quantify_external_cladding(
             "Window / Door Reveal Trim (FC / timber)",
             "lm", opening_trim_lm,
             "calculated",
-            "sum((2×h + w) × qty) for each external opening",
-            f"dxf_geometry: {len(ext_openings)} external openings",
+            "sum((2×h + w) × qty) for each external-cladding opening (entrance doors ≥0.85m + windows)",
+            f"dxf_geometry: {len(trim_openings)} openings in external cladding face",
             "sum((2h+w)×qty per opening)",
             "MEDIUM",
             manual_review=True,
             notes=(
-                "Jamb / reveal trim at external openings: 2 × height + 1 × width per opening. "
+                "Jamb / reveal trim at external cladding openings: 2 × height + 1 × width per opening. "
+                f"Louvre h={_louvre_h_default:.2f} m (config default). "
+                f"Partition doors (<{_EXT_DOOR_MIN_W:.2f} m wide) excluded — they are in internal walls. "
                 "Verify trim profile and dimensions with cladding specification."
             ),
         ))

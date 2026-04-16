@@ -337,6 +337,24 @@ def quantify_linings(
 
     if wet_area_total > 0:
         wet_sheets = math.ceil(wet_area_total * waste / fc_wall_area)
+        # Describe perimeter source for the notes field
+        _has_config_perim = (
+            not _has_dxf_perim
+            and wet_spaces
+            and any(sp.perimeter_m > 0 for sp in wet_spaces)
+        )
+        if _has_dxf_perim:
+            _perim_src_note = "perimeter from DXF wall-network geometry (HIGH)."
+        elif _has_config_perim:
+            _perim_src_note = (
+                "perimeter from project_config (LOW — config-specified, not measured from drawings). "
+                "Verify room perimeter against wet area schedule."
+            )
+        else:
+            _perim_src_note = (
+                "perimeter estimated from floor area (LOW — no measured perimeter available). "
+                "Verify room dimensions before ordering."
+            )
         rows.append(_row(
             "wall_lining_wet",
             "Wet Area Wall Lining — Waterproof Board / FC",
@@ -348,10 +366,9 @@ def quantify_linings(
             _wall_conf,
             manual_review=_wall_mr,
             notes=(
-                "Wet area lining: wall area = perimeter × wall height "
-                + ("(perimeter from DXF wall-network geometry). " if _has_dxf_perim
-                   else "(perimeter estimated — verify room dimensions). ")
-                + "Verify count against wet area wall schedule."
+                "Wet area lining: wall area = perimeter × wall height. "
+                + _perim_src_note
+                + " Verify count against wet area wall schedule."
             ),
         ))
         wet_sheet_supply_m2 = round(wet_sheets * fc_wall_area, 2)

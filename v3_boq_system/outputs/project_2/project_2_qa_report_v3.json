@@ -1,6 +1,6 @@
 {
   "project_type": "pharmacy",
-  "total_items": 220,
+  "total_items": 222,
   "package_completeness": {
     "structural_frame": {
       "present": true,
@@ -84,13 +84,13 @@
     },
     "floor_system": {
       "present": true,
-      "item_count": 16,
+      "item_count": 18,
       "measured": 0,
-      "calculated": 8,
-      "inferred": 8,
+      "calculated": 18,
+      "inferred": 0,
       "placeholder": 0,
-      "manual_review": 8,
-      "status": "UNCONFIRMED"
+      "manual_review": 9,
+      "status": "OK"
     },
     "footings": {
       "present": true,
@@ -124,21 +124,21 @@
     }
   },
   "provenance_summary": {
-    "total": 220,
+    "total": 222,
     "measured": 22,
-    "calculated": 147,
-    "inferred": 46,
+    "calculated": 157,
+    "inferred": 38,
     "placeholder": 5,
-    "pct_measured": 10.0,
-    "pct_calculated": 66.8,
-    "pct_inferred": 20.9,
+    "pct_measured": 9.9,
+    "pct_calculated": 70.7,
+    "pct_inferred": 17.1,
     "pct_placeholder": 2.3,
-    "manual_review_count": 84,
+    "manual_review_count": 85,
     "evidence_class_counts": {
       "measured_source": 22,
-      "calculated_source": 138,
+      "calculated_source": 148,
       "config_backed": 6,
-      "heuristic_inferred": 49,
+      "heuristic_inferred": 41,
       "placeholder": 5
     }
   },
@@ -221,7 +221,7 @@
       "quantity": 9,
       "unit": "nr",
       "confidence": "MEDIUM",
-      "notes": "MANUAL REVIEW REQUIRED. Panel count derived from floor area / per-panel area (7.182m\u00b2). Panel width=3000mm (from E1/E2 edge beam length, HIGH confidence). Panel depth=2394mm (from J1/S1/S2 span length, HIGH confidence). Count=9 is MEDIUM confidence \u2014 verify from FrameCAD floor panel layout."
+      "notes": "MANUAL REVIEW REQUIRED. Panel count calculated from DWG-measured floor area / per-panel area (7.182m\u00b2). Panel width=3000mm (from E1/E2 edge beam length, HIGH confidence). Panel depth=2394mm (from J1/S1/S2 span length, HIGH confidence). Count=9 MEDIUM confidence \u2014 verify from FrameCAD floor panel layout."
     },
     {
       "item_no": "G02",
@@ -239,7 +239,7 @@
       "quantity": 63,
       "unit": "nr",
       "confidence": "MEDIUM",
-      "notes": "MANUAL REVIEW REQUIRED. Profile: 150S41-095-500, length: 2394mm. 7 joists per panel (HIGH confidence \u2014 DWG Onpage FLayout schedule). Total 63 nr = 7 \u00d7 9 panels. Total lm: 150.82 lm (63 \u00d7 2.394m)."
+      "notes": "MANUAL REVIEW REQUIRED. Profile: 150S41-095-500, length: 2394mm. 7 joists per panel \u2014 HIGH confidence from DWG Onpage FLayout member schedule. Panel count 9 is MEDIUM (area-derived). Total: 7 \u00d7 9 = 63 nr. Total lm: 150.82 lm (63 \u00d7 2.394m). Verify panel count against FrameCAD floor panel layout before ordering."
     },
     {
       "item_no": "G05",
@@ -248,7 +248,7 @@
       "quantity": 18,
       "unit": "nr",
       "confidence": "MEDIUM",
-      "notes": "MANUAL REVIEW REQUIRED. Profile: 150P41-115-500, length: 3000mm. 2 edge beams per panel (E1\u00d71 + E2\u00d71). Total 18 nr. Total lm: 54.00 lm."
+      "notes": "MANUAL REVIEW REQUIRED. Profile: 150P41-115-500, length: 3000mm. 2 edge beams per panel (E1\u00d71 + E2\u00d71 \u2014 HIGH from DWG schedule). Total: 2 \u00d7 9 = 18 nr. Total lm: 54.00 lm."
     },
     {
       "item_no": "G07",
@@ -257,10 +257,19 @@
       "quantity": 18,
       "unit": "nr",
       "confidence": "MEDIUM",
-      "notes": "MANUAL REVIEW REQUIRED. Profile: 150S41-115-500, length: 2394mm. 2 stringers per panel (S1\u00d71 + S2\u00d71). Total 18 nr. Total lm: 43.09 lm."
+      "notes": "MANUAL REVIEW REQUIRED. Profile: 150S41-115-500, length: 2394mm. 2 stringers per panel (S1\u00d71 + S2\u00d71 \u2014 HIGH from DWG schedule). Total: 2 \u00d7 9 = 18 nr. Total lm: 43.09 lm."
     },
     {
       "item_no": "G09",
+      "section": "G - Floor System",
+      "item_name": "Floor Bearer / Support Beam (steel SHS/RHS) \u2014 count",
+      "quantity": 2,
+      "unit": "nr",
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Number of internal floor bearer lines. DWG panel depth = 2394mm \u2192 3 rows across 7.2m span. Perimeter boundaries bear on strip footings (no separate bearer). Internal lines = 3\u22121 = 2 nr. Each bearer runs the full building run \u2014 see 'lm' row below for ordering length."
+    },
+    {
+      "item_no": "G10",
       "section": "G - Floor System",
       "item_name": "Floor Bearer / Support Beam (steel SHS/RHS) \u2014 2 lines \u00d7 9.0m",
       "quantity": 18.0,
@@ -269,7 +278,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Internal floor bearer / support beam at joist-end bearing positions. DWG panel depth = 2394mm \u2192 3 rows across 7.2m span. Perimeter boundary lines bear on strip footings (no separate member needed). 2 internal lines \u00d7 9.0m = 18.0 lm. Bearer section (SHS/RHS or engineered timber) to be confirmed from structural drawings. Verify with FrameCAD engineer."
     },
     {
-      "item_no": "G10",
+      "item_no": "G11",
       "section": "G - Floor System",
       "item_name": "Sub-Floor Support Post / Adjustable Steel Stump",
       "quantity": 4,
@@ -278,7 +287,7 @@
       "notes": "MANUAL REVIEW REQUIRED. Adjustable steel stumps or concrete piers at mid-span support points of internal floor bearers. 2 bearer lines \u00d7 2 mid-span pads each = 4 nr. Perimeter end-points land on strip footings. Post type and base plate spec from structural engineer. Verify against pad footing layout and FrameCAD sub-floor schedule."
     },
     {
-      "item_no": "G11",
+      "item_no": "G12",
       "section": "G - Floor System",
       "item_name": "Joist Hanger Connector (J1 end fix)",
       "quantity": 126,
@@ -371,10 +380,10 @@
       "item_no": "A16",
       "section": "A - Structural Frame",
       "item_name": "PH Post Holder Bracket (PHA/PHB/PHD)",
-      "quantity": 28,
+      "quantity": 15,
       "unit": "nr",
-      "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Post holder brackets at column bases. Count estimated from IFC steel post lm. Verify bracket type (PHA/PHB/PHD) against post size and load from structural drawings."
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Post holder brackets at column bases. Count from DXF pad count (direct geometry measurement). Total: 15 nr. Verify bracket type (PHA/PHB/PHD) against post size and load from structural drawings."
     },
     {
       "item_no": "A17",
@@ -382,26 +391,26 @@
       "item_name": "Triple Grip Connector (roof-to-wall uplift)",
       "quantity": 36,
       "unit": "nr",
-      "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Roof-to-wall-plate cyclonic uplift connections at 1.2m centres along 42.4m eave line = 36 nr. Verify spacing and type from structural engineer (cyclone region requirement)."
+      "confidence": "MEDIUM",
+      "notes": "MANUAL REVIEW REQUIRED. Roof-to-wall-plate cyclonic uplift connectors at rafter-to-plate junctions. Eave length 42.4m from DXF roof geometry (hip roof \u2014 perimeter all sides). Spacing 1.2m (1 per rafter bay at standard 1200mm spacing). Total: ceil(42.4/1.2) = 36 nr. Verify triple grip type and fixing schedule from structural engineer for cyclone region."
     },
     {
       "item_no": "A18",
       "section": "A - Structural Frame",
       "item_name": "Hold-Down Washer \u2014 Cyclonic (post base)",
-      "quantity": 60,
+      "quantity": 30,
       "unit": "nr",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Hold-down washers at post base connections. 15 pads \u00d7 4 = 60 nr. Verify washer specification (size, grade) from structural drawings."
+      "notes": "MANUAL REVIEW REQUIRED. Hold-down washers at post base connections. 15 pads \u00d7 2 = 30 nr. Verify washer specification (size, grade) from structural drawings."
     },
     {
       "item_no": "A19",
       "section": "A - Structural Frame",
       "item_name": "Fix Plate / Gusset Plate (strap bracing connection)",
-      "quantity": 18,
+      "quantity": 34,
       "unit": "nr",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Fix plates at strap bracing termination points: 49.7lm \u00d7 0.35 = 18 nr. Verify against FrameCAD connection schedule."
+      "notes": "MANUAL REVIEW REQUIRED. Fix plates at strap bracing termination points (1 per strap end). 49.7lm \u00f7 3.0m avg run = 17 runs \u00d7 2 ends = 34 nr. Verify run count and plate spec from FrameCAD connection schedule."
     },
     {
       "item_no": "A20",
@@ -416,10 +425,10 @@
       "item_no": "A21",
       "section": "A - Structural Frame",
       "item_name": "Cable Grommet (LGS service penetration)",
-      "quantity": 45,
+      "quantity": 93,
       "unit": "nr",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Cable/conduit grommets at LGS stud penetrations. 29.4m internal wall \u00d7 1.5 per m = 45 nr. Quantity depends on electrical/hydraulic layout. Verify from services drawings."
+      "notes": "MANUAL REVIEW REQUIRED. Cable/conduit grommets at LGS stud penetrations (commercial density). Internal: 29.4m \u00d7 2.5/m = 73.5. External (service entries): 38.4m \u00d7 0.5/m = 19.2. Total: 93 nr. Quantity depends on electrical/hydraulic layout. Verify from services drawings."
     },
     {
       "item_no": "A22",
@@ -461,10 +470,10 @@
       "item_no": "K15",
       "section": "K - External Works",
       "item_name": "Window / Door Reveal Trim (FC / timber)",
-      "quantity": 68.03,
+      "quantity": 40.33,
       "unit": "lm",
       "confidence": "MEDIUM",
-      "notes": "MANUAL REVIEW REQUIRED. Jamb / reveal trim at external openings: 2 \u00d7 height + 1 \u00d7 width per opening. Verify trim profile and dimensions with cladding specification."
+      "notes": "MANUAL REVIEW REQUIRED. Jamb / reveal trim at external cladding openings: 2 \u00d7 height + 1 \u00d7 width per opening. Louvre h=0.75 m (config default). Partition doors (<0.85 m wide) excluded \u2014 they are in internal walls. Verify trim profile and dimensions with cladding specification."
     },
     {
       "item_no": "K17",
@@ -545,7 +554,7 @@
       "quantity": 7,
       "unit": "sheets",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Wet area lining: wall area = perimeter \u00d7 wall height (perimeter estimated \u2014 verify room dimensions). Verify count against wet area wall schedule."
+      "notes": "MANUAL REVIEW REQUIRED. Wet area lining: wall area = perimeter \u00d7 wall height. perimeter from project_config (LOW \u2014 config-specified, not measured from drawings). Verify room perimeter against wet area schedule. Verify count against wet area wall schedule."
     },
     {
       "item_no": "E12",
@@ -749,19 +758,19 @@
       "item_no": "I18",
       "section": "I - Services",
       "item_name": "Wet Area Wall Tiling \u2014 Toilet",
-      "quantity": 15.3,
+      "quantity": 11.16,
       "unit": "m2",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Heuristic estimate \u2014 room boundary not source-derived. Perimeter: 4\u00d7\u221a4.5=8.5m (heuristic \u2014 no room polygon). Tile area: 8.5m \u00d7 1800mm splash zone = 15.30 m\u00b2. No finish schedule in source documents. Verify tile type, actual room perimeter, splash-zone height, and area from architectural drawings. Deduct door/window openings."
+      "notes": "MANUAL REVIEW REQUIRED. Heuristic estimate \u2014 room boundary not source-derived. Perimeter: 2\u00d7(\u221a4.5+1)=6.2m (rect-est \u2014 no room polygon). Tile area: 6.2m \u00d7 1800mm splash zone = 11.16 m\u00b2. No finish schedule in source documents. Verify tile type, actual room perimeter, splash-zone height, and area from architectural drawings. Deduct door/window openings."
     },
     {
       "item_no": "I19",
       "section": "I - Services",
       "item_name": "Wet Area Waterproofing \u2014 Membrane",
-      "quantity": 5.78,
+      "quantity": 5.43,
       "unit": "m2",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Heuristic estimate: floor area (4.50 m\u00b2) + 150 mm upstand for Toilet. Perimeter 8.5 m estimated as 4\u00d7\u221a4.5 (no room polygon \u2014 config estimate). Verify room dimensions and upstand height from architectural drawings."
+      "notes": "MANUAL REVIEW REQUIRED. Heuristic estimate: floor area (4.50 m\u00b2) + 150 mm upstand for Toilet. Perimeter 6.2 m estimated as 4\u00d7\u221a4.5 (no room polygon \u2014 config estimate). Verify room dimensions and upstand height from architectural drawings."
     },
     {
       "item_no": "I20",
@@ -908,27 +917,20 @@
       "notes": "MANUAL REVIEW REQUIRED. Kerb guard (min 75 mm high) both sides. Verify from architectural drawings."
     }
   ],
-  "gap_analysis": [
-    {
-      "severity": "MEDIUM",
-      "package": "floor_system",
-      "issue": "Floor system package present but all items are inferred \u2014 no measured schedule",
-      "action": "Obtain floor panel/joist schedule from FrameCAD or structural engineer"
-    }
-  ],
+  "gap_analysis": [],
   "confidence_summary": {
     "HIGH": 39,
-    "MEDIUM": 103,
-    "LOW": 78,
-    "pct_high": 17.7,
-    "pct_medium": 46.8,
-    "pct_low": 35.5
+    "MEDIUM": 106,
+    "LOW": 77,
+    "pct_high": 17.6,
+    "pct_medium": 47.7,
+    "pct_low": 34.7
   },
   "evidence_quality": {
     "measured_source_count": 22,
-    "calculated_source_count": 138,
+    "calculated_source_count": 148,
     "config_backed_count": 6,
-    "heuristic_inferred_count": 49,
+    "heuristic_inferred_count": 41,
     "placeholder_count": 5,
     "config_backed_items": [
       {
@@ -969,18 +971,6 @@
       }
     ],
     "heuristic_items_not_manual_review": [
-      {
-        "item_no": "G04",
-        "item_name": "Floor Joist (J1) \u2014 150S41-095-500 (total lm)"
-      },
-      {
-        "item_no": "G06",
-        "item_name": "Floor Edge Beam (E1+E2) \u2014 150P41-115-500 (total lm)"
-      },
-      {
-        "item_no": "G08",
-        "item_name": "Floor Stringer (S1+S2) \u2014 150S41-115-500 (total lm)"
-      },
       {
         "item_no": "K08",
         "item_name": "External Corner Flashing (FC cladding)"
@@ -1063,7 +1053,7 @@
       }
     ],
     "promoted_count": 2,
-    "still_blocked_count": 56,
+    "still_blocked_count": 51,
     "still_blocked_sample": [
       {
         "item_no": "F04",
@@ -1096,31 +1086,31 @@
         "blocked_reason": "MANUAL REVIEW REQUIRED. 3kg bag of grout \u2248 6 m\u00b2 floor tile coverage. Adjust for joint width and tile size."
       },
       {
-        "item_no": "G01",
-        "item_name": "Floor Cassette Panel \u2014 3000mm \u00d7 2394mm",
-        "blocked_reason": "MANUAL REVIEW REQUIRED. Panel count derived from floor area / per-panel area (7.182m\u00b2). Panel width=3000mm (from E1/E2 e"
+        "item_no": "H05",
+        "item_name": "Termite Barrier \u2014 Physical Membrane (ext perimeter)",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. Physical termite management (barrier membrane / Granitgard or equivalent) at all footing/bearer "
       },
       {
-        "item_no": "G02",
-        "item_name": "Floor Cassette Panel \u2014 Total Area (9 panels)",
-        "blocked_reason": "MANUAL REVIEW REQUIRED. Total floor cassette panel area = 9 panels \u00d7 7.182m\u00b2 (3000mm \u00d7 2394mm each). Cross-check: main_f"
+        "item_no": "H06",
+        "item_name": "Bulk Earthworks / Level (provisional)",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. Excavation volume cannot be derived from architectural documents."
       },
       {
-        "item_no": "G03",
-        "item_name": "Floor Joist (J1) \u2014 150S41-095-500 \u00d7 2394mm",
-        "blocked_reason": "MANUAL REVIEW REQUIRED. Profile: 150S41-095-500, length: 2394mm. 7 joists per panel (HIGH confidence \u2014 DWG Onpage FLayou"
+        "item_no": "H12",
+        "item_name": "Termite Barrier \u2014 Physical Membrane (internal bearing lines)",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. Physical termite management at internal bearing interfaces. Verify treatment specification from "
       },
       {
-        "item_no": "G05",
-        "item_name": "Floor Edge Beam (E1+E2) \u2014 150P41-115-500 \u00d7 3000mm",
-        "blocked_reason": "MANUAL REVIEW REQUIRED. Profile: 150P41-115-500, length: 3000mm. 2 edge beams per panel (E1\u00d71 + E2\u00d71). Total 18 nr. Tota"
+        "item_no": "A21",
+        "item_name": "Cable Grommet (LGS service penetration)",
+        "blocked_reason": "MANUAL REVIEW REQUIRED. Cable/conduit grommets at LGS stud penetrations (commercial density). Internal: 29.4m \u00d7 2.5/m = "
       }
     ],
     "evidence_class_after": {
       "measured_source": 22,
-      "calculated_source": 138,
+      "calculated_source": 148,
       "config_backed": 6,
-      "heuristic_inferred": 49,
+      "heuristic_inferred": 41,
       "placeholder": 5
     },
     "reconciliation": {
