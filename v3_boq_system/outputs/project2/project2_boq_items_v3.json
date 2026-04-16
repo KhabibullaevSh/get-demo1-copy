@@ -2140,14 +2140,14 @@
     "quantity": 77.51,
     "rate_pgk": null,
     "amount_pgk": null,
-    "quantity_status": "calculated",
+    "quantity_status": "measured",
     "quantity_basis": "ext_wall_lm(38.40) \u00d7 wall_h(2.4) \u2212 ext_doors(1.877) \u2212 ext_windows(12.775)",
     "source_evidence": "dxf_geometry: ext_wall_perimeter=38.40 m, h=2.4 m",
     "derivation_rule": "38.40 \u00d7 2.4 \u2212 14.652",
     "confidence": "HIGH",
     "manual_review": false,
-    "notes": "Gross 92.16 m\u00b2 \u2212 doors 1.877 m\u00b2 [DOOR_90\u00d71(0.920\u00d72.04)] \u2212 windows 12.775 m\u00b2 [WINDOW_LOUVRE_1100\u00d78(1.080\u00d71.20), WINDOW_LOUVRE_800\u00d72(0.799\u00d70.62), WINDOW_LOUVRE_1800\u00d71(1.847\u00d70.75)] (louvre h=0.75 m from config default) = net 77.51 m\u00b2. Partition doors (<0.85 m wide) excluded \u2014 not in external cladding face.",
-    "evidence_class": "calculated_source"
+    "notes": "[canonical_geometry] Gross=92.16 m\u00b2 (38.40 m \u00d7 2.4 m). Entrance doors: 1.877 m\u00b2 [DOOR_90\u00d71(0.920\u00d72.040m)]. Windows: 12.775 m\u00b2 [WINDOW_LOUVRE_1100\u00d78(1.080\u00d71.203m); WINDOW_LOUVRE_800\u00d72(0.799\u00d70.623m); WINDOW_LOUVRE_1800\u00d71(1.847\u00d70.750m [louvre_fallback])] (louvre_h_default=0.75 m). Net cladding: 77.51 m\u00b2. Partition doors excluded (width < 0.85 m \u2014 internal walls only).",
+    "evidence_class": "measured_source"
   },
   {
     "item_no": "K05",
@@ -2417,7 +2417,7 @@
     "amount_pgk": null,
     "quantity_status": "calculated",
     "quantity_basis": "sum((2\u00d7h + w) \u00d7 qty) for each external-cladding opening (entrance doors \u22650.85m + windows)",
-    "source_evidence": "dxf_geometry: 4 openings in external cladding face",
+    "source_evidence": "canonical_geometry: 4 openings in cladding face",
     "derivation_rule": "sum((2h+w)\u00d7qty per opening)",
     "confidence": "MEDIUM",
     "manual_review": true,
@@ -3815,14 +3815,14 @@
     "quantity": 26,
     "rate_pgk": null,
     "amount_pgk": null,
-    "quantity_status": "calculated",
+    "quantity_status": "measured",
     "quantity_basis": "ceil(ext_wall_area_net \u00d7 1.05 / 3.24)",
-    "source_evidence": "dxf_geometry: ext_wall_lm=38.40 m \u00d7 h=2.4 m \u2192 gross=92.16 m\u00b2 \u2212 openings=14.652 m\u00b2 \u2192 net=77.51 m\u00b2",
+    "source_evidence": "canonical_geometry/wf_external: gross=92.16 m\u00b2 net=77.51 m\u00b2 \u2212 openings=14.652 m\u00b2 \u2192 net=77.51 m\u00b2",
     "derivation_rule": "ceil(77.51 \u00d7 1.05 / 3.24)",
     "confidence": "MEDIUM",
     "manual_review": false,
-    "notes": "Opening deductions: doors=1.877 m\u00b2 [DOOR_90\u00d71(0.920\u00d72.04)]; windows=12.775 m\u00b2 [WINDOW_LOUVRE_1100\u00d78(1.080\u00d70.75), WINDOW_LOUVRE_800\u00d72(0.799\u00d70.75), WINDOW_LOUVRE_1800\u00d71(1.847\u00d70.75)] (louvre height=0.75 m from config default). Gross=92.16 m\u00b2 \u2212 14.652 m\u00b2 = net=77.51 m\u00b2.",
-    "evidence_class": "calculated_source"
+    "notes": "[canonical_geometry] Opening deductions: doors=1.877 m\u00b2 [DOOR_90\u00d71(0.920\u00d72.040)]; windows=12.775 m\u00b2 [WINDOW_LOUVRE_1100\u00d78(1.080\u00d71.203), WINDOW_LOUVRE_800\u00d72(0.799\u00d70.623), WINDOW_LOUVRE_1800\u00d71(1.847\u00d70.750 [louvre_fallback])] (louvre_h=0.75 m). Gross=92.16 m\u00b2 \u2212 14.652 m\u00b2 = net=77.51 m\u00b2.",
+    "evidence_class": "measured_source"
   },
   {
     "item_no": "E02",
@@ -3940,14 +3940,14 @@
     "quantity": 41,
     "rate_pgk": null,
     "amount_pgk": null,
-    "quantity_status": "calculated",
+    "quantity_status": "measured",
     "quantity_basis": "ceil(int_wall_area_net \u00d7 1.05 / 3.24)",
-    "source_evidence": "dxf_geometry: int_wall_lm=29.40 m \u00d7 h=2.4 m \u00d7 2 faces = 141.12 m\u00b2 \u2212 int_doors=16.320 m\u00b2 \u2192 net=124.80 m\u00b2",
+    "source_evidence": "canonical_geometry/wf_internal: gross=141.12 m\u00b2 net=124.80 m\u00b2 \u2212 int_doors=16.320 m\u00b2 \u2192 net=124.80 m\u00b2",
     "derivation_rule": "ceil(124.80 \u00d7 1.05 / 3.24)",
     "confidence": "HIGH",
     "manual_review": false,
-    "notes": "Opening deductions (assumed-internal doors, both partition faces): 16.320 m\u00b2 [DOOR_82\u00d74\u00d72f(0.820\u00d72.04), DOOR_72\u00d71\u00d72f(0.720\u00d72.04)]. Gross=141.12 m\u00b2 \u2212 16.320 m\u00b2 = net=124.80 m\u00b2. Doors classified as internal by width < 0.85 m threshold. Measured from DXF WALLS layer: 8 internal wall runs.",
-    "evidence_class": "calculated_source"
+    "notes": "[canonical_geometry] Partition door deductions (both faces): 16.320 m\u00b2 [DOOR_82\u00d74\u00d72f(0.820\u00d72.040), DOOR_72\u00d71\u00d72f(0.720\u00d72.040)]. Gross=141.12 m\u00b2 \u2212 16.320 m\u00b2 = net=124.80 m\u00b2. Doors classified internal by width < 0.85 m threshold. Measured from DXF WALLS layer: 8 internal wall runs.",
+    "evidence_class": "measured_source"
   },
   {
     "item_no": "E07",
@@ -3996,7 +3996,7 @@
     "derivation_rule": "ceil(area \u00d7 25 / 200)",
     "confidence": "LOW",
     "manual_review": false,
-    "notes": "Opening deductions (assumed-internal doors, both partition faces): 16.320 m\u00b2 [DOOR_82\u00d74\u00d72f(0.820\u00d72.04), DOOR_72\u00d71\u00d72f(0.720\u00d72.04)]. Gross=141.12 m\u00b2 \u2212 16.320 m\u00b2 = net=124.80 m\u00b2. Doors classified as internal by width < 0.85 m threshold. Measured from DXF WALLS layer: 8 internal wall runs.",
+    "notes": "[canonical_geometry] Partition door deductions (both faces): 16.320 m\u00b2 [DOOR_82\u00d74\u00d72f(0.820\u00d72.040), DOOR_72\u00d71\u00d72f(0.720\u00d72.040)]. Gross=141.12 m\u00b2 \u2212 16.320 m\u00b2 = net=124.80 m\u00b2. Doors classified internal by width < 0.85 m threshold. Measured from DXF WALLS layer: 8 internal wall runs.",
     "evidence_class": "calculated_source"
   },
   {

@@ -2,18 +2,15 @@
 external_cladding_quantifier.py — External wall cladding (FC weatherboard / sheet) quantification.
 
 Sources (priority order):
-  1. Measured ext_wall perimeter from DXF (WallElement wall_type=external, length_m)
-  2. Wall height from IFC or project_config
+  1. CanonicalCladdingFace (canonical geometry layer — pre-computed net area,
+     opening deductions with correct quantity multipliers, explicit truth_class)
+  2. Measured ext_wall perimeter from DXF (WallElement wall_type=external, length_m)
+  3. Wall height from IFC or project_config
 
-Produces:
-  - FC Weatherboard / External Sheet Cladding (m²)
-  - Board count (nr) based on board width and wall run
-  - H-joiner extrusions (nr) based on board count and run per board
-  - External corner flashings (nr) — from estimated corner count
-  - Internal corner flashings (nr)
-  - Stud clips / fixing clips (nr) per stud row
-  - Stainless screws / rivets (nr)
-  - Building wrap / sarking (m²) if external cladding present
+When a CanonicalGeometryModel is available (passed as canonical_geom), the opening
+deduction section reads directly from CanonicalCladdingFace — no re-derivation.
+All board-count, H-joiner, corner, and accessory rows still use the wall dimensions
+from the element model (unchanged).
 
 All quantities derived from geometry — no reference BOQ values copied.
 """
@@ -21,8 +18,12 @@ from __future__ import annotations
 
 import logging
 import math
+from typing import TYPE_CHECKING, Optional
 
 from v3_boq_system.normalize.element_model import ProjectElementModel, WallElement
+
+if TYPE_CHECKING:
+    from v3_boq_system.normalize.canonical_objects import CanonicalGeometryModel
 
 log = logging.getLogger("boq.v3.ext_cladding")
 
@@ -67,14 +68,20 @@ def _derive_LW(floor_area: float, floor_perim: float) -> tuple[float, float]:
 
 
 def quantify_external_cladding(
-    model:  ProjectElementModel,
-    config: dict,
+    model:         ProjectElementModel,
+    config:        dict,
+    canonical_geom: "Optional[CanonicalGeometryModel]" = None,
 ) -> list[dict]:
     """
     Produce external wall cladding BOQ rows from measured wall geometry.
 
+    When canonical_geom is provided, uses CanonicalCladdingFace for the
+    opening deduction section (pre-computed, quantity-correct, explicit truth_class).
+    All board-count and accessory rows still derive from element model wall dimensions.
+
     Returns list of BOQ rows.
     """
+    from v3_boq_system.normalize.canonical_objects import TruthClass
     rows: list[dict] = []
 
     ext_walls = [w for w in model.walls if w.wall_type == "external"]
@@ -97,55 +104,92 @@ def quantify_external_cladding(
     board_length_mm   = clad_cfg.get("board_length_mm", 4200)    # stock board length
     waste_factor      = clad_cfg.get("waste_factor", 1.05)
 
-    # ── Gross cladding area ───────────────────────────────────────────────────
-    # Opening deductions: only openings that actually penetrate the external cladding face.
-    # Width threshold (0.85 m) separates external entrance doors (≥850 mm) from internal
-    # partition doors (<850 mm). All element-model openings carry is_external=True by
-    # default, so the width heuristic is necessary to exclude partition doors.
-    # Louvre windows with height_m=0 use the config default height (typically 0.75 m).
-    lining_cfg       = config.get("lining", {})
+    # ── Gross cladding area — canonical-first ─────────────────────────────────
+    # When canonical_geom is available, the opening deduction section reads directly
+    # from CanonicalCladdingFace (pre-computed, quantity-correct, explicit truth_class).
+    # The canonical face was built by geometry_reconciler after graphical reconciliation,
+    # so window heights from FrameCAD labels are already resolved.
+    #
+    # Fallback (no canonical_geom): applies the same classification logic inline.
+    lining_cfg        = config.get("lining", {})
     _louvre_h_default = lining_cfg.get("default_louvre_height_m", 0.75)
-    _EXT_DOOR_MIN_W   = 0.85   # ≥850 mm → external entrance; <850 mm → partition door
+    _EXT_DOOR_MIN_W   = 0.85
 
-    clad_ext_door_ops = [o for o in model.openings
-                         if o.opening_type == "door"   and o.width_m >= _EXT_DOOR_MIN_W]
-    clad_ext_win_ops  = [o for o in model.openings
-                         if o.opening_type == "window" and o.is_external and o.width_m > 0]
+    gross_area = round(ext_lm * ext_h, 2)
 
-    clad_door_area = round(sum(
-        o.width_m * o.height_m * o.quantity
-        for o in clad_ext_door_ops
-        if o.height_m > 0
-    ), 3)
-    clad_win_area  = round(sum(
-        o.width_m * (o.height_m if o.height_m > 0 else _louvre_h_default) * o.quantity
-        for o in clad_ext_win_ops
-    ), 3)
-    opening_area = round(clad_door_area + clad_win_area, 3)
+    _canon_cf = canonical_geom.primary_cladding_face() if canonical_geom else None
 
-    gross_area   = round(ext_lm * ext_h, 2)
-    net_area     = round(gross_area - opening_area, 2) if opening_area > 0 else gross_area
-
-    if opening_area > 0:
+    if _canon_cf is not None:
+        # ── Path A: canonical geometry (preferred) ───────────────────────────
+        opening_area   = _canon_cf.opening_deduction_m2
+        clad_door_area = _canon_cf.door_deduction_m2
+        clad_win_area  = _canon_cf.window_deduction_m2
+        net_area       = _canon_cf.net_area_m2
+        area_status    = TruthClass.to_quantity_status(_canon_cf.truth_class)
+        area_conf      = _canon_cf.confidence
+        area_note      = (
+            f"[canonical_geometry] {_canon_cf.notes}"
+            if opening_area > 0
+            else "Gross area (canonical_geometry: no openings deducted)"
+        )
+        _louvre_h_default = _canon_cf.louvre_height_default_m
+        # Reconstruct per-type detail parts for basis strings
+        clad_ext_door_ops = [o for o in canonical_geom.openings if o.is_cladding_face
+                             and o.opening_type == "door"] if canonical_geom else []
+        clad_ext_win_ops  = [o for o in canonical_geom.openings if o.is_cladding_face
+                             and o.opening_type == "window"] if canonical_geom else []
         door_parts = ", ".join(
-            f"{o.mark}×{o.quantity}({o.width_m:.3f}×{o.height_m:.2f})" for o in clad_ext_door_ops
+            f"{o.mark}×{o.quantity}({o.width_m:.3f}×{o.height_used:.3f}m)"
+            for o in clad_ext_door_ops
         )
         win_parts = ", ".join(
-            f"{o.mark}×{o.quantity}({o.width_m:.3f}×{(o.height_m if o.height_m > 0 else _louvre_h_default):.2f})"
+            f"{o.mark}×{o.quantity}({o.width_m:.3f}×{o.height_used:.3f}m"
+            + (" [louvre_fallback]" if o.height_fallback_used else "") + ")"
             for o in clad_ext_win_ops
         )
-        area_note = (
-            f"Gross {gross_area:.2f} m² − doors {clad_door_area:.3f} m² [{door_parts}] "
-            f"− windows {clad_win_area:.3f} m² [{win_parts}] "
-            f"(louvre h={_louvre_h_default:.2f} m from config default) "
-            f"= net {net_area:.2f} m². "
-            f"Partition doors (<{_EXT_DOOR_MIN_W:.2f} m wide) excluded — not in external cladding face."
-        )
-    else:
-        area_note = "Gross area — deduct openings manually (no opening dimensions measured)"
 
-    area_status  = "calculated" if opening_area > 0 else "measured"
-    area_conf    = conf if opening_area > 0 else "MEDIUM"
+    else:
+        # ── Path B: element model fallback ────────────────────────────────────
+        clad_ext_door_ops_raw = [o for o in model.openings
+                                 if o.opening_type == "door" and o.width_m >= _EXT_DOOR_MIN_W]
+        clad_ext_win_ops_raw  = [o for o in model.openings
+                                 if o.opening_type == "window" and o.is_external
+                                 and o.width_m > 0]
+        clad_door_area = round(sum(
+            o.width_m * o.height_m * o.quantity
+            for o in clad_ext_door_ops_raw if o.height_m > 0
+        ), 3)
+        clad_win_area  = round(sum(
+            o.width_m * (o.height_m if o.height_m > 0 else _louvre_h_default) * o.quantity
+            for o in clad_ext_win_ops_raw
+        ), 3)
+        opening_area  = round(clad_door_area + clad_win_area, 3)
+        net_area      = round(max(0.0, gross_area - opening_area), 2)
+        area_status   = "calculated" if opening_area > 0 else "measured"
+        area_conf     = conf if opening_area > 0 else "MEDIUM"
+        door_parts    = ", ".join(
+            f"{o.mark}×{o.quantity}({o.width_m:.3f}×{o.height_m:.2f})"
+            for o in clad_ext_door_ops_raw
+        )
+        win_parts = ", ".join(
+            f"{o.mark}×{o.quantity}({o.width_m:.3f}×"
+            f"{(o.height_m if o.height_m > 0 else _louvre_h_default):.2f}m)"
+            for o in clad_ext_win_ops_raw
+        )
+        clad_ext_door_ops = clad_ext_door_ops_raw  # type: ignore[assignment]
+        clad_ext_win_ops  = clad_ext_win_ops_raw   # type: ignore[assignment]
+
+    if opening_area > 0 and _canon_cf is None:
+        area_note = (
+            f"[element_model] Gross {gross_area:.2f} m² "
+            f"− doors {clad_door_area:.3f} m² [{door_parts}] "
+            f"− windows {clad_win_area:.3f} m² [{win_parts}] "
+            f"(louvre h={_louvre_h_default:.2f} m from config) "
+            f"= net {net_area:.2f} m². "
+            f"Partition doors (<{_EXT_DOOR_MIN_W:.2f} m) excluded."
+        )
+    elif not opening_area:
+        area_note = "Gross area — no opening dimensions measured"
 
     rows.append(_row(
         "external_cladding",
@@ -428,14 +472,21 @@ def quantify_external_cladding(
 
     # ── Window / door reveal trim ─────────────────────────────────────────────
     # Jamb / reveal trim at openings in the external cladding face.
-    # Uses same entrance-door threshold as area deduction (_EXT_DOOR_MIN_W).
-    # Partition doors (<0.85 m) are in internal walls — no external reveal trim.
-    # Louvre windows with height_m=0 use _louvre_h_default (not wall height).
-    trim_openings = clad_ext_door_ops + clad_ext_win_ops
+    # When canonical_geom is available, uses CanonicalOpening.height_used (already
+    # resolved including louvre fallback).  Partition doors excluded by is_cladding_face.
     opening_trim_lm = 0.0
-    for o in trim_openings:
-        h_used = o.height_m if o.height_m > 0 else _louvre_h_default
-        opening_trim_lm += (2 * h_used + o.width_m) * o.quantity
+    if _canon_cf is not None and canonical_geom is not None:
+        # Canonical path — height already resolved, is_cladding_face already filtered
+        for o in canonical_geom.cladding_face_openings():
+            opening_trim_lm += (2 * o.height_used + o.width_m) * o.quantity
+        _trim_src = f"canonical_geometry: {len(canonical_geom.cladding_face_openings())} openings in cladding face"
+    else:
+        # Fallback path — uses element model openings with inline height resolution
+        trim_openings = clad_ext_door_ops + clad_ext_win_ops  # type: ignore[operator]
+        for o in trim_openings:
+            h_used = o.height_m if o.height_m > 0 else _louvre_h_default  # type: ignore[union-attr]
+            opening_trim_lm += (2 * h_used + o.width_m) * o.quantity  # type: ignore[union-attr]
+        _trim_src = f"dxf_geometry: {len(trim_openings)} openings in external cladding face"  # type: ignore[arg-type]
     opening_trim_lm = round(opening_trim_lm, 2)
     if opening_trim_lm > 0:
         rows.append(_row(
@@ -444,7 +495,7 @@ def quantify_external_cladding(
             "lm", opening_trim_lm,
             "calculated",
             "sum((2×h + w) × qty) for each external-cladding opening (entrance doors ≥0.85m + windows)",
-            f"dxf_geometry: {len(trim_openings)} openings in external cladding face",
+            _trim_src,
             "sum((2h+w)×qty per opening)",
             "MEDIUM",
             manual_review=True,

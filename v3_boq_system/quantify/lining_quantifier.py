@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import math
+from typing import TYPE_CHECKING, Optional
 
 from v3_boq_system.normalize.element_model import (
     CeilingElement,
@@ -23,6 +24,9 @@ from v3_boq_system.normalize.element_model import (
     RoomElement,
     WallElement,
 )
+
+if TYPE_CHECKING:
+    from v3_boq_system.normalize.canonical_objects import CanonicalGeometryModel
 
 log = logging.getLogger("boq.v3.lining")
 
@@ -41,9 +45,10 @@ def _row(
 
 
 def quantify_linings(
-    model:  ProjectElementModel,
-    config: dict,
+    model:          ProjectElementModel,
+    config:         dict,
     assembly_rules: dict,
+    canonical_geom: "Optional[CanonicalGeometryModel]" = None,
 ) -> list[dict]:
     """
     Produce BOQ rows for all lining packages.
@@ -61,56 +66,102 @@ def quantify_linings(
     ceil_batten_s = config.get("structural", {}).get("ceiling_batten_spacing_mm", 400) / 1000
 
     # ── Opening deductions ────────────────────────────────────────────────────
-    # Source: DXF block geometry (HIGH for widths; height_m=0 on louvres uses config default).
-    # Element builder marks all DXF doors as is_external=True by default.
-    # Width heuristic for this pharmacy: doors ≥ 0.85 m = external entrance;
-    # doors < 0.85 m = assumed internal partition door.
+    # When canonical_geom is available, reads pre-classified CanonicalOpening objects
+    # (entrance doors, partition doors, windows with resolved heights).
+    # Fallback: applies classification inline from element model openings.
+    from v3_boq_system.normalize.canonical_objects import TruthClass
     louvre_h_default = lining_cfg.get("default_louvre_height_m", 0.75)
-    _EXT_DOOR_MIN_W  = 0.85   # mm-threshold separating entrance (≥850) from room doors (<850)
+    _EXT_DOOR_MIN_W  = 0.85
 
-    ext_door_ops = [o for o in model.openings
-                    if o.opening_type == "door" and o.width_m >= _EXT_DOOR_MIN_W]
-    ext_win_ops  = [o for o in model.openings
-                    if o.opening_type == "window" and o.is_external]
-    int_door_ops = [o for o in model.openings
-                    if o.opening_type == "door" and o.width_m < _EXT_DOOR_MIN_W]
-
-    ext_door_area      = round(sum(o.width_m * o.height_m * o.quantity
-                                   for o in ext_door_ops), 3)
-    ext_win_area       = round(sum(o.width_m
-                                   * (o.height_m if o.height_m > 0 else louvre_h_default)
-                                   * o.quantity for o in ext_win_ops), 3)
-    int_door_area_1f   = round(sum(o.width_m * o.height_m * o.quantity
-                                   for o in int_door_ops), 3)   # one face each
-    int_door_area_2f   = round(int_door_area_1f * 2, 3)         # both partition faces
-    ext_opening_deduct = round(ext_door_area + ext_win_area, 3)
+    if canonical_geom is not None:
+        # ── Canonical path: use pre-classified openings ───────────────────────
+        _canon_ext_doors   = canonical_geom.entrance_doors()
+        _canon_ext_wins    = canonical_geom.external_windows()
+        _canon_int_doors   = canonical_geom.partition_doors()
+        ext_door_area      = round(sum(o.opening_area_m2 for o in _canon_ext_doors), 3)
+        ext_win_area       = round(sum(o.opening_area_m2 for o in _canon_ext_wins), 3)
+        int_door_area_1f   = round(sum(o.opening_area_m2 for o in _canon_int_doors), 3)
+        int_door_area_2f   = round(int_door_area_1f * 2, 3)
+        ext_opening_deduct = round(ext_door_area + ext_win_area, 3)
+        _opening_src       = "canonical_geometry"
+        # Alias for skirting section which needs .width_m / .quantity / .mark
+        ext_door_ops = _canon_ext_doors
+        ext_win_ops  = _canon_ext_wins
+        int_door_ops = _canon_int_doors
+    else:
+        # ── Element model fallback ────────────────────────────────────────────
+        ext_door_ops = [o for o in model.openings
+                        if o.opening_type == "door" and o.width_m >= _EXT_DOOR_MIN_W]
+        ext_win_ops  = [o for o in model.openings
+                        if o.opening_type == "window" and o.is_external]
+        int_door_ops = [o for o in model.openings
+                        if o.opening_type == "door" and o.width_m < _EXT_DOOR_MIN_W]
+        ext_door_area      = round(sum(o.width_m * o.height_m * o.quantity
+                                       for o in ext_door_ops), 3)
+        ext_win_area       = round(sum(o.width_m
+                                       * (o.height_m if o.height_m > 0 else louvre_h_default)
+                                       * o.quantity for o in ext_win_ops), 3)
+        int_door_area_1f   = round(sum(o.width_m * o.height_m * o.quantity
+                                       for o in int_door_ops), 3)
+        int_door_area_2f   = round(int_door_area_1f * 2, 3)
+        ext_opening_deduct = round(ext_door_area + ext_win_area, 3)
+        _opening_src       = "dxf_geometry"
+        # Alias for deduct-note construction below
+        _canon_ext_doors   = None  # type: ignore[assignment]
+        _canon_ext_wins    = None  # type: ignore[assignment]
+        _canon_int_doors   = None  # type: ignore[assignment]
 
     # ── External wall lining ──────────────────────────────────────────────────
     ext_walls = [w for w in model.walls if w.wall_type == "external"]
     if ext_walls:
         ext_lm    = sum(w.length_m for w in ext_walls)
         ext_h     = max(w.height_m for w in ext_walls)
-        ext_area  = round(ext_lm * ext_h, 2)
-        ext_conf  = max((w.confidence for w in ext_walls), key=lambda c: {"HIGH":3,"MEDIUM":2,"LOW":1}.get(c,0))
+        ext_conf  = max((w.confidence for w in ext_walls),
+                        key=lambda c: {"HIGH": 3, "MEDIUM": 2, "LOW": 1}.get(c, 0))
         ext_src   = ext_walls[0].source
 
-        # Deduct external door(s) and window openings from interior lining area
-        ext_area_net = round(max(0.0, ext_area - ext_opening_deduct), 2)
+        # Prefer canonical wall face net area when available
+        _canon_wf = canonical_geom.external_wall_face() if canonical_geom else None
+        if _canon_wf is not None:
+            ext_area     = _canon_wf.gross_area_m2
+            ext_area_net = _canon_wf.net_area_m2
+            _area_status = TruthClass.to_quantity_status(_canon_wf.truth_class)
+            _area_src    = f"canonical_geometry/wf_external: gross={ext_area:.2f} m² net={ext_area_net:.2f} m²"
+        else:
+            ext_area     = round(ext_lm * ext_h, 2)
+            ext_area_net = round(max(0.0, ext_area - ext_opening_deduct), 2)
+            _area_status = "calculated"
+            _area_src    = (f"{ext_src}: ext_wall_lm={ext_lm:.2f} m × h={ext_h:.1f} m"
+                            f" → gross={ext_area:.2f} m²")
+
         sheets    = math.ceil(ext_area_net * waste / fc_wall_area)
 
         _deduct_note = ""
         if ext_opening_deduct > 0:
-            door_parts = ", ".join(
-                f"{o.mark}×{o.quantity}({o.width_m:.3f}×{o.height_m:.2f})" for o in ext_door_ops
-            )
-            win_h_used = louvre_h_default
-            win_parts  = ", ".join(
-                f"{o.mark}×{o.quantity}({o.width_m:.3f}×{win_h_used:.2f})" for o in ext_win_ops
-            )
+            if canonical_geom is not None and _canon_ext_doors is not None:
+                door_parts = ", ".join(
+                    f"{o.mark}×{o.quantity}({o.width_m:.3f}×{o.height_used:.3f})"
+                    for o in _canon_ext_doors
+                )
+                win_parts  = ", ".join(
+                    f"{o.mark}×{o.quantity}({o.width_m:.3f}×{o.height_used:.3f}"
+                    + (" [louvre_fallback]" if o.height_fallback_used else "") + ")"
+                    for o in _canon_ext_wins  # type: ignore[union-attr]
+                )
+            else:
+                door_parts = ", ".join(
+                    f"{o.mark}×{o.quantity}({o.width_m:.3f}×{o.height_m:.2f})"
+                    for o in ext_door_ops  # type: ignore[possibly-undefined]
+                )
+                win_parts = ", ".join(
+                    f"{o.mark}×{o.quantity}({o.width_m:.3f}×{louvre_h_default:.2f})"
+                    for o in ext_win_ops  # type: ignore[possibly-undefined]
+                )
             _deduct_note = (
-                f"Opening deductions: doors={ext_door_area:.3f} m² [{door_parts}]; "
+                f"[{_opening_src}] Opening deductions: "
+                f"doors={ext_door_area:.3f} m² [{door_parts}]; "
                 f"windows={ext_win_area:.3f} m² [{win_parts}] "
-                f"(louvre height={win_h_used:.2f} m from config default). "
+                f"(louvre_h={louvre_h_default:.2f} m). "
                 f"Gross={ext_area:.2f} m² − {ext_opening_deduct:.3f} m² = net={ext_area_net:.2f} m²."
             )
 
@@ -118,9 +169,9 @@ def quantify_linings(
             "wall_lining_external",
             "External Wall Lining — FC Sheet (6mm, 1200×2700)",
             "sheets", sheets,
-            "calculated",
+            _area_status if ext_opening_deduct > 0 else "calculated",
             f"ceil(ext_wall_area_net × {waste} / {fc_wall_area})",
-            (f"{ext_src}: ext_wall_lm={ext_lm:.2f} m × h={ext_h:.1f} m → gross={ext_area:.2f} m²"
+            (_area_src
              + (f" − openings={ext_opening_deduct:.3f} m² → net={ext_area_net:.2f} m²"
                 if ext_opening_deduct > 0 else "")),
             f"ceil({ext_area_net:.2f} × {waste} / {fc_wall_area})",
@@ -183,11 +234,6 @@ def quantify_linings(
     if int_walls:
         int_lm      = sum(w.length_m for w in int_walls)
         int_h       = max(w.height_m for w in int_walls)
-        # WallElement.area_m2 already includes faces=2 for internal partitions.
-        # Use that so sheets cover both faces without double-calculating.
-        int_area_both     = round(sum(w.area_m2 for w in int_walls), 2)  # both faces gross
-        # Deduct assumed-internal door openings (both faces of each door opening)
-        int_area_both_net = round(max(0.0, int_area_both - int_door_area_2f), 2)
         int_conf    = int_walls[0].confidence
         int_src     = int_walls[0].source
         int_note    = int_walls[0].notes or (
@@ -195,20 +241,42 @@ def quantify_linings(
             if int_conf == "LOW" else ""
         )
 
+        # Prefer canonical wall face for net area when available
+        _canon_int_wf = canonical_geom.internal_wall_face() if canonical_geom else None
+        if _canon_int_wf is not None:
+            int_area_both     = _canon_int_wf.gross_area_m2
+            int_area_both_net = _canon_int_wf.net_area_m2
+            _int_area_status  = TruthClass.to_quantity_status(_canon_int_wf.truth_class)
+            _int_area_src     = (f"canonical_geometry/wf_internal: gross={int_area_both:.2f} m² "
+                                 f"net={int_area_both_net:.2f} m²")
+        else:
+            # WallElement.area_m2 already includes faces=2 for internal partitions.
+            int_area_both     = round(sum(w.area_m2 for w in int_walls), 2)
+            int_area_both_net = round(max(0.0, int_area_both - int_door_area_2f), 2)
+            _int_area_status  = "calculated"
+            _int_area_src     = (f"{int_src}: int_wall_lm={int_lm:.2f} m × h={int_h:.1f} m × 2 faces "
+                                 f"= {int_area_both:.2f} m²")
+
         sheets_int = math.ceil(int_area_both_net * waste / fc_wall_area)
         fc_wall_w  = lining_cfg.get("fc_wall_sheet_w", 1.2)
 
         _int_deduct_note = ""
         if int_door_area_2f > 0:
-            int_door_parts = ", ".join(
-                f"{o.mark}×{o.quantity}×2f({o.width_m:.3f}×{o.height_m:.2f})"
-                for o in int_door_ops
-            )
+            if canonical_geom is not None and _canon_int_doors is not None:
+                int_door_parts = ", ".join(
+                    f"{o.mark}×{o.quantity}×2f({o.width_m:.3f}×{o.height_used:.3f})"
+                    for o in _canon_int_doors
+                )
+            else:
+                int_door_parts = ", ".join(
+                    f"{o.mark}×{o.quantity}×2f({o.width_m:.3f}×{o.height_m:.2f})"
+                    for o in int_door_ops  # type: ignore[possibly-undefined]
+                )
             _int_deduct_note = (
-                f"Opening deductions (assumed-internal doors, both partition faces): "
+                f"[{_opening_src}] Partition door deductions (both faces): "
                 f"{int_door_area_2f:.3f} m² [{int_door_parts}]. "
                 f"Gross={int_area_both:.2f} m² − {int_door_area_2f:.3f} m² = net={int_area_both_net:.2f} m². "
-                f"Doors classified as internal by width < {_EXT_DOOR_MIN_W:.2f} m threshold. "
+                f"Doors classified internal by width < {_EXT_DOOR_MIN_W:.2f} m threshold. "
                 + (int_note or "")
             )
         else:
@@ -218,9 +286,9 @@ def quantify_linings(
             "wall_lining_internal",
             "Internal Wall Lining — FC Sheet (6mm, 1200×2700)",
             "sheets", sheets_int,
-            "calculated",
+            _int_area_status,
             f"ceil(int_wall_area_net × {waste} / {fc_wall_area})",
-            (f"{int_src}: int_wall_lm={int_lm:.2f} m × h={int_h:.1f} m × 2 faces = {int_area_both:.2f} m²"
+            (_int_area_src
              + (f" − int_doors={int_door_area_2f:.3f} m² → net={int_area_both_net:.2f} m²"
                 if int_door_area_2f > 0 else "")),
             f"ceil({int_area_both_net:.2f} × {waste} / {fc_wall_area})",

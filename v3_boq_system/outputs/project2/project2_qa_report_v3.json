@@ -45,8 +45,8 @@
     "wall_lining_external": {
       "present": true,
       "item_count": 5,
-      "measured": 0,
-      "calculated": 5,
+      "measured": 1,
+      "calculated": 4,
       "inferred": 0,
       "placeholder": 0,
       "manual_review": 0,
@@ -55,8 +55,8 @@
     "wall_lining_internal": {
       "present": true,
       "item_count": 5,
-      "measured": 0,
-      "calculated": 5,
+      "measured": 1,
+      "calculated": 4,
       "inferred": 0,
       "placeholder": 0,
       "manual_review": 0,
@@ -125,18 +125,18 @@
   },
   "provenance_summary": {
     "total": 222,
-    "measured": 22,
-    "calculated": 157,
+    "measured": 25,
+    "calculated": 154,
     "inferred": 38,
     "placeholder": 5,
-    "pct_measured": 9.9,
-    "pct_calculated": 70.7,
+    "pct_measured": 11.3,
+    "pct_calculated": 69.4,
     "pct_inferred": 17.1,
     "pct_placeholder": 2.3,
     "manual_review_count": 85,
     "evidence_class_counts": {
-      "measured_source": 22,
-      "calculated_source": 148,
+      "measured_source": 25,
+      "calculated_source": 145,
       "config_backed": 6,
       "heuristic_inferred": 41,
       "placeholder": 5
@@ -927,8 +927,8 @@
     "pct_low": 34.7
   },
   "evidence_quality": {
-    "measured_source_count": 22,
-    "calculated_source_count": 148,
+    "measured_source_count": 25,
+    "calculated_source_count": 145,
     "config_backed_count": 6,
     "heuristic_inferred_count": 41,
     "placeholder_count": 5,
@@ -1107,8 +1107,8 @@
       }
     ],
     "evidence_class_after": {
-      "measured_source": 22,
-      "calculated_source": 148,
+      "measured_source": 25,
+      "calculated_source": 145,
       "config_backed": 6,
       "heuristic_inferred": 41,
       "placeholder": 5

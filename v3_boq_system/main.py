@@ -452,6 +452,21 @@ def run_pipeline(
     except Exception as exc:
         log.warning("   [2c] Graphical pre-reconciliation failed: %s — continuing", exc)
 
+    # ── [2d] Build canonical geometry model ───────────────────────────────────
+    # Post-reconciliation canonical layer: fuses multi-source candidates,
+    # classifies each opening / wall face / space, pre-computes net areas.
+    # Must run AFTER [2c] so that window heights from FrameCAD labels are resolved.
+    canonical_geom = None
+    try:
+        from v3_boq_system.normalize.geometry_reconciler import build_canonical_geometry
+        from v3_boq_system.normalize.geometry_index import GeometryIndex
+        canonical_geom  = build_canonical_geometry(element_model, config)
+        _geom_index     = GeometryIndex(canonical_geom)
+        log.info("   [2d] Canonical geometry: %s", canonical_geom.summary_dict())
+    except Exception as exc:
+        log.warning("   [2d] Canonical geometry build failed: %s — continuing without", exc)
+        _geom_index = None
+
     # ── [3] Run all quantifiers ───────────────────────────────────────────────
     log.info("[3/10] Running quantifiers")
     all_rows: list[dict] = []
@@ -471,7 +486,8 @@ def run_pipeline(
     log.info("   → roof: %d rows", len(all_rows))
 
     n_prev = len(all_rows)
-    all_rows += quantify_linings(element_model, config, assembly_rules)
+    all_rows += quantify_linings(element_model, config, assembly_rules,
+                                  canonical_geom=canonical_geom)
     log.info("   → linings: +%d rows", len(all_rows) - n_prev)
 
     n_prev = len(all_rows)
@@ -496,7 +512,8 @@ def run_pipeline(
     log.info("   → services + finishes: +%d rows", len(all_rows) - n_prev)
 
     n_prev = len(all_rows)
-    all_rows += quantify_external_cladding(element_model, config)
+    all_rows += quantify_external_cladding(element_model, config,
+                                            canonical_geom=canonical_geom)
     log.info("   → external cladding: +%d rows", len(all_rows) - n_prev)
 
     n_prev = len(all_rows)
@@ -582,6 +599,7 @@ def run_pipeline(
     qa_json_path       = out_dir / f"{_pname_key}_qa_report_v3.json"
     em_json_path       = out_dir / f"{_pname_key}_element_model.json"
     spaces_json_path   = out_dir / f"{_pname_key}_spaces_v3.json"
+    canon_geom_path    = out_dir / f"{_pname_key}_canonical_geometry_v3.json"
     sched_json_path    = out_dir / f"{_pname_key}_pdf_schedules_v3.json"
     annot_json_path    = out_dir / f"{_pname_key}_dxf_annotations_v3.json"
     graphics_json_path = out_dir / f"{_pname_key}_pdf_graphics_regions_v3.json"
@@ -592,6 +610,14 @@ def run_pipeline(
     _save_json(boq_items, boq_json_path)
     _save_json(qa_report,  qa_json_path)
     _save_json(_element_model_to_dict(element_model), em_json_path)
+
+    # Canonical geometry debug output
+    if canonical_geom is not None and _geom_index is not None:
+        try:
+            _save_json(_geom_index.full_debug_dict(), canon_geom_path)
+            log.info("   → Canonical geometry JSON: %s", canon_geom_path.name)
+        except Exception as exc:
+            log.warning("   Canonical geometry JSON write failed: %s", exc)
 
     # DXF annotation results — strip large text_entities list for JSON (just summary)
     if raw_dxf_annotations:
