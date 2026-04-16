@@ -1,26 +1,26 @@
 {
-  "version": "v3.3-project2-fc-sheet-completion",
-  "date": "2026-03-31",
+  "version": "v3.4-project2-50107-50113-50115-pass",
+  "date": "2026-04-16",
   "project_name": "project 2",
   "project_display": "Angau Pharmacy",
   "pipeline_version": "v3",
 
-  "item_count": 220,
+  "item_count": 222,
   "placeholder_count": 5,
-  "manual_review_count": 88,
-  "tests_passed": 83,
-  "tests_total": 83,
+  "manual_review_count": 85,
+  "tests_passed": 426,
+  "tests_total": 426,
 
   "status_breakdown": {
     "measured": 22,
-    "calculated": 147,
-    "inferred": 46,
+    "calculated": 157,
+    "inferred": 38,
     "placeholder": 5
   },
   "confidence_breakdown": {
-    "HIGH": 36,
-    "MEDIUM": 100,
-    "LOW": 84
+    "HIGH": 39,
+    "MEDIUM": 106,
+    "LOW": 77
   },
 
   "packages_covered": [
@@ -73,13 +73,14 @@
     "openings": "DXF INSERT blocks (door/window mark, width, count)",
     "rooms": "project_config room_schedule (no machine-readable schedule in sources)",
     "stairs": "project_config stair_schedule (DXF STAIRS layer = evidence only)",
-    "floor_system": "IFC floor elements (inferred — no FrameCAD floor panel tab for this project)"
+    "floor_system": "DWG Onpage FLayout member schedule (j_per HIGH) × area-derived panel count (MEDIUM) — calculated status; FC sheet from DXF geometry (HIGH)"
   },
 
   "known_discrepancies": {
     "truss_lm": "IFC reports 1634.29 lm vs reference ~490 lm — likely IFC over-classifies purlins as trusses",
     "batten_count": "FrameCAD BOM reports 266 pieces (1385.3 lm) vs reference ~47 nr — BOM may cover all zones not just roof",
-    "shs_lm": "IFC reports 96.69 lm SHS vs reference ~24.9 lm — IFC may include non-structural members"
+    "shs_lm": "IFC reports 96.69 lm SHS vs reference ~24.9 lm — IFC may include non-structural members",
+    "ext_cladding_deduction_RESOLVED": "Bug fixed v3.4: opening deduction now multiplies by o.quantity and excludes partition doors (<0.85m). Net cladding 85.34→77.51 m²"
   },
 
   "remaining_manual_review": {
