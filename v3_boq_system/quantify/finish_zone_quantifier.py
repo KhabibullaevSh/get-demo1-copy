@@ -8,39 +8,210 @@ Replaces quantify_finishes() in services_quantifier.py.
 Sources floor finish areas from SpaceElement list; falls back to config when
 no spaces are populated (ensures backward compatibility).
 
+When canonical_geom is provided (step [2d] in main.py), uses the pre-aggregated
+CanonicalFloorZone objects for improved traceability and consistent truth_class
+propagation.  Falls back to element model spaces when canonical is absent.
+
 Non-negotiable rule: no quantities sourced from BOQ template files.
 """
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING, Optional
 
 from v3_boq_system.normalize.element_model import ProjectElementModel
+
+if TYPE_CHECKING:
+    from v3_boq_system.normalize.canonical_objects import CanonicalGeometryModel
 
 log = logging.getLogger("boq.v3.finish_zone")
 
 
 def quantify_finish_zones(
-    element_model: ProjectElementModel,
-    config:        dict,
+    element_model:  ProjectElementModel,
+    config:         dict,
+    canonical_geom: "Optional[CanonicalGeometryModel]" = None,
 ) -> list[dict]:
     """
     Produce finish BOQ rows from the space model.
 
+    Priority:
+      1. canonical_geom.floor_zones (if available) — best traceability
+      2. element_model.spaces (space model path)
+      3. config room_schedule fallback (when spaces list is empty)
+
     Floor finish (dry + wet) rows cite contributing_space_refs and
     quantity_rule_used for full traceability.  Paint rows are derived from
-    wall geometry (unchanged from services_quantifier logic).
-
-    Falls back to direct config read when element_model.spaces is empty.
+    wall geometry (unchanged).
     """
     rows:   list[dict] = []
     spaces  = element_model.spaces
 
-    if spaces:
+    # Canonical path — use pre-aggregated floor zones when available
+    if canonical_geom is not None and canonical_geom.floor_zones:
+        rows += _floor_finish_from_canonical(canonical_geom)
+        log.debug("finish_zones: using canonical floor zones (%d)", len(canonical_geom.floor_zones))
+    elif spaces:
         rows += _floor_finish_from_spaces(element_model, config, spaces)
+        log.debug("finish_zones: using element model spaces (%d)", len(spaces))
     else:
         rows += _floor_finish_from_config(element_model, config)
+        log.debug("finish_zones: using config fallback")
 
     rows += _paint_rows(element_model)
+    return rows
+
+
+# ── Floor finish — canonical floor zones path ────────────────────────────────
+
+def _floor_finish_from_canonical(canonical_geom: "CanonicalGeometryModel") -> list[dict]:
+    """
+    Produce floor finish rows from canonical CanonicalFloorZone objects.
+
+    Uses pre-aggregated zones with explicit TruthClass and evidence lists.
+    Produces identical item_name/unit/quantity structure to the space model path,
+    but sources the evidence from canonical geometry for better traceability.
+
+    Verandah zones are excluded here — WPC decking is in the K-package.
+    """
+    import math as _math
+    from v3_boq_system.normalize.canonical_objects import TruthClass
+
+    rows: list[dict] = []
+
+    dry_zones = [fz for fz in canonical_geom.floor_zones if fz.zone_type == "internal_dry"]
+    wet_zones = [fz for fz in canonical_geom.floor_zones if fz.zone_type == "internal_wet"]
+    ver_area  = sum(
+        fz.area_m2 for fz in canonical_geom.floor_zones if fz.zone_type == "verandah"
+    )
+
+    # ── Dry zone ──────────────────────────────────────────────────────────────
+    for fz in dry_zones:
+        if fz.area_m2 <= 0:
+            continue
+        tc_status = TruthClass.to_quantity_status(fz.truth_class)
+        _src = (
+            f"canonical_geometry/floor_zone/{fz.id}: "
+            f"{fz.zone_name} = {fz.area_m2:.2f} m² "
+            f"({len(fz.space_ids)} spaces, truth_class={fz.truth_class})"
+        )
+        rows.append({
+            "item_name":  "Floor Finish — Dry Zone (vinyl plank)",
+            "item_code":  "",
+            "unit":       "m2",
+            "quantity":   fz.area_m2,
+            "package":    "finishes",
+            "quantity_status":      tc_status,
+            "quantity_basis":       f"canonical_floor_zone/{fz.zone_type}: sum(space areas) [zone: {fz.id}]",
+            "source_evidence":      _src,
+            "derivation_rule":      "sum(space.area_m2 for s in canonical dry_zone.space_ids)",
+            "confidence":           fz.confidence,
+            "manual_review":        fz.confidence != "HIGH",
+            "notes": (
+                f"[Zone: internal_dry / canonical] {fz.zone_name}. "
+                f"Verandah ({ver_area:.1f} m²) excluded — WPC decking in K-package. "
+                f"truth_class={fz.truth_class}. "
+                + (fz.notes or "")
+            ),
+            "contributing_space_refs": fz.space_ids,
+            "quantity_rule_used":
+                "canonical_floor_zone.area_m2 (pre-aggregated in geometry_reconciler)",
+        })
+        _vinyl_waste  = 1.10
+        _vinyl_supply = round(fz.area_m2 * _vinyl_waste, 1)
+        rows.append({
+            "item_name":  "Vinyl Plank — Supply Total (10% cut waste)",
+            "item_code":  "",
+            "unit":       "m2",
+            "quantity":   _vinyl_supply,
+            "package":    "finishes",
+            "quantity_status":  tc_status,
+            "quantity_basis":   f"canonical_dry_zone({fz.area_m2:.2f}) × 1.10 cut waste",
+            "source_evidence":  _src,
+            "derivation_rule":  f"{fz.area_m2:.2f} × 1.10",
+            "confidence":       fz.confidence,
+            "manual_review":    True,
+            "notes": (
+                f"[Zone: internal_dry / canonical] Vinyl plank supply: "
+                f"{fz.area_m2:.2f}m² net + 10% cut waste = {_vinyl_supply}m². "
+                "Spec: LVT/SPC vinyl plank — thickness and finish to be confirmed."
+            ),
+        })
+
+    # ── Wet zone ──────────────────────────────────────────────────────────────
+    for fz in wet_zones:
+        if fz.area_m2 <= 0:
+            continue
+        tc_status = TruthClass.to_quantity_status(fz.truth_class)
+        _src = (
+            f"canonical_geometry/floor_zone/{fz.id}: "
+            f"{fz.zone_name} = {fz.area_m2:.2f} m² "
+            f"({len(fz.space_ids)} spaces, truth_class={fz.truth_class})"
+        )
+        rows.append({
+            "item_name":  "Floor Finish — Wet Zone (ceramic tile)",
+            "item_code":  "",
+            "unit":       "m2",
+            "quantity":   fz.area_m2,
+            "package":    "finishes",
+            "quantity_status":      tc_status,
+            "quantity_basis":       f"canonical_floor_zone/{fz.zone_type}: sum(wet space areas) [zone: {fz.id}]",
+            "source_evidence":      _src,
+            "derivation_rule":      "sum(space.area_m2 for s in canonical wet_zone.space_ids)",
+            "confidence":           fz.confidence,
+            "manual_review":        fz.confidence != "HIGH",
+            "notes": (
+                f"[Zone: internal_wet / canonical] {fz.zone_name}. "
+                f"Ceramic tile (non-slip). truth_class={fz.truth_class}. "
+                "Verify wet zone classification with architect. "
+                + (fz.notes or "")
+            ),
+            "contributing_space_refs": fz.space_ids,
+            "quantity_rule_used":
+                "canonical_floor_zone.area_m2 (pre-aggregated in geometry_reconciler)",
+        })
+        _tile_waste  = 1.15
+        _tile_supply = round(fz.area_m2 * _tile_waste, 2)
+        rows.append({
+            "item_name": "Ceramic Floor Tile — Supply Total (15% cut waste)",
+            "item_code": "", "unit": "m2",
+            "quantity": _tile_supply, "package": "finishes",
+            "quantity_status": tc_status,
+            "quantity_basis": f"canonical_wet_zone({fz.area_m2:.2f}) × 1.15 cut waste",
+            "source_evidence": _src,
+            "derivation_rule": f"{fz.area_m2:.2f} × 1.15",
+            "confidence": fz.confidence, "manual_review": True,
+            "notes": (
+                f"Ceramic floor tile supply: {fz.area_m2:.2f}m² + 15% cut waste "
+                f"= {_tile_supply}m². "
+                "Tile spec (size, finish, slip rating) to be confirmed by architect."
+            ),
+        })
+        tile_adh_bags = _math.ceil(fz.area_m2 / 4.0)
+        rows.append({
+            "item_name": "Floor Tile Adhesive — Wet Area (20kg bag)",
+            "item_code": "", "unit": "bags",
+            "quantity": tile_adh_bags, "package": "finishes",
+            "quantity_status": tc_status,
+            "quantity_basis": "ceil(canonical_wet_zone_area / 4 m² per bag)",
+            "source_evidence": _src,
+            "derivation_rule": "ceil(wet_area / 4.0)",
+            "confidence": "LOW", "manual_review": True,
+            "notes": f"20kg bag of tile adhesive ≈ 4 m² coverage on floor. Verify tile size and spec.",
+        })
+        grout_bags = _math.ceil(fz.area_m2 / 6.0)
+        rows.append({
+            "item_name": "Floor Tile Grout — Wet Area (3kg bag)",
+            "item_code": "", "unit": "bags",
+            "quantity": grout_bags, "package": "finishes",
+            "quantity_status": tc_status,
+            "quantity_basis": "ceil(canonical_wet_zone_area / 6 m² per bag)",
+            "source_evidence": _src,
+            "derivation_rule": "ceil(wet_area / 6.0)",
+            "confidence": "LOW", "manual_review": True,
+            "notes": f"3kg bag of grout ≈ 6 m² floor tile coverage. Adjust for joint width.",
+        })
+
     return rows
 
 

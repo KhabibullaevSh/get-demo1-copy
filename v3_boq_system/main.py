@@ -508,7 +508,8 @@ def run_pipeline(
 
     n_prev = len(all_rows)
     all_rows += quantify_services(element_model, config, room_templates)
-    all_rows += quantify_finish_zones(element_model, config)
+    all_rows += quantify_finish_zones(element_model, config,
+                                      canonical_geom=canonical_geom)
     log.info("   → services + finishes: +%d rows", len(all_rows) - n_prev)
 
     n_prev = len(all_rows)

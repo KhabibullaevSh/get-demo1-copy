@@ -8,13 +8,29 @@ rules, and pre-computes net areas.
 PARTS B + C of the geometry fusion architecture:
   B — Candidate generation: reads openings, walls, spaces from element model
   C — Reconciliation:       classifies each candidate, deduces net areas,
-                            assigns TruthClass, and assembles the canonical model
+                            assigns TruthClass with explicit evidence records,
+                            populates cross-reference links between objects,
+                            and assembles the canonical model
 
 Source priority (applied throughout):
   1. DXF geometry      → HIGH / MEASURED
   2. FrameCAD / PDF   → MEDIUM / CALCULATED
   3. IFC              → MEDIUM / MEASURED (secondary)
   4. config           → LOW  / CONFIG_FALLBACK
+
+Relationship linking strategy (honest about current data limitations):
+  - Opening → WallFace: classification-driven (entrance/cladding → external face;
+    partition → internal face).  No spatial coordinates available from element model.
+  - WallFace → Space:   perimeter/topology inference (all enclosed spaces share the
+    external perimeter; internal wall partitions enclosed spaces).  Room-level
+    spatial topology unavailable without DXF wall network or IfcRelSpaceBoundary.
+  - Space → WallFace:   inverse of above (bidirectional via evidence).
+  - Space → Opening:    building-level only (all external openings linked to all
+    enclosed spaces through the external wall face — room-specific impossible
+    without room schedule or spatial data).
+
+These limitations are recorded explicitly in each object's evidence list.
+Callers can check evidence to understand what was and was not resolved.
 
 INVARIANT: No BOQ reference quantities enter this module.  Pure geometry.
 
@@ -88,6 +104,250 @@ def _max_conf(walls: list[WallElement]) -> str:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Evidence helpers
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _build_opening_evidence(
+    op:               "OpeningElement",
+    base_tc:          str,
+    final_tc:         str,
+    height_fallback:  bool,
+    height_used:      float,
+    is_entrance:      bool,
+    is_partition:     bool,
+    is_clad:          bool,
+    opening_area:     float,
+    louvre_h_default: float,
+) -> list[str]:
+    """
+    Build the evidence list for a CanonicalOpening.
+
+    Each string records one piece of evidence used in truth_class assignment.
+    This replaces the previous approach of embedding evidence in notes strings,
+    making it queryable by the index and visible in JSON debug output.
+    """
+    ev: list[str] = []
+
+    # Source evidence
+    if op.element_id:
+        ev.append(f"source_entity_id={op.element_id} via {op.source}")
+    else:
+        ev.append(f"source={op.source} (no entity_id — weakens traceability)")
+
+    # Width evidence
+    if op.width_m > 0:
+        ev.append(f"width={op.width_m:.3f}m from {op.source}")
+    else:
+        ev.append("width=0: missing measurement — classification unreliable")
+
+    # Height evidence — most important truth signal for openings
+    if not height_fallback and op.height_m > 0:
+        ev.append(
+            f"height={op.height_m:.3f}m: direct source measurement "
+            f"→ supports {base_tc}"
+        )
+    elif height_fallback and op.opening_type == "window":
+        ev.append(
+            f"height: raw=0.000m → louvre_fallback={louvre_h_default:.3f}m applied "
+            f"→ truth_class downgraded {base_tc} → {TruthClass.CALCULATED}"
+        )
+    elif height_fallback:
+        ev.append(
+            f"height: raw={op.height_m:.3f}m → door_standard=2.100m applied "
+            f"→ truth_class downgraded {base_tc} → {TruthClass.CALCULATED}"
+        )
+
+    if base_tc != final_tc:
+        ev.append(f"truth_class: {base_tc} → {final_tc} (downgraded: height_fallback)")
+    else:
+        ev.append(f"truth_class: {final_tc} (from source)")
+
+    # Classification evidence — why this opening is classified this way
+    if is_entrance:
+        ev.append(
+            f"entrance_door: w={op.width_m:.3f}m ≥ {_EXT_DOOR_MIN_W:.3f}m threshold "
+            "→ is_cladding_face=True, exposure_class=external"
+        )
+    elif is_partition:
+        ev.append(
+            f"partition_door: w={op.width_m:.3f}m < {_EXT_DOOR_MIN_W:.3f}m threshold "
+            "→ is_cladding_face=False, exposure_class=internal_partition"
+        )
+    elif op.opening_type == "window":
+        if op.is_external:
+            ev.append(
+                f"external_window: is_external=True, w={op.width_m:.3f}m > 0 "
+                "→ is_cladding_face=True, exposure_class=external"
+            )
+        else:
+            ev.append(
+                "internal_window: is_external=False "
+                "→ is_cladding_face=False, exposure_class=unknown"
+            )
+
+    # Quantity evidence
+    if op.quantity > 1:
+        ev.append(
+            f"qty={op.quantity}: area={opening_area:.3f}m² = "
+            f"{op.quantity}×{op.width_m:.3f}×{height_used:.3f} (qty-multiplied)"
+        )
+    else:
+        ev.append(
+            f"qty=1: area={opening_area:.3f}m² = "
+            f"{op.width_m:.3f}×{height_used:.3f}"
+        )
+
+    return ev
+
+
+def _build_wall_face_evidence(
+    walls:          list[WallElement],
+    canonical_ops:  list[CanonicalOpening],
+    is_external:    bool,
+    gross_area:     float,
+    ded_area:       float,
+    net_area:       float,
+    tc:             str,
+) -> list[str]:
+    """
+    Build the evidence list for a CanonicalWallFace.
+
+    Records what geometry drove the gross area, what openings drove the
+    deduction, and why this truth_class was assigned.
+    """
+    ev: list[str] = []
+
+    # Source evidence — what drove the wall dimensions
+    sources = {w.source for w in walls}
+    entity_ids = [w.element_id for w in walls if w.element_id]
+    if entity_ids:
+        ev.append(f"wall_entities={entity_ids} from {sources}")
+    else:
+        ev.append(f"source={sources} (no entity_ids)")
+
+    # Dimension evidence
+    lm  = sum(w.length_m for w in walls)
+    h   = max(w.height_m for w in walls)
+    ev.append(
+        f"gross_area: {lm:.2f}m × {h:.1f}m = {gross_area:.2f}m² "
+        f"({'one face' if is_external else 'both faces combined'})"
+    )
+
+    # Deduction evidence
+    if is_external:
+        ded_ops = [o for o in canonical_ops if o.is_cladding_face]
+    else:
+        ded_ops = [o for o in canonical_ops if o.is_partition]
+
+    if ded_ops:
+        ded_parts = [
+            f"{o.mark}×{o.quantity}({o.opening_area_m2:.3f}m²)"
+            for o in ded_ops
+        ]
+        mult = " ×2 faces" if not is_external else ""
+        ev.append(
+            f"deductions{mult}: {', '.join(ded_parts)} = {ded_area:.3f}m²"
+        )
+    else:
+        ev.append("deductions: none")
+
+    ev.append(f"net_area={net_area:.2f}m² ({gross_area:.2f} − {ded_area:.3f})")
+    ev.append(
+        f"truth_class={tc}: from source '{walls[0].source}' "
+        + ("(all {n} elements agree)" if len(walls) > 1 else "")
+    )
+
+    return ev
+
+
+def _build_space_evidence(
+    sp:        "SpaceElement",
+    tc:        str,
+    perim_src: str,
+) -> list[str]:
+    """
+    Build the evidence list for a CanonicalSpace.
+
+    Records what signals drove the truth_class and perimeter_source decisions.
+    """
+    ev: list[str] = []
+
+    # Source evidence
+    st = (sp.source_type or "config").lower()
+    ev.append(f"source_type={st}")
+
+    if sp.polygon:
+        ev.append(
+            f"polygon: {len(sp.polygon)} vertices available "
+            f"→ geometry boundary from {st} → supports {TruthClass.MEASURED}"
+        )
+    else:
+        ev.append(
+            "polygon: absent — no drawn boundary for this space "
+            "(config-backed or schedule-only source)"
+        )
+
+    if sp.perimeter_m > 0:
+        ev.append(
+            f"perimeter={sp.perimeter_m:.2f}m (source={perim_src})"
+        )
+    else:
+        ev.append(
+            "perimeter: 0 — no perimeter available; "
+            "will be estimated or remain unknown"
+        )
+
+    ev.append(f"area={sp.area_m2:.2f}m² from {st}")
+
+    if tc == TruthClass.CONFIG_FALLBACK:
+        ev.append(
+            "truth_class=config_fallback: area/perimeter from project_config "
+            "only — no source drawing measurement"
+        )
+    elif tc == TruthClass.MEASURED:
+        ev.append(
+            "truth_class=measured: polygon boundary from source drawing → "
+            "direct measurement"
+        )
+    elif tc == TruthClass.CALCULATED:
+        ev.append(
+            "truth_class=calculated_from_geometry: wall-network or DXF-backed "
+            "perimeter without full polygon"
+        )
+
+    return ev
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Classification helpers
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _derive_exposure_class(
+    is_entrance:    bool,
+    is_partition:   bool,
+    opening_type:   str,
+    is_external:    bool,
+) -> str:
+    """Derive explicit exposure_class from opening classification flags."""
+    if is_entrance or (opening_type == "window" and is_external):
+        return "external"
+    if is_partition:
+        return "internal_partition"
+    return "unknown"
+
+
+def _derive_enclosure_class(sp: "CanonicalSpace") -> str:
+    """Derive explicit enclosure_class from CanonicalSpace classification flags."""
+    if sp.is_verandah:
+        return "verandah"
+    if sp.is_external and not sp.is_verandah:
+        return "external"
+    if sp.is_enclosed:
+        return "enclosed"
+    return "unknown"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # PART B — Candidate generators
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -104,6 +364,9 @@ def _build_canonical_openings(
       - Windows that are external → is_cladding_face=True
       - Windows with height_m == 0.0 → louvre height default applied, height_fallback_used=True
       - opening_area_m2 always includes quantity (fixes the "× qty" bug at canonical level)
+
+    Evidence lists record why each truth_class was assigned.
+    exposure_class is derived explicitly from classification flags.
     """
     canonical: list[CanonicalOpening] = []
 
@@ -134,7 +397,7 @@ def _build_canonical_openings(
         # Canonical deduction area — ALWAYS quantity-correct
         opening_area = round(op.width_m * height_used * op.quantity, 3)
 
-        # TruthClass — downgrade from MEASURED if height came from fallback
+        # TruthClass — base from source, downgrade if height came from fallback
         base_tc = _truth_from_source(op.source)
         if height_fallback and base_tc == TruthClass.MEASURED:
             # Width is measured, height is not → CALCULATED overall
@@ -142,7 +405,17 @@ def _build_canonical_openings(
         else:
             tc = base_tc
 
-        # Build human-readable notes for traceability
+        # Derive explicit exposure_class
+        exposure = _derive_exposure_class(is_entrance, is_partition,
+                                          op.opening_type, op.is_external)
+
+        # Build evidence list (replaces embedding evidence in notes strings)
+        evidence = _build_opening_evidence(
+            op, base_tc, tc, height_fallback, height_used,
+            is_entrance, is_partition, is_clad, opening_area, louvre_h_default,
+        )
+
+        # Build human-readable notes (kept for legacy compatibility)
         note_parts: list[str] = []
         if height_fallback:
             note_parts.append(
@@ -184,15 +457,18 @@ def _build_canonical_openings(
             confidence           = op.confidence,
             truth_class          = tc,
             fallback_used        = height_fallback,
+            exposure_class       = exposure,
+            evidence             = evidence,
             notes                = "; ".join(note_parts),
         )
         canonical.append(cop)
 
         log.debug(
             "  opening %-18s: entrance=%-5s partition=%-5s clad=%-5s "
-            "area=%6.3f (qty=%d×%.3f×%.3f) tc=%s",
+            "area=%6.3f (qty=%d×%.3f×%.3f) tc=%s exposure=%s",
             cop.mark, cop.is_entrance, cop.is_partition, cop.is_cladding_face,
-            cop.opening_area_m2, op.quantity, op.width_m, height_used, tc,
+            cop.opening_area_m2, op.quantity, op.width_m, height_used,
+            tc, exposure,
         )
 
     return canonical
@@ -213,6 +489,8 @@ def _build_canonical_wall_faces(
     Internal face: deducts partition doors from combined both-face area.
 
     Net area is pre-computed here.  Quantifiers read net_area_m2 directly.
+    face_class is set explicitly (external | internal).
+    Evidence records what drove the area and what deductions were applied.
     """
     faces: list[CanonicalWallFace] = []
 
@@ -230,9 +508,16 @@ def _build_canonical_wall_faces(
         net_area   = round(max(0.0, gross_area - ded_area), 2)
 
         tc = _truth_from_source(ext_src)
+
+        evidence = _build_wall_face_evidence(
+            ext_walls, canonical_openings, True,
+            gross_area, ded_area, net_area, tc,
+        )
+
         faces.append(CanonicalWallFace(
             id                   = "wf_external",
             wall_type            = "external",
+            face_class           = "external",
             length_m             = ext_lm,
             height_m             = ext_h,
             gross_area_m2        = gross_area,
@@ -246,6 +531,7 @@ def _build_canonical_wall_faces(
             confidence           = ext_conf,
             truth_class          = tc,
             fallback_used        = (tc == TruthClass.CONFIG_FALLBACK),
+            evidence             = evidence,
             notes                = (
                 f"External wall face: {ext_lm:.2f} m × {ext_h:.1f} m = "
                 f"{gross_area:.2f} m² gross. "
@@ -270,9 +556,16 @@ def _build_canonical_wall_faces(
         net_both   = round(max(0.0, gross_both - ded_both), 2)
 
         tc = _truth_from_source(int_src)
+
+        evidence = _build_wall_face_evidence(
+            int_walls, canonical_openings, False,
+            gross_both, ded_both, net_both, tc,
+        )
+
         faces.append(CanonicalWallFace(
             id                   = "wf_internal",
             wall_type            = "internal",
+            face_class           = "internal",
             length_m             = int_lm,
             height_m             = int_h,
             gross_area_m2        = gross_both,
@@ -287,6 +580,7 @@ def _build_canonical_wall_faces(
             truth_class          = tc,
             fallback_used        = (tc in (TruthClass.CONFIG_FALLBACK,
                                            TruthClass.INFERRED)),
+            evidence             = evidence,
             notes                = (
                 f"Internal wall both faces: {int_lm:.2f} m × {int_h:.1f} m × 2 = "
                 f"{gross_both:.2f} m² gross. "
@@ -366,6 +660,9 @@ def _build_canonical_spaces(
     Maps source_type → TruthClass and perimeter_source → human-readable label.
     Config-sourced spaces always get CONFIG_FALLBACK; DXF-backed ones get MEASURED
     (polygon) or CALCULATED (wall-network perimeter without full polygon).
+
+    enclosure_class is derived explicitly from classification flags.
+    Evidence records what signals drove the truth_class decision.
     """
     result: list[CanonicalSpace] = []
 
@@ -422,6 +719,10 @@ def _build_canonical_spaces(
             fallback_used    = (tc == TruthClass.CONFIG_FALLBACK),
             notes            = "; ".join(p for p in note_parts if p),
         )
+        # Derive enclosure_class and build evidence list (requires csp to exist first)
+        csp.enclosure_class = _derive_enclosure_class(csp)
+        csp.evidence        = _build_space_evidence(sp, tc, perim_src)
+        csp.evidence.append(f"enclosure_class={csp.enclosure_class}")
         result.append(csp)
 
     return result
@@ -440,6 +741,8 @@ def _build_floor_zones(
 
     Each zone carries the minimum (weakest) TruthClass of its constituent spaces
     so that config-backed rooms propagate LOW/CONFIG_FALLBACK status.
+    Evidence records which spaces contributed and why the zone truth_class is
+    what it is.
     """
     zones: list[CanonicalFloorZone] = []
 
@@ -448,6 +751,17 @@ def _build_floor_zones(
     if wet:
         tc      = TruthClass.weakest([s.truth_class for s in wet])
         conf    = min((s.confidence for s in wet), key=_conf_rank)
+        ev = [
+            f"contributing_spaces: {[s.space_name for s in wet]}",
+            f"truth_class={tc}: weakest of contributing space truth_classes "
+            f"({[s.truth_class for s in wet]})",
+            "zone_type=internal_wet: all spaces have is_wet=True and is_enclosed=True",
+        ]
+        if tc == TruthClass.CONFIG_FALLBACK:
+            ev.append(
+                "config_fallback: all spaces from config schedule — "
+                "areas are estimated; verify from drawings"
+            )
         zones.append(CanonicalFloorZone(
             id           = "fz_wet",
             zone_name    = "Wet Areas",
@@ -459,6 +773,7 @@ def _build_floor_zones(
             confidence   = conf,
             truth_class  = tc,
             fallback_used = (tc == TruthClass.CONFIG_FALLBACK),
+            evidence     = ev,
             notes        = (
                 f"Wet floor zone: {[s.space_name for s in wet]}. "
                 f"area={round(sum(s.area_m2 for s in wet), 2):.2f} m². "
@@ -477,6 +792,14 @@ def _build_floor_zones(
     for ft, group in finish_groups.items():
         tc   = TruthClass.weakest([s.truth_class for s in group])
         conf = min((s.confidence for s in group), key=_conf_rank)
+        ev = [
+            f"contributing_spaces: {[s.space_name for s in group]}",
+            f"truth_class={tc}: weakest of contributing space truth_classes "
+            f"({[s.truth_class for s in group]})",
+            f"zone_type=internal_dry finish_type={ft}: "
+            "spaces are enclosed, not wet, not external",
+            "verandah_excluded: is_verandah spaces filtered out before this zone",
+        ]
         zones.append(CanonicalFloorZone(
             id           = f"fz_dry_{ft.replace('_', '').replace('-', '')}",
             zone_name    = f"Internal Dry — {ft.replace('_', ' ').title()}",
@@ -487,6 +810,7 @@ def _build_floor_zones(
             confidence   = conf,
             truth_class  = tc,
             fallback_used = (tc == TruthClass.CONFIG_FALLBACK),
+            evidence     = ev,
             notes        = (
                 f"Dry floor zone ({ft}): {[s.space_name for s in group]}. "
                 f"area={round(sum(s.area_m2 for s in group), 2):.2f} m²."
@@ -498,6 +822,12 @@ def _build_floor_zones(
     if ver:
         tc   = TruthClass.weakest([s.truth_class for s in ver])
         conf = min((s.confidence for s in ver), key=_conf_rank)
+        ev = [
+            f"contributing_spaces: {[s.space_name for s in ver]}",
+            f"truth_class={tc}: weakest of contributing space truth_classes",
+            "zone_type=verandah: spaces have is_verandah=True",
+            "internal_dry_excluded: verandah not in dry internal zone (not enclosed)",
+        ]
         zones.append(CanonicalFloorZone(
             id           = "fz_verandah",
             zone_name    = "Verandah",
@@ -508,6 +838,7 @@ def _build_floor_zones(
             confidence   = conf,
             truth_class  = tc,
             fallback_used = (tc == TruthClass.CONFIG_FALLBACK),
+            evidence     = ev,
             notes        = (
                 f"Verandah/external covered zone: {[s.space_name for s in ver]}. "
                 f"area={round(sum(s.area_m2 for s in ver), 2):.2f} m²."
@@ -515,6 +846,175 @@ def _build_floor_zones(
         ))
 
     return zones
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PART C — Relationship linking
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _link_relationships(
+    canonical_openings:  list[CanonicalOpening],
+    canonical_wall_faces: list[CanonicalWallFace],
+    canonical_spaces:    list[CanonicalSpace],
+) -> None:
+    """
+    Populate cross-reference links between canonical objects.
+
+    Called AFTER all builders have run.  Mutates the objects in-place to
+    populate linked_wall_face_ids, linked_space_ids, linked_opening_ids.
+
+    Linking strategy:
+      1. Opening → WallFace (classification-driven — no spatial coordinates needed):
+           - Cladding-face openings (entrance + external windows) → external wall face
+           - Partition doors → internal wall face
+           - Unresolved openings: recorded with SOURCE_LIMITED evidence note
+
+      2. WallFace → Space (perimeter/topology inference):
+           - External wall: all enclosed spaces share the perimeter boundary
+           - Internal wall: all enclosed non-verandah spaces are partitioned
+           - NOTE: Room-level topology unavailable without DXF wall network or
+             IfcRelSpaceBoundary.  We cannot link an opening to a specific room.
+             This is SOURCE_LIMITED and recorded in evidence.
+
+      3. Space → WallFace + Opening (inverse of above):
+           - Enclosed spaces linked to both wall faces if present
+           - External openings linked at building level (cannot be room-specific)
+           - Verandah: linked to external wall face only
+
+    All linking limitations are added to evidence lists — NOT silently omitted.
+    """
+    ext_wf = next((wf for wf in canonical_wall_faces if wf.wall_type == "external"), None)
+    int_wf = next((wf for wf in canonical_wall_faces if wf.wall_type == "internal"), None)
+
+    # ── 1. Opening → WallFace ─────────────────────────────────────────────────
+    for op in canonical_openings:
+        if op.is_cladding_face and ext_wf is not None:
+            op.linked_wall_face_ids = [ext_wf.id]
+            op.evidence.append(
+                f"linked_to:{ext_wf.id} "
+                "(classification-driven: is_cladding_face=True → external face)"
+            )
+        elif op.is_partition and int_wf is not None:
+            op.linked_wall_face_ids = [int_wf.id]
+            op.evidence.append(
+                f"linked_to:{int_wf.id} "
+                "(classification-driven: is_partition=True → internal face)"
+            )
+        elif op.is_cladding_face and ext_wf is None:
+            op.evidence.append(
+                "wall_face_link:unresolved — is_cladding_face=True but no "
+                "external wall face in model (source_limited)"
+            )
+        elif op.is_partition and int_wf is None:
+            op.evidence.append(
+                "wall_face_link:unresolved — is_partition=True but no "
+                "internal wall face in model (source_limited)"
+            )
+        else:
+            op.evidence.append(
+                "wall_face_link:unresolved — "
+                f"is_cladding_face={op.is_cladding_face}, "
+                f"is_partition={op.is_partition}, "
+                "no matching wall face type"
+            )
+
+    # ── 2. WallFace → Space ───────────────────────────────────────────────────
+    enclosed_ids = [s.id for s in canonical_spaces
+                    if s.is_enclosed and not s.is_external]
+
+    if ext_wf is not None:
+        ext_wf.linked_space_ids = enclosed_ids[:]
+        if enclosed_ids:
+            ext_wf.evidence.append(
+                f"linked_spaces:{len(enclosed_ids)} enclosed spaces "
+                "(perimeter inference: all enclosed spaces share external wall boundary)"
+            )
+            ext_wf.evidence.append(
+                "space_link_method:perimeter_inference — "
+                "room-level topology unavailable (no DXF wall network)"
+            )
+        else:
+            ext_wf.evidence.append(
+                "linked_spaces:none — no enclosed spaces in model "
+                "(source_limited for space-face topology)"
+            )
+
+    if int_wf is not None:
+        int_wf.linked_space_ids = enclosed_ids[:]
+        if enclosed_ids:
+            int_wf.evidence.append(
+                f"linked_spaces:{len(enclosed_ids)} enclosed spaces "
+                "(topological inference: internal walls partition enclosed spaces)"
+            )
+            int_wf.evidence.append(
+                "space_link_method:topological_inference — "
+                "per-room wall assignment unavailable without DXF wall network"
+            )
+        else:
+            int_wf.evidence.append(
+                "linked_spaces:none — no enclosed spaces in model"
+            )
+
+    # ── 3. Space → WallFace + Opening ─────────────────────────────────────────
+    ext_clad_ids = [o.id for o in canonical_openings if o.is_cladding_face]
+
+    for s in canonical_spaces:
+        if s.is_enclosed and not s.is_external:
+            face_ids: list[str] = []
+            if ext_wf is not None:
+                face_ids.append(ext_wf.id)
+            if int_wf is not None:
+                face_ids.append(int_wf.id)
+            s.linked_wall_face_ids = face_ids
+            if face_ids:
+                s.evidence.append(
+                    f"linked_wall_faces:{face_ids} "
+                    "(perimeter/topology inference — room-level face topology "
+                    "unavailable without DXF wall network)"
+                )
+            # External openings: link at building level (not room-specific)
+            s.linked_opening_ids = ext_clad_ids[:]
+            if ext_clad_ids:
+                s.evidence.append(
+                    f"linked_external_openings:{len(ext_clad_ids)} "
+                    "(building-level: all external openings share the external wall; "
+                    "room-specific assignment requires room schedule or DXF topology)"
+                )
+            else:
+                s.evidence.append(
+                    "linked_openings:none "
+                    "(no cladding-face openings in model)"
+                )
+
+        elif s.is_verandah:
+            if ext_wf is not None:
+                s.linked_wall_face_ids = [ext_wf.id]
+                s.evidence.append(
+                    f"linked_to:{ext_wf.id} "
+                    "(verandah adjoins external wall — topological inference)"
+                )
+            else:
+                s.evidence.append(
+                    "wall_face_link:unresolved — verandah present but no "
+                    "external wall face in model"
+                )
+        elif s.is_external:
+            s.linked_wall_face_ids = []
+            s.evidence.append(
+                "wall_face_link:external_open_space — not linked to wall faces "
+                "(no boundary wall)"
+            )
+
+    log.debug(
+        "_link_relationships: "
+        "openings=%d (linked=%d unlinked=%d) "
+        "ext_wf_spaces=%d int_wf_spaces=%d",
+        len(canonical_openings),
+        sum(1 for o in canonical_openings if o.linked_wall_face_ids),
+        sum(1 for o in canonical_openings if not o.linked_wall_face_ids),
+        len(ext_wf.linked_space_ids) if ext_wf else 0,
+        len(int_wf.linked_space_ids) if int_wf else 0,
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -539,7 +1039,8 @@ def build_canonical_geometry(
         config: Project config dict
 
     Returns:
-        CanonicalGeometryModel containing all canonical objects.
+        CanonicalGeometryModel containing all canonical objects with
+        cross-reference links and evidence lists populated.
     """
     lining_cfg       = config.get("lining", {})
     louvre_h_default = lining_cfg.get("default_louvre_height_m", 0.75)
@@ -558,6 +1059,9 @@ def build_canonical_geometry(
                                                   canonical_openings, louvre_h_default)
     canonical_spaces     = _build_canonical_spaces(model)
     floor_zones          = _build_floor_zones(canonical_spaces)
+
+    # C — Relationship linking (after all objects built)
+    _link_relationships(canonical_openings, canonical_wall_faces, canonical_spaces)
 
     geom = CanonicalGeometryModel(
         openings       = canonical_openings,

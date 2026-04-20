@@ -154,8 +154,13 @@ class CanonicalOpening:
     fallback_used:        bool         = False
     notes:                str          = ""
 
-    # Linked objects (populated by geometry_index)
+    # Linked objects (populated by _link_relationships in geometry_reconciler)
     linked_wall_face_ids: list[str]    = field(default_factory=list)
+    linked_space_ids:     list[str]    = field(default_factory=list)
+    # Explicit exposure class — derived from classification, not buried in is_* flags
+    exposure_class:       str          = "unknown"  # external | internal_partition | unknown
+    # Evidence chain — each string records one piece of evidence for truth_class
+    evidence:             list[str]    = field(default_factory=list)
 
 
 @dataclass
@@ -197,8 +202,12 @@ class CanonicalWallFace:
     fallback_used:        bool         = False
     notes:                str          = ""
 
-    # Linked spaces (populated when wall-network zones are available)
+    # Linked spaces (populated by _link_relationships)
     linked_space_ids:     list[str]    = field(default_factory=list)
+    # Explicit face classification — replaces implicit wall_type checks in quantifiers
+    face_class:           str          = "unknown"  # external | internal | verandah_edge | unknown
+    # Evidence chain
+    evidence:             list[str]    = field(default_factory=list)
 
 
 @dataclass
@@ -298,9 +307,13 @@ class CanonicalSpace:
     fallback_used:        bool         = True
     notes:                str          = ""
 
-    # Linked objects
+    # Linked objects (populated by _link_relationships)
     linked_opening_ids:   list[str]    = field(default_factory=list)
     linked_wall_face_ids: list[str]    = field(default_factory=list)
+    # Explicit enclosure class — replaces is_enclosed / is_verandah flag checks
+    enclosure_class:      str          = "unknown"  # enclosed | semi_external | verandah | external | unknown
+    # Evidence chain
+    evidence:             list[str]    = field(default_factory=list)
 
 
 @dataclass
@@ -323,6 +336,8 @@ class CanonicalFloorZone:
 
     # Contributing spaces
     space_ids:            list[str]    = field(default_factory=list)
+    # Evidence chain — why this zone has the truth_class it has
+    evidence:             list[str]    = field(default_factory=list)
 
     # Provenance
     level:                str          = "GF"

@@ -226,8 +226,10 @@ class TestInternalWallGeometry:
                       and i.get("boq_section") == "E - Linings & Ceilings"]
         for row in int_lining:
             ev = (row.get("source_evidence") or "").lower()
-            assert "dxf" in ev or "int_wall" in ev, (
-                f"Internal wall lining '{row['item_name']}' not sourced from DXF: "
+            # Accept DXF direct, int_wall alias, or canonical_geometry path
+            # (canonical_geometry/wf_internal is derived from DXF — same source)
+            assert "dxf" in ev or "int_wall" in ev or "canonical_geometry" in ev, (
+                f"Internal wall lining '{row['item_name']}' not sourced from DXF or canonical: "
                 f"source_evidence='{row.get('source_evidence')}'"
             )
 

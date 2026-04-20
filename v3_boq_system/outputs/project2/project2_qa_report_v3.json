@@ -76,8 +76,8 @@
       "present": true,
       "item_count": 9,
       "measured": 0,
-      "calculated": 9,
-      "inferred": 0,
+      "calculated": 3,
+      "inferred": 6,
       "placeholder": 0,
       "manual_review": 7,
       "status": "OK"
@@ -126,19 +126,19 @@
   "provenance_summary": {
     "total": 222,
     "measured": 25,
-    "calculated": 154,
-    "inferred": 38,
+    "calculated": 148,
+    "inferred": 44,
     "placeholder": 5,
     "pct_measured": 11.3,
-    "pct_calculated": 69.4,
-    "pct_inferred": 17.1,
+    "pct_calculated": 66.7,
+    "pct_inferred": 19.8,
     "pct_placeholder": 2.3,
     "manual_review_count": 85,
     "evidence_class_counts": {
       "measured_source": 25,
       "calculated_source": 145,
-      "config_backed": 6,
-      "heuristic_inferred": 41,
+      "config_backed": 0,
+      "heuristic_inferred": 47,
       "placeholder": 5
     }
   },
@@ -158,7 +158,7 @@
       "quantity": 60.3,
       "unit": "m2",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. [Zone: internal_dry] Vinyl plank finish for 5 dry internal space(s). Verandah (21.6 m\u00b2) excluded \u2014 WPC decking in K-package. CONFIG-BACKED FALLBACK: Space areas from config room_schedule only. No room polygons in DXF; no IfcSpace in IFC. These are estimated areas \u2014 verify all room dimensions from architectural drawings.  LAYERED ASSEMBLY \u2014 FINISH LAYER: this row is the finish above the FC sheet substrate (G-package, 64.80 m\u00b2 total internal substrate). Substrate covers all internal zones; finish type differs per zone. External verandah (21.6 m\u00b2) uses WPC decking (K-package) \u2014 no FC substrate and no finish row here."
+      "notes": "MANUAL REVIEW REQUIRED. [Zone: internal_dry / canonical] Internal Dry \u2014 Vinyl Plank. Verandah (21.6 m\u00b2) excluded \u2014 WPC decking in K-package. truth_class=config_fallback. Dry floor zone (vinyl_plank): ['Dispensary', 'Waiting / Reception', 'Consultation Room', 'Staff Room', 'Storage']. area=60.30 m\u00b2."
     },
     {
       "item_no": "F05",
@@ -167,7 +167,7 @@
       "quantity": 66.3,
       "unit": "m2",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. [Zone: internal_dry] Vinyl plank supply: 60.30m\u00b2 net + 10% cut waste = 66.3m\u00b2. 10% is standard for rectangular rooms with plank direction runs. Adjust for irregular layout or diagonal pattern. Spec: LVT/SPC vinyl plank \u2014 thickness and finish to be confirmed by architect."
+      "notes": "MANUAL REVIEW REQUIRED. [Zone: internal_dry / canonical] Vinyl plank supply: 60.30m\u00b2 net + 10% cut waste = 66.3m\u00b2. Spec: LVT/SPC vinyl plank \u2014 thickness and finish to be confirmed."
     },
     {
       "item_no": "F06",
@@ -176,7 +176,7 @@
       "quantity": 4.5,
       "unit": "m2",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. [Zone: internal_wet] Ceramic tile (non-slip) for wet space(s): Toilet (4.50 m\u00b2). CONFIG-BACKED FALLBACK: Space areas from config room_schedule only. No room polygons in DXF; no IfcSpace in IFC. These are estimated areas \u2014 verify all room dimensions from architectural drawings. Verify wet zone classification with architect.   LAYERED ASSEMBLY \u2014 FINISH LAYER: this row is the finish above the FC sheet substrate (G-package, 64.80 m\u00b2 total internal substrate). Substrate covers all internal zones; finish type differs per zone. External verandah (21.6 m\u00b2) uses WPC decking (K-package) \u2014 no FC substrate and no finish row here."
+      "notes": "MANUAL REVIEW REQUIRED. [Zone: internal_wet / canonical] Wet Areas. Ceramic tile (non-slip). truth_class=config_fallback. Verify wet zone classification with architect. Wet floor zone: ['Toilet']. area=4.50 m\u00b2. Config-fallback areas \u2014 verify from drawings."
     },
     {
       "item_no": "F07",
@@ -185,7 +185,7 @@
       "quantity": 5.17,
       "unit": "m2",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. Ceramic floor tile supply order quantity = 4.50m\u00b2 net area + 15% cut waste = 5.17m\u00b2. 15% is standard for square tiles in a regular wet room. Tile spec (size, finish, slip rating) to be confirmed by architect. Verify with wet area tile schedule before ordering."
+      "notes": "MANUAL REVIEW REQUIRED. Ceramic floor tile supply: 4.50m\u00b2 + 15% cut waste = 5.17m\u00b2. Tile spec (size, finish, slip rating) to be confirmed by architect."
     },
     {
       "item_no": "F08",
@@ -203,7 +203,7 @@
       "quantity": 1,
       "unit": "bags",
       "confidence": "LOW",
-      "notes": "MANUAL REVIEW REQUIRED. 3kg bag of grout \u2248 6 m\u00b2 floor tile coverage. Adjust for joint width and tile size."
+      "notes": "MANUAL REVIEW REQUIRED. 3kg bag of grout \u2248 6 m\u00b2 floor tile coverage. Adjust for joint width."
     },
     {
       "item_no": "F12",
@@ -929,47 +929,10 @@
   "evidence_quality": {
     "measured_source_count": 25,
     "calculated_source_count": 145,
-    "config_backed_count": 6,
-    "heuristic_inferred_count": 41,
+    "config_backed_count": 0,
+    "heuristic_inferred_count": 47,
     "placeholder_count": 5,
-    "config_backed_items": [
-      {
-        "item_no": "F04",
-        "item_name": "Floor Finish \u2014 Dry Zone (vinyl plank)",
-        "confidence": "LOW",
-        "manual_review": true
-      },
-      {
-        "item_no": "F05",
-        "item_name": "Vinyl Plank \u2014 Supply Total (10% cut waste)",
-        "confidence": "LOW",
-        "manual_review": true
-      },
-      {
-        "item_no": "F06",
-        "item_name": "Floor Finish \u2014 Wet Zone (ceramic tile)",
-        "confidence": "LOW",
-        "manual_review": true
-      },
-      {
-        "item_no": "F07",
-        "item_name": "Ceramic Floor Tile \u2014 Supply Total (15% cut waste)",
-        "confidence": "LOW",
-        "manual_review": true
-      },
-      {
-        "item_no": "F08",
-        "item_name": "Floor Tile Adhesive \u2014 Wet Area (20kg bag)",
-        "confidence": "LOW",
-        "manual_review": true
-      },
-      {
-        "item_no": "F09",
-        "item_name": "Floor Tile Grout \u2014 Wet Area (3kg bag)",
-        "confidence": "LOW",
-        "manual_review": true
-      }
-    ],
+    "config_backed_items": [],
     "heuristic_items_not_manual_review": [
       {
         "item_no": "K08",
@@ -1058,22 +1021,22 @@
       {
         "item_no": "F04",
         "item_name": "Floor Finish \u2014 Dry Zone (vinyl plank)",
-        "blocked_reason": "MANUAL REVIEW REQUIRED. [Zone: internal_dry] Vinyl plank finish for 5 dry internal space(s). Verandah (21.6 m\u00b2) excluded"
+        "blocked_reason": "MANUAL REVIEW REQUIRED. [Zone: internal_dry / canonical] Internal Dry \u2014 Vinyl Plank. Verandah (21.6 m\u00b2) excluded \u2014 WPC d"
       },
       {
         "item_no": "F05",
         "item_name": "Vinyl Plank \u2014 Supply Total (10% cut waste)",
-        "blocked_reason": "MANUAL REVIEW REQUIRED. [Zone: internal_dry] Vinyl plank supply: 60.30m\u00b2 net + 10% cut waste = 66.3m\u00b2. 10% is standard f"
+        "blocked_reason": "MANUAL REVIEW REQUIRED. [Zone: internal_dry / canonical] Vinyl plank supply: 60.30m\u00b2 net + 10% cut waste = 66.3m\u00b2. Spec:"
       },
       {
         "item_no": "F06",
         "item_name": "Floor Finish \u2014 Wet Zone (ceramic tile)",
-        "blocked_reason": "MANUAL REVIEW REQUIRED. [Zone: internal_wet] Ceramic tile (non-slip) for wet space(s): Toilet (4.50 m\u00b2). CONFIG-BACKED F"
+        "blocked_reason": "MANUAL REVIEW REQUIRED. [Zone: internal_wet / canonical] Wet Areas. Ceramic tile (non-slip). truth_class=config_fallback"
       },
       {
         "item_no": "F07",
         "item_name": "Ceramic Floor Tile \u2014 Supply Total (15% cut waste)",
-        "blocked_reason": "MANUAL REVIEW REQUIRED. Ceramic floor tile supply order quantity = 4.50m\u00b2 net area + 15% cut waste = 5.17m\u00b2. 15% is stan"
+        "blocked_reason": "MANUAL REVIEW REQUIRED. Ceramic floor tile supply: 4.50m\u00b2 + 15% cut waste = 5.17m\u00b2. Tile spec (size, finish, slip rating"
       },
       {
         "item_no": "F08",
@@ -1083,7 +1046,7 @@
       {
         "item_no": "F09",
         "item_name": "Floor Tile Grout \u2014 Wet Area (3kg bag)",
-        "blocked_reason": "MANUAL REVIEW REQUIRED. 3kg bag of grout \u2248 6 m\u00b2 floor tile coverage. Adjust for joint width and tile size."
+        "blocked_reason": "MANUAL REVIEW REQUIRED. 3kg bag of grout \u2248 6 m\u00b2 floor tile coverage. Adjust for joint width."
       },
       {
         "item_no": "H05",
@@ -1109,8 +1072,8 @@
     "evidence_class_after": {
       "measured_source": 25,
       "calculated_source": 145,
-      "config_backed": 6,
-      "heuristic_inferred": 41,
+      "config_backed": 0,
+      "heuristic_inferred": 47,
       "placeholder": 5
     },
     "reconciliation": {
